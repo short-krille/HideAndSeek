@@ -1,6 +1,5 @@
 package de.thecoolcraft11.hideAndSeek.gui;
 
-import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemRarity;
 import de.thecoolcraft11.hideAndSeek.items.LoadoutItemType;
 import de.thecoolcraft11.hideAndSeek.loadout.LoadoutManager;
@@ -22,12 +21,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.*;
 
 public class LoadoutGUI implements Listener {
-    private final HideAndSeek plugin;
     private final LoadoutManager loadoutManager;
-    private final Map<UUID, Boolean> viewMode = new HashMap<>(); 
+    private final Map<UUID, Boolean> viewMode = new HashMap<>();
 
-    public LoadoutGUI(HideAndSeek plugin, LoadoutManager loadoutManager) {
-        this.plugin = plugin;
+    public LoadoutGUI(LoadoutManager loadoutManager) {
         this.loadoutManager = loadoutManager;
     }
 
@@ -51,13 +48,10 @@ public class LoadoutGUI implements Listener {
         int usedTokens = hiderView ? loadout.getHiderTokensUsed() : loadout.getSeekerTokensUsed();
         Set<LoadoutItemType> selected = hiderView ? loadout.getHiderItems() : loadout.getSeekerItems();
 
-        
+
         inv.setItem(4, createInfoItem(selected.size(), maxItems, usedTokens, maxTokens));
 
-        
-        inv.setItem(49, createToggleButton(hiderView));
 
-        
         int slot = 9;
         for (LoadoutItemType item : LoadoutItemType.values()) {
             if (hiderView && !item.isForHiders()) continue;
@@ -67,6 +61,19 @@ public class LoadoutGUI implements Listener {
             boolean isSelected = selected.contains(item);
             inv.setItem(slot++, createItemStack(item, cost, isSelected, usedTokens, maxTokens, selected.size(), maxItems));
         }
+
+
+        int selectedSlot = 45;
+        int displayedCount = 0;
+        for (LoadoutItemType item : selected) {
+            if (displayedCount >= 7) break;
+            int cost = loadoutManager.getItemCost(item);
+            inv.setItem(selectedSlot++, createSelectedItemDisplay(item, cost));
+            displayedCount++;
+        }
+
+
+        inv.setItem(52, createToggleButton(hiderView));
 
         player.openInventory(inv);
     }
@@ -87,15 +94,44 @@ public class LoadoutGUI implements Listener {
         int slot = event.getRawSlot();
         boolean isHiderView = titleStr.equals("Hider Loadout");
 
-        
-        if (slot == 49) {
+
+        if (slot == 52) {
             viewMode.put(player.getUniqueId(), !isHiderView);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
             openView(player, !isHiderView);
             return;
         }
 
-        
+
+        if (slot >= 45 && slot <= 51) {
+            PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());
+            Set<LoadoutItemType> selected = isHiderView ? loadout.getHiderItems() : loadout.getSeekerItems();
+
+
+            List<LoadoutItemType> selectedList = new ArrayList<>(selected);
+            int itemIndex = slot - 45;
+
+            if (itemIndex < selectedList.size()) {
+                LoadoutItemType itemToRemove = selectedList.get(itemIndex);
+
+                if (isHiderView) {
+                    loadout.removeHiderItem(itemToRemove);
+                } else {
+                    loadout.removeSeekerItem(itemToRemove);
+                }
+
+                int cost = loadoutManager.getItemCost(itemToRemove);
+                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.8f);
+                player.sendMessage(Component.text("Removed ", NamedTextColor.RED)
+                        .append(Component.text(formatName(itemToRemove.name()), getRarityColor(itemToRemove.getRarity())))
+                        .append(Component.text(" (+" + cost + " tokens)", NamedTextColor.GOLD)));
+
+                openView(player, isHiderView);
+            }
+            return;
+        }
+
+
         if (slot < 9 || slot >= 45) return;
 
         PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());
@@ -202,6 +238,15 @@ public class LoadoutGUI implements Listener {
                 .decoration(TextDecoration.ITALIC, false));
 
         List<Component> lore = new ArrayList<>();
+
+
+        String description = getItemDescription(type);
+        if (!description.isEmpty()) {
+            lore.add(Component.text(description, NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.empty());
+        }
+
         lore.add(Component.text("Cost: " + cost + " tokens", NamedTextColor.GOLD)
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("Rarity: " + type.getRarity().name(), rarityColor)
@@ -234,6 +279,56 @@ public class LoadoutGUI implements Listener {
         return item;
     }
 
+    private String getItemDescription(LoadoutItemType type) {
+        return switch (type) {
+            case FIRECRACKER -> "Creates a loud sound to scare seekers";
+            case CAT_SOUND -> "Plays a cat sound for misdirection";
+            case RANDOM_BLOCK -> "Randomize your block appearance";
+            case SPEED_BOOST -> "Gain temporary speed boost";
+            case TRACKER_CROSSBOW -> "Track seekers with arrows";
+            case BLOCK_SWAP -> "Swap blocks with other hiders";
+            case BIG_FIRECRACKER -> "Large explosion for distraction";
+            case FIREWORK_ROCKET -> "Launch fireworks as escape";
+            case KNOCKBACK_STICK -> "Knockback tool for combat";
+            case MEDKIT -> "Heal yourself in battle";
+            case TOTEM_OF_UNDYING -> "Revive from death once";
+            case INVISIBILITY_CLOAK -> "Become invisible temporarily";
+            case SLOWNESS_BALL -> "Slow down pursuing seekers";
+            case GRAPPLING_HOOK -> "Launch towards your target";
+            case INK_SPLASH -> "Blind nearby hiders";
+            case LIGHTNING_FREEZE -> "Freeze all hiders briefly";
+            case GLOWING_COMPASS -> "Make nearest hider glow";
+            case CURSE_SPELL -> "Curse hiders when hitting them";
+            case BLOCK_RANDOMIZER -> "Force all hiders to change blocks";
+            case CHAIN_PULL -> "Pull hiders towards you";
+            case PROXIMITY_SENSOR -> "Place sensor to detect hiders";
+            case CAGE_TRAP -> "Trap hiders in an invisible cage";
+        };
+    }
+
+    private ItemStack createSelectedItemDisplay(LoadoutItemType type, int cost) {
+        Material material = getMaterialForItem(type);
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+
+        NamedTextColor rarityColor = getRarityColor(type.getRarity());
+        meta.displayName(Component.text(formatName(type.name()), rarityColor, TextDecoration.BOLD)
+                .decoration(TextDecoration.ITALIC, false));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Cost: " + cost + " tokens", NamedTextColor.GOLD)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Rarity: " + type.getRarity().name(), rarityColor)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("Click to remove", NamedTextColor.RED)
+                .decoration(TextDecoration.ITALIC, false));
+
+        meta.lore(lore);
+        item.setItemMeta(meta);
+        return item;
+    }
+
     private Material getMaterialForItem(LoadoutItemType type) {
         return switch (type) {
             case FIRECRACKER -> Material.RED_CANDLE;
@@ -247,6 +342,8 @@ public class LoadoutGUI implements Listener {
             case KNOCKBACK_STICK -> Material.STICK;
             case MEDKIT -> Material.GOLDEN_APPLE;
             case TOTEM_OF_UNDYING -> Material.TOTEM_OF_UNDYING;
+            case INVISIBILITY_CLOAK -> Material.PHANTOM_MEMBRANE;
+            case SLOWNESS_BALL -> Material.SNOWBALL;
             case GRAPPLING_HOOK -> Material.FISHING_ROD;
             case INK_SPLASH -> Material.INK_SAC;
             case LIGHTNING_FREEZE -> Material.LIGHTNING_ROD;
@@ -254,6 +351,8 @@ public class LoadoutGUI implements Listener {
             case CURSE_SPELL -> Material.ENCHANTED_BOOK;
             case BLOCK_RANDOMIZER -> Material.BLAZE_POWDER;
             case CHAIN_PULL -> Material.LEAD;
+            case PROXIMITY_SENSOR -> Material.REDSTONE_TORCH;
+            case CAGE_TRAP -> Material.IRON_BARS;
         };
     }
 

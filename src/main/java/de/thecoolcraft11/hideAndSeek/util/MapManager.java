@@ -334,6 +334,9 @@ public class MapManager {
             plugin.getLogger().warning("No spawn points configured for map " + mapName + ", using world spawn");
         }
 
+        
+        HideAndSeek.getDataController().setRoundSpawnPoint(spawnLocation);
+
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.teleport(spawnLocation);
         }

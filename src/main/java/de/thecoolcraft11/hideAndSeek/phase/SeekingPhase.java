@@ -210,12 +210,6 @@ public class SeekingPhase implements GamePhase {
         }
     }
 
-    private String formatTime(int seconds) {
-        int minutes = seconds / 60;
-        int secs = seconds % 60;
-        return String.format("%d:%02d", minutes, secs);
-    }
-
     @Override
     public boolean allowBlockBreak() {
         return false;

@@ -32,65 +32,134 @@ game:
 
 # Setting default values (automatically registered, can be overridden via /mg setting command)
 settings:
-  had:
-    gametype: "NORMAL"  # NORMAL, BLOCK, SMALL
-    gamestyle: "SPECTATOR"  # SPECTATOR, INVASION, INFINITE
-    hiding_time: 60  # seconds
-    seeking_time: 300  # seconds
+  game:
+    gametype: "NORMAL"
+    gamestyle: "SPECTATOR"
+    hiding_time: 60
+    seeking_time: 300
     hider_invisibility: false
-    small_mode_size: 0.5  # scale for SMALL mode
+    small_mode_size: 0.5
     random_team_distribution: true
+    use_preferred_modes: true
+    fixed_seeker_team: ""
     seeker_count: 1
-    hider_health: 20  # half-hearts
-    block_view_height: 0.1  # height offset when hiding as block
+    hider_health: 20
+    block_view_height: 0.1
+    block_size_to_block: false
+    seeker_kill_mode: "NORMAL"
+    auto_cleanup_after_round: true
+    small_mode_seeker_size: 1.0
 
-    points:
-      hider: 1  # points per 5 seconds hiding
-      seeker_find: 10  # points for finding a hider
-      taunt_cat: 5  # points for using cat taunt
-      taunt_firecracker: 10  # points for using firecracker
+  blockstats:
+    show-names: false
 
   hider-items:
-    cat-taunt:
-      cooldown: 8  # seconds
+    random-block:
+      uses: 5
+    crossbow:
+      hits-per-upgrade: 3
+    sound:
+      cooldown: 4
       points: 5
-      volume: 1.0
+      volume: 0.75
       pitch: 0.8
-
     explosion:
-      cooldown: 8  # seconds
+      cooldown: 8
       points: 10
       volume: 0.65
       pitch: 1.5
-      smoke-particles: 3  # particles per tick
-      fuse-time: 40  # ticks (20 = 1 second)
-
+      smoke-particles: 3
+      fuse-time: 40
     speed-boost:
-      type: "SPEED_EFFECT"  # SPEED_EFFECT or VELOCITY_BOOST
-      cooldown: 10  # seconds
-      duration: 5  # seconds (SPEED_EFFECT only)
-      boost-power: 0.5  # velocity multiplier (VELOCITY_BOOST only)
-      amplifier-bonus: 0.2  # bonus per crossbow hit level
+      type: "SPEED_EFFECT"
+      cooldown: 10
+      duration: 5
+      boost-power: 0.5
+    knockback-stick:
+      level: 2
+    block-swap:
+      cooldown: 15
+      range: 50.0
+    big-firecracker:
+      cooldown: 12
+      fuse-time: 60
+      mini-fuse-time: 30
+      mini-count: 3
+      points: 20
+      volume: 1.2
+      pitch: 0.5
+    firework-rocket:
+      cooldown: 10
+      target-y: 128
+      points: 15
+      volume: 10.0
+    medkit:
+      cooldown: 30
+      channel-time: 5
+      heal-amount: 20.0
+    totem:
+      effect-duration: 30
+      max-uses: 1
+    invisibility-cloak:
+      cooldown: 20
+      duration: 8
+    slowness-ball:
+      cooldown: 10
+      duration: 6
+      amplifier: 1
 
-    crossbow:
-      cooldown: 5  # seconds
-
-    random-block:
-      cooldown: 3  # seconds
+  timer:
+    hiding_color1: "#FF0000"
+    hiding_color2: "#0000FF"
+    seeking_color1: "#FFFF00"
+    seeking_color2: "#00FFFF"
+    animation_type: "WAVE"
+    animation_speed: 0.5
 
   seeker-items:
     grappling-hook:
-      cooldown: 2  # seconds
-      speed: 1.5  # movement speed multiplier
-      max-distance: 30  # blocks
+      cooldown: 2
+      speed: 1.5
+    ink-splash:
+      cooldown: 20
+      radius: 25
+      duration: 7
+    lightning-freeze:
+      cooldown: 60
+      duration: 5
+    glowing-compass:
+      cooldown: 25
+      duration: 10
+      range: 50.0
+    curse-spell:
+      cooldown: 30
+      active-duration: 10
+      curse-duration: 8
+      small-shrink-delay: 8
+    block-randomizer:
+      cooldown: 45
+    chain-pull:
+      cooldown: 12
+      range: 30.0
+      pull-power: 2.0
+      slowness-duration: 3
+    proximity-sensor:
+      cooldown: 5
+      range: 8.0
+      duration: 60
+    cage-trap:
+      cooldown: 5
+      range: 5.0
+      duration: 60
+      paralyze-duration: 5
 
-  blockstats:
-    show-names: false  # show player names in block stats GUI
-
-  teams:
-    max_teams: 2
-    max_per_team: 10
-    max_total_players: 20
-    min_teams: 2
-    min_per_team: 1
-    min_total_players: 2
+  loadout:
+    hider-max-items: 3
+    seeker-max-items: 4
+    hider-max-tokens: 12
+    seeker-max-tokens: 12
+    token-cost-common: 1
+    token-cost-uncommon: 2
+    token-cost-rare: 4
+    token-cost-epic: 6
+    token-cost-legendary: 10

@@ -212,7 +212,7 @@ public class BlockSelectorGUI {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             String name = formatName(material.name());
-            meta.displayName(Component.text(("") + name,
+            meta.displayName(Component.text(name,
                             isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW, TextDecoration.BOLD)
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(Component.text("Click to select", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));

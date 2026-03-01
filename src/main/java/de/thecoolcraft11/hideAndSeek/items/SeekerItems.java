@@ -8,9 +8,14 @@ import de.thecoolcraft11.minigameframework.items.ItemActionType;
 import de.thecoolcraft11.minigameframework.items.ItemInteractionContext;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.RedstoneWallTorch;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemFlag;
@@ -23,6 +28,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
@@ -31,21 +37,23 @@ import org.joml.Vector3f;
 import java.util.*;
 
 public final class SeekerItems {
-    public static final String GRAPPLING_HOOK_ITEM_ID = "had_seeker_grappling_hook";
-    public static final String BLOCK_STATS_ITEM_ID = "had_seeker_block_stats";
-    public static final String SEEKERS_MASK_ITEM_ID = "had_seekers_mask";
-    public static final String SEEKERS_SWORD_ID = "had_seeker_sword";
-    public static final String INK_SPLASH_ITEM_ID = "had_seeker_ink_splash";
-    public static final String LIGHTNING_FREEZE_ITEM_ID = "had_seeker_lightning_freeze";
-    public static final String GLOWING_COMPASS_ITEM_ID = "had_seeker_glowing_compass";
-    public static final String CURSE_SPELL_ITEM_ID = "had_seeker_curse_spell";
-    public static final String BLOCK_RANDOMIZER_ITEM_ID = "had_seeker_block_randomizer";
-    public static final String CHAIN_PULL_ITEM_ID = "had_seeker_chain_pull";
+    public static final String GRAPPLING_HOOK_ITEM_ID = "has_seeker_grappling_hook";
+    public static final String BLOCK_STATS_ITEM_ID = "has_seeker_block_stats";
+    public static final String SEEKERS_MASK_ITEM_ID = "has_seekers_mask";
+    public static final String SEEKERS_SWORD_ID = "has_seeker_sword";
+    public static final String INK_SPLASH_ITEM_ID = "has_seeker_ink_splash";
+    public static final String LIGHTNING_FREEZE_ITEM_ID = "has_seeker_lightning_freeze";
+    public static final String GLOWING_COMPASS_ITEM_ID = "has_seeker_glowing_compass";
+    public static final String CURSE_SPELL_ITEM_ID = "has_seeker_curse_spell";
+    public static final String BLOCK_RANDOMIZER_ITEM_ID = "has_seeker_block_randomizer";
+    public static final String CHAIN_PULL_ITEM_ID = "has_seeker_chain_pull";
+    public static final String PROXIMITY_SENSOR_ITEM_ID = "has_seeker_proximity_sensor";
+    public static final String CAGE_TRAP_ITEM_ID = "has_seeker_cage_trap";
 
-    private static final Map<UUID, Long> grapplingHookCooldowns = new HashMap<>();
     private static final Map<UUID, Long> seekerCurseActiveUntil = new HashMap<>();
     private static final Map<UUID, Long> hiderCursedUntil = new HashMap<>();
     private static final Map<UUID, ItemStack> inkHelmetBackup = new HashMap<>();
+    private static final Map<Location, BlockDisplay> sensorDisplays = new HashMap<>();
 
     public static void registerItems(HideAndSeek plugin) {
         registerCooldownItems(plugin);
@@ -67,6 +75,8 @@ public final class SeekerItems {
         plugin.getCustomItemManager().unregisterItem(CURSE_SPELL_ITEM_ID);
         plugin.getCustomItemManager().unregisterItem(BLOCK_RANDOMIZER_ITEM_ID);
         plugin.getCustomItemManager().unregisterItem(CHAIN_PULL_ITEM_ID);
+        plugin.getCustomItemManager().unregisterItem(PROXIMITY_SENSOR_ITEM_ID);
+        plugin.getCustomItemManager().unregisterItem(CAGE_TRAP_ITEM_ID);
     }
 
     private static void registerCooldownItems(HideAndSeek plugin) {
@@ -165,6 +175,33 @@ public final class SeekerItems {
                 .withVanillaCooldownDisplay(true)
                 .allowOffHand(false)
                 .allowArmor(false)
+                .build());
+        int proximityCooldown = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.cooldown", 5);
+        plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createProximitySensorItem(), PROXIMITY_SENSOR_ITEM_ID)
+                .withAction(ItemActionType.RIGHT_CLICK_BLOCK, context -> placeProximitySensor(context, plugin))
+                .withDescription("Place a proximity sensor")
+                .withDropPrevention(true)
+                .withCraftPrevention(true)
+                .withVanillaCooldown(proximityCooldown * 20)
+                .withCustomCooldown(proximityCooldown * 1000L)
+                .withVanillaCooldownDisplay(true)
+                .allowOffHand(false)
+                .allowArmor(false)
+                .cancelDefaultAction(true)
+                .build());
+
+        int cageCooldown = plugin.getSettingRegistry().get("seeker-items.cage-trap.cooldown", 5);
+        plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createCageTrapItem(), CAGE_TRAP_ITEM_ID)
+                .withAction(ItemActionType.RIGHT_CLICK_BLOCK, context -> placeCageTrap(context, plugin))
+                .withDescription("Place an invisible cage trap")
+                .withDropPrevention(true)
+                .withCraftPrevention(true)
+                .withVanillaCooldown(cageCooldown * 20)
+                .withCustomCooldown(cageCooldown * 1000L)
+                .withVanillaCooldownDisplay(true)
+                .allowOffHand(false)
+                .allowArmor(false)
+                .cancelDefaultAction(true)
                 .build());
     }
 
@@ -330,9 +367,6 @@ public final class SeekerItems {
         }
     }
 
-    public static void resetTracking() {
-        grapplingHookCooldowns.clear();
-    }
 
     public static boolean isCurseActive(UUID seekerId) {
         Long until = seekerCurseActiveUntil.get(seekerId);
@@ -390,7 +424,7 @@ public final class SeekerItems {
 
         hider.sendMessage(Component.text("You have been cursed!", NamedTextColor.DARK_PURPLE));
 
-        
+
         new BukkitRunnable() {
             int ticks = 0;
 
@@ -402,9 +436,9 @@ public final class SeekerItems {
                 }
 
                 Location loc = hider.getLocation().add(0, 1, 0);
-                
+
                 hider.getWorld().spawnParticle(Particle.SOUL, loc, 8, 0.3, 0.5, 0.3, 0.1);
-                
+
                 hider.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 5, 0.2, 0.3, 0.2, 0.05);
 
                 ticks++;
@@ -458,9 +492,9 @@ public final class SeekerItems {
             @Override
             public void run() {
 
-                if (!seeker.isOnline() || (ticks > 5 && seeker.isOnGround()) || ticks > 30) {
+                if (!seeker.isOnline() || !seeker.getWorld().equals(hookLoc.getWorld()) || (ticks > 5 && seeker.isOnGround()) || ticks > 30) {
 
-                    if (seeker.getLocation().distance(hookLoc) < 3) {
+                    if (seeker.isOnline() && seeker.getWorld().equals(hookLoc.getWorld()) && seeker.getLocation().distance(hookLoc) < 3) {
                         seeker.getWorld().playSound(seeker.getLocation(), Sound.ENTITY_WIND_CHARGE_THROW, 1f, 0.5f);
                     }
                     this.cancel();
@@ -497,9 +531,6 @@ public final class SeekerItems {
         }
     }
 
-    private static void setOnCooldown(UUID playerId) {
-        grapplingHookCooldowns.put(playerId, System.currentTimeMillis());
-    }
 
     private static ItemStack createGrapplingHookItem() {
         ItemStack item = new ItemStack(Material.FISHING_ROD);
@@ -581,8 +612,8 @@ public final class SeekerItems {
 
     private static void spawnInkSplash(ItemInteractionContext context, HideAndSeek plugin) {
         Player seeker = context.getPlayer();
-        int radius = plugin.getSettingRegistry().get("seeker-items.ink-splash.radius", 5);
-        int duration = plugin.getSettingRegistry().get("seeker-items.ink-splash.duration", 5);
+        int radius = plugin.getSettingRegistry().get("seeker-items.ink-splash.radius", 25);
+        int duration = plugin.getSettingRegistry().get("seeker-items.ink-splash.duration", 7);
 
         for (Player hider : Bukkit.getOnlinePlayers()) {
             if (!HideAndSeek.getDataController().getHiders().contains(hider.getUniqueId())) continue;
@@ -594,13 +625,11 @@ public final class SeekerItems {
             HiderEquipmentChangeListener.hideHelmet(hider);
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(
                     plugin,
-                    () -> {
-                        HiderEquipmentChangeListener.hideHelmet(hider);
-                    },
+                    () -> HiderEquipmentChangeListener.hideHelmet(hider),
                     0L, 1L
             );
 
-            
+
             hider.getWorld().spawnParticle(Particle.SQUID_INK, hider.getEyeLocation(), 10, 0.3, 0.3, 0.3, 0.1);
 
             hider.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, duration * 20, 255, false, false));
@@ -657,84 +686,101 @@ public final class SeekerItems {
         }
 
         if (nearest != null) {
-            final Player finalNearest = nearest;
-            UUID hiderId = finalNearest.getUniqueId();
-
-            var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
-            Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;
-            boolean isBlockMode = gameModeObj != null && gameModeObj.toString().equals("BLOCK");
-
-
-            HideAndSeek.getDataController().setGlowing(hiderId, true);
-
-            if (isBlockMode) {
-
-                BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(hiderId);
-                if (display != null && display.isValid()) {
-                    display.setGlowing(true);
-                    Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-                    Team hiderTeam = scoreboard.getEntryTeam(finalNearest.getName());
-                    display.setGlowColorOverride(chatColorToBukkitColor(hiderTeam.getColor()));
-                } else if (HideAndSeek.getDataController().isHidden(hiderId)) {
-
-                    var hiddenBlock = HideAndSeek.getDataController().getHiddenBlock(hiderId);
-                    var lastLoc = HideAndSeek.getDataController().getLastLocation(hiderId);
-                    var blockData = HideAndSeek.getDataController().getChosenBlockData(hiderId);
-                    if ((hiddenBlock != null || lastLoc != null) && blockData != null) {
-                        Location spawnLoc = hiddenBlock != null
-                                ? hiddenBlock.getLocation().clone().add(0.5, 0, 0.5)
-                                : lastLoc.getBlock().getLocation().clone().add(0.5, 0, 0.5);
-                        BlockDisplay tempDisplay = spawnLoc.getWorld().spawn(spawnLoc, BlockDisplay.class, bd -> {
-                            bd.setBlock(blockData);
-                            bd.setGlowing(true);
-                            bd.setTransformation(new Transformation(
-                                    new Vector3f(-0.5f, 0.001f, -0.5f),
-                                    new AxisAngle4f(0, 0, 0, 0),
-                                    new Vector3f(1.001f, 1.001f, 1.001f),
-                                    new AxisAngle4f(0, 0, 0, 0)
-                            ));
-                            bd.setBrightness(new Display.Brightness(15, 15));
-                            Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-                            Team hiderTeam = scoreboard.getEntryTeam(finalNearest.getName());
-                            bd.setGlowColorOverride(chatColorToBukkitColor(hiderTeam.getColor()));
-                            bd.getPersistentDataContainer().set(new NamespacedKey(plugin, "temp_glow"), PersistentDataType.STRING, hiderId.toString());
-                        });
-
-
-                        HideAndSeek.getDataController().setBlockDisplay(hiderId, tempDisplay);
-                    }
-                }
-            } else {
-
-                finalNearest.setGlowing(true);
-            }
-
-
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                HideAndSeek.getDataController().removeGlowing(hiderId);
-
-                if (isBlockMode) {
-                    BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(hiderId);
-                    if (display != null && display.isValid()) {
-
-                        String tempGlowId = display.getPersistentDataContainer().get(new NamespacedKey(plugin, "temp_glow"), PersistentDataType.STRING);
-                        if (tempGlowId != null && tempGlowId.equals(hiderId.toString())) {
-
-                            display.remove();
-                        } else {
-
-                            display.setGlowing(false);
-                            display.setGlowColorOverride(null);
-                        }
-                    }
-                } else {
-                    finalNearest.setGlowing(false);
-                }
-            }, duration * 20L);
-
-            seeker.sendMessage(Component.text(finalNearest.getName() + " is now glowing!", NamedTextColor.GOLD));
+            applyGlowEffect(nearest, duration, plugin);
+            seeker.sendMessage(Component.text(nearest.getName() + " is now glowing!", NamedTextColor.GOLD));
         } else {
             seeker.sendMessage(Component.text("No hiders found nearby!", NamedTextColor.RED));
+        }
+    }
+
+    /**
+     * Applies a glowing effect to a hider for a specified duration.
+     * Works in all game modes - uses block display glow in BLOCK mode, player glow in others.
+     *
+     * @param hider    The hider to glow
+     * @param duration Duration of glow in seconds
+     * @param plugin   Reference to the plugin
+     */
+    private static void applyGlowEffect(Player hider, int duration, HideAndSeek plugin) {
+        UUID hiderId = hider.getUniqueId();
+
+        var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
+        Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;
+        boolean isBlockMode = gameModeObj != null && gameModeObj.toString().equals("BLOCK");
+
+
+        HideAndSeek.getDataController().setGlowing(hiderId, true);
+
+        if (isBlockMode) {
+
+            BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(hiderId);
+            if (display != null && display.isValid()) {
+                display.setGlowing(true);
+                Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                Team hiderTeam = scoreboard.getEntryTeam(hider.getName());
+                if (hiderTeam != null) {
+                    display.setGlowColorOverride(textColorToColor(hiderTeam.color()));
+                }
+            } else if (HideAndSeek.getDataController().isHidden(hiderId)) {
+
+                var hiddenBlock = HideAndSeek.getDataController().getHiddenBlock(hiderId);
+                var lastLoc = HideAndSeek.getDataController().getLastLocation(hiderId);
+                var blockData = HideAndSeek.getDataController().getChosenBlockData(hiderId);
+                if ((hiddenBlock != null || lastLoc != null) && blockData != null) {
+                    Location spawnLoc = hiddenBlock != null
+                            ? hiddenBlock.getLocation().clone().add(0.5, 0, 0.5)
+                            : lastLoc.getBlock().getLocation().clone().add(0.5, 0, 0.5);
+                    BlockDisplay tempDisplay = spawnLoc.getWorld().spawn(spawnLoc, BlockDisplay.class, bd -> {
+                        bd.setBlock(blockData);
+                        bd.setGlowing(true);
+                        bd.setTransformation(new Transformation(
+                                new Vector3f(-0.5f, 0.001f, -0.5f),
+                                new AxisAngle4f(0, 0, 0, 0),
+                                new Vector3f(1.001f, 1.001f, 1.001f),
+                                new AxisAngle4f(0, 0, 0, 0)
+                        ));
+                        bd.setBrightness(new Display.Brightness(15, 15));
+                        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                        Team hiderTeam = scoreboard.getEntryTeam(hider.getName());
+                        if (hiderTeam != null) {
+                            bd.setGlowColorOverride(textColorToColor(hiderTeam.color()));
+                        }
+                        bd.getPersistentDataContainer().set(new NamespacedKey(plugin, "temp_glow"), PersistentDataType.STRING, hiderId.toString());
+                    });
+
+                    HideAndSeek.getDataController().setBlockDisplay(hiderId, tempDisplay);
+                }
+            }
+        } else {
+
+            hider.setGlowing(true);
+        }
+
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> removeGlowEffect(hider, isBlockMode, plugin), duration * 20L);
+    }
+
+    private static void removeGlowEffect(Player hider, boolean isBlockMode, HideAndSeek plugin) {
+        UUID hiderId = hider.getUniqueId();
+        HideAndSeek.getDataController().removeGlowing(hiderId);
+
+        if (isBlockMode) {
+            BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(hiderId);
+            if (display != null && display.isValid()) {
+
+                String tempGlowId = display.getPersistentDataContainer().get(new NamespacedKey(plugin, "temp_glow"), PersistentDataType.STRING);
+                if (tempGlowId != null && tempGlowId.equals(hiderId.toString())) {
+
+                    display.remove();
+                } else {
+
+                    display.setGlowing(false);
+                    display.setGlowColorOverride(null);
+                }
+            }
+        } else {
+
+            hider.setGlowing(false);
         }
     }
 
@@ -744,13 +790,11 @@ public final class SeekerItems {
         seekerCurseActiveUntil.put(seeker.getUniqueId(), until);
 
         ItemStack sword = seeker.getInventory().getItemInMainHand();
-        if (sword != null) {
-            ItemMeta meta = sword.getItemMeta();
-            if (meta != null) {
-                meta.addEnchant(Enchantment.SHARPNESS, 1, true);
-                
-                sword.setItemMeta(meta);
-            }
+        ItemMeta meta = sword.getItemMeta();
+        if (meta != null) {
+            meta.addEnchant(Enchantment.SHARPNESS, 1, true);
+
+            sword.setItemMeta(meta);
         }
 
         seeker.sendMessage(Component.text("Curse spell activated! (" + duration + "s)", NamedTextColor.DARK_PURPLE));
@@ -758,12 +802,10 @@ public final class SeekerItems {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             seekerCurseActiveUntil.remove(seeker.getUniqueId());
             ItemStack s = seeker.getInventory().getItemInMainHand();
-            if (s != null) {
-                ItemMeta m = s.getItemMeta();
-                if (m != null) {
-                    m.removeEnchant(Enchantment.SHARPNESS);
-                    s.setItemMeta(m);
-                }
+            ItemMeta m = s.getItemMeta();
+            if (m != null) {
+                m.removeEnchant(Enchantment.SHARPNESS);
+                s.setItemMeta(m);
             }
         }, duration * 20L);
     }
@@ -781,12 +823,50 @@ public final class SeekerItems {
             Player hider = Bukkit.getPlayer(hiderId);
             if (hider == null) continue;
             HiderItems.randomizeBlockFor(hider, plugin, true);
-            
+
             hider.getWorld().spawnParticle(Particle.ENCHANT, hider.getLocation().add(0, 1, 0), 15, 0.4, 0.4, 0.4, 0.1);
             hider.playSound(hider.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 1.0f, 1.5f);
             count++;
         }
         seeker.sendMessage(Component.text("Blocks randomized! (" + count + " hiders)", NamedTextColor.GREEN));
+    }
+
+    /**
+     * Finds a safe landing location for teleporting a player.
+     * Ensures the location is not inside a solid block by checking nearby positions.
+     */
+    private static Location findSafeLandingLocation(Location loc, World world) {
+        Location checkLoc = loc.clone();
+
+
+        Block block;
+
+
+        int maxAttempts = 10;
+        for (int i = 0; i < maxAttempts; i++) {
+            block = world.getBlockAt(checkLoc);
+            if (!block.getType().isSolid() && (i == 0 || world.getBlockAt(checkLoc.clone().add(0, -1, 0)).getType().isSolid())) {
+                return checkLoc;
+            }
+            checkLoc.add(0, 1, 0);
+        }
+
+
+        checkLoc = loc.clone();
+        Block below = world.getBlockAt(checkLoc.clone().add(0, -0.5, 0));
+        if (!below.getType().isSolid()) {
+
+            while (checkLoc.getY() > world.getMinHeight()) {
+                below = world.getBlockAt(checkLoc.clone().add(0, -1, 0));
+                if (below.getType().isSolid()) {
+                    checkLoc.add(0, 1, 0);
+                    break;
+                }
+                checkLoc.add(0, -1, 0);
+            }
+        }
+
+        return checkLoc;
     }
 
     private static void chainPull(Player seeker, HideAndSeek plugin) {
@@ -827,6 +907,9 @@ public final class SeekerItems {
         targetLocation.setYaw(seeker.getLocation().getYaw());
         targetLocation.setPitch(0);
 
+
+        final Location finalTargetLocation = findSafeLandingLocation(targetLocation, seeker.getWorld());
+
         int slownessDuration = plugin.getSettingRegistry().get("seeker-items.chain-pull.slowness-duration", 3);
         int pullTicks = 8;
 
@@ -835,38 +918,44 @@ public final class SeekerItems {
 
             @Override
             public void run() {
-                if (!finalTarget.isOnline() || !finalTarget.getWorld().equals(seeker.getWorld())) {
+                try {
+                    if (!finalTarget.isOnline() || !finalTarget.getWorld().equals(seeker.getWorld())) {
+                        cancel();
+                        return;
+                    }
+
+
+                    drawChainParticles(seeker, finalTarget);
+
+                    Location current = finalTarget.getLocation();
+                    Vector toTarget = finalTargetLocation.toVector().subtract(current.toVector());
+                    double distance = toTarget.length();
+
+                    if (distance < 0.6 || ticks >= pullTicks) {
+                        Location safeLanding = findSafeLandingLocation(finalTarget.getLocation(), seeker.getWorld());
+                        finalTarget.teleport(safeLanding);
+                        finalTarget.setVelocity(new Vector(0, 0, 0));
+                        finalTarget.addPotionEffect(new PotionEffect(
+                                PotionEffectType.SLOWNESS,
+                                slownessDuration * 20,
+                                2,
+                                false,
+                                false,
+                                false
+                        ));
+                        seeker.sendMessage(Component.text("Pulled " + finalTarget.getName() + "!", NamedTextColor.GREEN));
+                        finalTarget.sendMessage(Component.text("You've been pulled by a chain!", NamedTextColor.DARK_GRAY));
+                        cancel();
+                        return;
+                    }
+
+                    Vector velocity = toTarget.normalize().multiply(Math.min(power, distance));
+                    finalTarget.setVelocity(velocity);
+                    ticks++;
+                } catch (Exception e) {
+
                     cancel();
-                    return;
                 }
-
-                
-                drawChainParticles(seeker, finalTarget);
-
-                Location current = finalTarget.getLocation();
-                Vector toTarget = targetLocation.toVector().subtract(current.toVector());
-                double distance = toTarget.length();
-
-                if (distance < 0.6 || ticks >= pullTicks) {
-                    finalTarget.teleport(targetLocation);
-                    finalTarget.setVelocity(new Vector(0, 0, 0));
-                    finalTarget.addPotionEffect(new PotionEffect(
-                            PotionEffectType.SLOWNESS,
-                            slownessDuration * 20,
-                            2,
-                            false,
-                            false,
-                            false
-                    ));
-                    seeker.sendMessage(Component.text("Pulled " + finalTarget.getName() + "!", NamedTextColor.GREEN));
-                    finalTarget.sendMessage(Component.text("You've been pulled by a chain!", NamedTextColor.DARK_GRAY));
-                    cancel();
-                    return;
-                }
-
-                Vector velocity = toTarget.normalize().multiply(Math.min(power, distance));
-                finalTarget.setVelocity(velocity);
-                ticks++;
             }
         }.runTaskTimer(plugin, 0L, 1L);
     }
@@ -892,26 +981,26 @@ public final class SeekerItems {
                     start.getY() + dy * t,
                     start.getZ() + dz * t);
 
-            
+
             int r = (int) (60 + (255 - 60) * t);
             int g = (int) (140 + (80 - 140) * t);
             int b = (int) (255 + (10 - 255) * t);
             world.spawnParticle(Particle.DUST, point, 1, 0, 0, 0, 0,
                     new Particle.DustOptions(Color.fromRGB(r, g, b), 0.75f));
 
-            
+
             if (i % 2 == 0) {
                 world.spawnParticle(Particle.DUST, point, 1, 0, 0, 0, 0,
                         new Particle.DustOptions(Color.fromRGB(255, 255, 255), 0.3f));
             }
 
-            
+
             if (Math.random() < 0.07) {
                 world.spawnParticle(Particle.CRIT, point, 1, 0.03, 0.03, 0.03, 0.01);
             }
         }
 
-        
+
         world.spawnParticle(Particle.DUST, start, 4, 0.08, 0.08, 0.08, 0,
                 new Particle.DustOptions(Color.fromRGB(60, 140, 255), 1.1f));
         world.spawnParticle(Particle.END_ROD, start, 1, 0.04, 0.04, 0.04, 0.003);
@@ -919,13 +1008,6 @@ public final class SeekerItems {
         world.spawnParticle(Particle.DUST, end, 4, 0.08, 0.08, 0.08, 0,
                 new Particle.DustOptions(Color.fromRGB(255, 80, 10), 1.1f));
         world.spawnParticle(Particle.END_ROD, end, 1, 0.04, 0.04, 0.04, 0.003);
-    }
-
-    private static void removeChainDisplays(List<BlockDisplay> displays) {
-        for (BlockDisplay d : displays) {
-            if (d != null && d.isValid()) d.remove();
-        }
-        displays.clear();
     }
 
 
@@ -1019,26 +1101,483 @@ public final class SeekerItems {
         return item;
     }
 
-    private static Color chatColorToBukkitColor(ChatColor chatColor) {
-        return switch (chatColor) {
-            case BLACK -> Color.fromRGB(0, 0, 0);
-            case DARK_BLUE -> Color.fromRGB(0, 0, 170);
-            case DARK_GREEN -> Color.fromRGB(0, 170, 0);
-            case DARK_AQUA -> Color.fromRGB(0, 170, 170);
-            case DARK_RED -> Color.fromRGB(170, 0, 0);
-            case DARK_PURPLE -> Color.fromRGB(170, 0, 170);
-            case GOLD -> Color.fromRGB(255, 170, 0);
-            case GRAY -> Color.fromRGB(170, 170, 170);
-            case DARK_GRAY -> Color.fromRGB(85, 85, 85);
-            case BLUE -> Color.fromRGB(85, 85, 255);
-            case GREEN -> Color.fromRGB(85, 255, 85);
-            case AQUA -> Color.fromRGB(85, 255, 255);
-            case RED -> Color.fromRGB(255, 85, 85);
-            case LIGHT_PURPLE -> Color.fromRGB(255, 85, 255);
-            case YELLOW -> Color.fromRGB(255, 255, 85);
-            case WHITE -> Color.fromRGB(255, 255, 255);
-            default -> Color.fromRGB(255, 255, 255);
+    private static Color textColorToColor(TextColor chatColor) {
+        return chatColor != null ? Color.fromRGB(chatColor.red(), chatColor.green(), chatColor.blue()) : Color.WHITE;
+    }
+
+    private static ItemStack createProximitySensorItem() {
+        ItemStack item = new ItemStack(Material.REDSTONE_TORCH);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text("Proximity Sensor", NamedTextColor.DARK_RED, TextDecoration.BOLD)
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.lore(List.of(
+                    Component.text("Right click to place a sensor", NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false)
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static void placeProximitySensor(ItemInteractionContext context, HideAndSeek plugin) {
+        double range = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.range", 8.0);
+        int sensorDuration = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.duration", 60);
+
+
+        Block clickedBlock = context.getLocation().getBlock();
+        Player player = context.getPlayer();
+
+
+        if (!clickedBlock.getType().isSolid()) {
+            player.sendMessage(Component.text("Cannot place sensor - need solid block!", NamedTextColor.RED));
+            context.skipCooldown();
+            return;
+        }
+
+
+        RayTraceResult rayTrace = player.getWorld().rayTraceBlocks(
+                player.getEyeLocation(),
+                player.getLocation().getDirection(),
+                5.0
+        );
+
+        BlockFace clickedFace = BlockFace.UP;
+        if (rayTrace != null && rayTrace.getHitBlockFace() != null) {
+            clickedFace = rayTrace.getHitBlockFace();
+        }
+
+
+        Block torchBlock = clickedBlock.getRelative(clickedFace);
+
+
+        if (!torchBlock.getType().isAir()) {
+            player.sendMessage(Component.text("Cannot place sensor here - space is occupied!", NamedTextColor.RED));
+            context.skipCooldown();
+            return;
+        }
+
+
+        Material torchType;
+        BlockData torchData;
+
+        if (clickedFace == BlockFace.DOWN) {
+
+            player.sendMessage(Component.text("Cannot place sensor on ceiling!", NamedTextColor.RED));
+            context.skipCooldown();
+            return;
+        } else if (clickedFace == BlockFace.UP) {
+
+            torchType = Material.REDSTONE_TORCH;
+            torchData = torchType.createBlockData();
+            torchBlock.setBlockData(torchData);
+            BlockDisplay display = (BlockDisplay) torchBlock.getLocation().getWorld().spawnEntity(torchBlock.getLocation(), EntityType.BLOCK_DISPLAY);
+            display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-type"), PersistentDataType.STRING, "proximity");
+            display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-block"), PersistentDataType.STRING, torchBlock.getLocation().toString());
+            BlockData data = Material.SCULK_SENSOR.createBlockData();
+
+            display.setBlock(data);
+
+            display.setTransformation(new Transformation(
+                    new Vector3f(0.375f, 0.425f, 0.375f),
+                    new AxisAngle4f(0, 0, 0, 0),
+                    new Vector3f(0.25f, 0.465f, 0.25f),
+                    new AxisAngle4f(0, 0, 0, 0)
+            ));
+            sensorDisplays.put(torchBlock.getLocation(), display);
+
+        } else {
+
+            torchType = Material.REDSTONE_WALL_TORCH;
+            torchData = torchType.createBlockData();
+
+
+            if (torchData instanceof RedstoneWallTorch wallTorch) {
+                wallTorch.setFacing(clickedFace);
+                torchBlock.setBlockData(wallTorch);
+
+
+                BlockDisplay display = (BlockDisplay) torchBlock.getLocation().getWorld().spawnEntity(torchBlock.getLocation(), EntityType.BLOCK_DISPLAY);
+                display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-type"), PersistentDataType.STRING, "proximity");
+                display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-block"), PersistentDataType.STRING, torchBlock.getLocation().toString());
+                BlockData data = Material.SCULK_SENSOR.createBlockData();
+
+                display.setBlock(data);
+
+
+                display.setTransformation(getWallTorchTransformation(clickedFace));
+                sensorDisplays.put(torchBlock.getLocation(), display);
+            } else {
+                torchBlock.setType(torchType);
+            }
+        }
+
+        Location sensorLocation = torchBlock.getLocation().clone().add(0.5, 0.5, 0.5);
+
+
+        Map<UUID, Long> glowingHiders = new HashMap<>();
+
+
+        new BukkitRunnable() {
+            final long startTime = System.currentTimeMillis();
+            final long durationMs = sensorDuration == -1 ? Long.MAX_VALUE : (long) sensorDuration * 1000L;
+
+            @Override
+            public void run() {
+
+                if (torchBlock.getType() != Material.REDSTONE_TORCH && torchBlock.getType() != Material.REDSTONE_WALL_TORCH) {
+                    cancel();
+
+                    BlockDisplay display = sensorDisplays.remove(torchBlock.getLocation());
+                    if (display != null && display.isValid()) {
+                        display.remove();
+                    }
+
+                    for (UUID hiderId : glowingHiders.keySet()) {
+                        Player hider = Bukkit.getPlayer(hiderId);
+                        if (hider != null) {
+                            removeProximitySensorGlow(hider, plugin);
+                        }
+                    }
+                    return;
+                }
+
+                if (sensorDuration != -1 && System.currentTimeMillis() - startTime > durationMs) {
+                    torchBlock.setType(Material.AIR);
+                    cancel();
+
+                    BlockDisplay display = sensorDisplays.remove(torchBlock.getLocation());
+                    if (display != null && display.isValid()) {
+                        display.remove();
+                    }
+
+                    for (UUID hiderId : glowingHiders.keySet()) {
+                        Player hider = Bukkit.getPlayer(hiderId);
+                        if (hider != null) {
+                            removeProximitySensorGlow(hider, plugin);
+                        }
+                    }
+                    return;
+                }
+
+                Set<UUID> hidersInRange = new HashSet<>();
+
+
+                for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
+                    Player hider = Bukkit.getPlayer(hiderId);
+                    if (hider == null || !hider.isOnline() || !hider.getWorld().equals(sensorLocation.getWorld()))
+                        continue;
+
+                    double distance = hider.getLocation().distance(sensorLocation);
+                    if (distance < range) {
+                        hidersInRange.add(hiderId);
+
+                        if (!glowingHiders.containsKey(hiderId)) {
+                            sensorLocation.getWorld().playSound(sensorLocation, Sound.BLOCK_SCULK_SENSOR_CLICKING, 1.0f, 1.0f);
+                        }
+
+
+                        Location hiderLoc = hider.getLocation().add(0, 1, 0);
+
+                        hider.getWorld().spawnParticle(
+                                Particle.VIBRATION,
+                                sensorLocation,
+                                0,
+                                0, 0, 0,
+                                1.0,
+                                new Vibration(new Vibration.Destination.BlockDestination(hiderLoc), 5)
+                        );
+
+
+                        if (!glowingHiders.containsKey(hiderId)) {
+                            applyProximitySensorGlow(hider, plugin);
+                        }
+                        glowingHiders.put(hiderId, System.currentTimeMillis());
+                    }
+                }
+
+
+                List<UUID> hidersToRemove = new ArrayList<>();
+                for (UUID hiderId : glowingHiders.keySet()) {
+                    if (!hidersInRange.contains(hiderId)) {
+                        Player hider = Bukkit.getPlayer(hiderId);
+                        if (hider != null) {
+                            removeProximitySensorGlow(hider, plugin);
+                        }
+                        hidersToRemove.add(hiderId);
+                    }
+                }
+                for (UUID hiderId : hidersToRemove) {
+                    glowingHiders.remove(hiderId);
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 10L);
+
+        String durationMsg = sensorDuration == -1 ? "until round ends" : sensorDuration + " seconds";
+        context.getPlayer().sendMessage(Component.text("Proximity sensor placed! (" + durationMsg + ")", NamedTextColor.GREEN));
+    }
+
+    private static ItemStack createCageTrapItem() {
+        ItemStack item = new ItemStack(Material.IRON_BARS);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text("Cage Trap", NamedTextColor.GRAY, TextDecoration.BOLD)
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.lore(List.of(
+                    Component.text("Right click to place a trap", NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false)
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static void placeCageTrap(ItemInteractionContext context, HideAndSeek plugin) {
+        Location location = context.getLocation().clone().add(0.5, 1, 0.5);
+        double range = plugin.getSettingRegistry().get("seeker-items.cage-trap.range", 5.0);
+        int paralyzeDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.paralyze-duration", 5);
+        int trapDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.duration", 60);
+        int setupTime = 5;
+
+
+        BlockDisplay cageDisplay = location.getWorld().spawn(location, BlockDisplay.class, display -> {
+            display.setBlock(Material.IRON_BARS.createBlockData());
+            display.setVisibleByDefault(false);
+            display.getPersistentDataContainer().set(new NamespacedKey(plugin, "cage_trap"), PersistentDataType.BOOLEAN, true);
+        });
+
+
+        new BukkitRunnable() {
+            final long startTime = System.currentTimeMillis();
+            final long durationMs = trapDuration == -1 ? Long.MAX_VALUE : (long) trapDuration * 1000L;
+            boolean triggered = false;
+            boolean readyToTrigger = false;
+
+            @Override
+            public void run() {
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                long setupTimeMs = setupTime * 1000L;
+
+
+                if (!readyToTrigger && elapsedTime >= setupTimeMs) {
+                    readyToTrigger = true;
+                }
+
+                if (!cageDisplay.isValid() || (trapDuration != -1 && elapsedTime > durationMs)) {
+                    if (cageDisplay.isValid()) {
+                        cageDisplay.remove();
+                    }
+                    cancel();
+                    return;
+                }
+
+
+                if (!readyToTrigger) {
+                    return;
+                }
+
+
+                for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
+                    Player hider = Bukkit.getPlayer(hiderId);
+                    if (hider == null || !hider.isOnline() || !hider.getWorld().equals(location.getWorld()))
+                        continue;
+
+                    double distance = hider.getLocation().distance(location);
+                    if (distance < range && !triggered) {
+                        triggered = true;
+                        triggerCageTrap(hider, plugin, paralyzeDuration);
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 5L);
+
+        String durationMsg = trapDuration == -1 ? "until round ends" : trapDuration + " seconds";
+        context.getPlayer().sendMessage(Component.text("Cage trap placed! (Ready in 5s, lasts " + durationMsg + ")", NamedTextColor.GREEN));
+    }
+
+    private static void triggerCageTrap(Player hider, HideAndSeek plugin,
+                                        int paralyzeDuration) {
+        Location hiderLoc = hider.getLocation();
+
+
+        int cageSize = 3;
+        int halfSize = cageSize / 2;
+
+        for (int x = -halfSize; x <= halfSize; x++) {
+            for (int y = 0; y < 3; y++) {
+                for (int z = -halfSize; z <= halfSize; z++) {
+
+                    if ((Math.abs(x) == halfSize || Math.abs(z) == halfSize) || y == 0 || y == 2) {
+                        Location blockLoc = hiderLoc.clone().add(x, y, z);
+                        BlockDisplay blockDisplay = blockLoc.getWorld().spawn(blockLoc, BlockDisplay.class, display -> {
+                            display.setBlock(Material.IRON_BARS.createBlockData());
+                            display.setVisibleByDefault(false);
+                        });
+
+
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            if (p.getUniqueId().equals(hider.getUniqueId())) {
+                                p.showEntity(plugin, blockDisplay);
+                            }
+                        }
+
+
+                        Bukkit.getScheduler().runTaskLater(plugin, blockDisplay::remove, paralyzeDuration * 20L);
+                    }
+                }
+            }
+        }
+
+
+        hider.addPotionEffect(new PotionEffect(
+                PotionEffectType.SLOWNESS,
+                paralyzeDuration * 20,
+                10,
+                false,
+                false,
+                false
+        ));
+
+
+        hider.addPotionEffect(new PotionEffect(
+                PotionEffectType.JUMP_BOOST,
+                paralyzeDuration * 20,
+                250,
+                false,
+                false,
+                false
+        ));
+
+        hider.sendMessage(Component.text("You've been trapped by a cage!", NamedTextColor.DARK_RED));
+        hider.playSound(hider.getLocation(), Sound.BLOCK_IRON_DOOR_CLOSE, 1.0f, 0.8f);
+    }
+
+    /**
+     * Apply glow effect for proximity sensor (continuous, no removal scheduled).
+     * Keeps hider glowing as long as they're in sensor range.
+     */
+    private static void applyProximitySensorGlow(Player hider, HideAndSeek plugin) {
+        UUID hiderId = hider.getUniqueId();
+
+        var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
+        Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;
+        boolean isBlockMode = gameModeObj != null && gameModeObj.toString().equals("BLOCK");
+
+
+        HideAndSeek.getDataController().setGlowing(hiderId, true);
+
+        if (isBlockMode) {
+
+            BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(hiderId);
+            if (display != null && display.isValid()) {
+                display.setGlowing(true);
+                Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                Team hiderTeam = scoreboard.getEntryTeam(hider.getName());
+                if (hiderTeam != null) {
+                    display.setGlowColorOverride(textColorToColor(hiderTeam.color()));
+                }
+            } else if (HideAndSeek.getDataController().isHidden(hiderId)) {
+
+                var hiddenBlock = HideAndSeek.getDataController().getHiddenBlock(hiderId);
+                var lastLoc = HideAndSeek.getDataController().getLastLocation(hiderId);
+                var blockData = HideAndSeek.getDataController().getChosenBlockData(hiderId);
+                if ((hiddenBlock != null || lastLoc != null) && blockData != null) {
+                    Location spawnLoc = hiddenBlock != null
+                            ? hiddenBlock.getLocation().clone().add(0.5, 0, 0.5)
+                            : lastLoc.getBlock().getLocation().clone().add(0.5, 0, 0.5);
+                    BlockDisplay tempDisplay = spawnLoc.getWorld().spawn(spawnLoc, BlockDisplay.class, bd -> {
+                        bd.setBlock(blockData);
+                        bd.setGlowing(true);
+                        bd.setTransformation(new Transformation(
+                                new Vector3f(-0.5f, 0.001f, -0.5f),
+                                new AxisAngle4f(0, 0, 0, 0),
+                                new Vector3f(1.001f, 1.001f, 1.001f),
+                                new AxisAngle4f(0, 0, 0, 0)
+                        ));
+                        bd.setBrightness(new Display.Brightness(15, 15));
+                        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                        Team hiderTeam = scoreboard.getEntryTeam(hider.getName());
+                        if (hiderTeam != null) {
+                            bd.setGlowColorOverride(textColorToColor(hiderTeam.color()));
+                        }
+                        bd.getPersistentDataContainer().set(new NamespacedKey(plugin, "temp_glow"), PersistentDataType.STRING, hiderId.toString());
+                    });
+
+                    HideAndSeek.getDataController().setBlockDisplay(hiderId, tempDisplay);
+                }
+            }
+        } else {
+
+            hider.setGlowing(true);
+        }
+
+    }
+
+    /**
+     * Remove glow effect for proximity sensor.
+     */
+    private static void removeProximitySensorGlow(Player hider, HideAndSeek plugin) {
+        UUID hiderId = hider.getUniqueId();
+        HideAndSeek.getDataController().removeGlowing(hiderId);
+
+        var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
+        Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;
+        boolean isBlockMode = gameModeObj != null && gameModeObj.toString().equals("BLOCK");
+
+        if (isBlockMode) {
+            BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(hiderId);
+            if (display != null && display.isValid()) {
+
+                String tempGlowId = display.getPersistentDataContainer().get(new NamespacedKey(plugin, "temp_glow"), PersistentDataType.STRING);
+                if (tempGlowId != null && tempGlowId.equals(hiderId.toString())) {
+
+                    display.remove();
+                } else {
+
+                    display.setGlowing(false);
+                    display.setGlowColorOverride(null);
+                }
+            }
+        } else {
+
+            hider.setGlowing(false);
+        }
+    }
+
+    private static Transformation getWallTorchTransformation(BlockFace face) {
+        return switch (face) {
+            case NORTH -> new Transformation(
+                    new Vector3f(0.375f, 0.5715f, 0.715f),
+                    new AxisAngle4f(0.4f, -1f, 0f, 0f),
+                    new Vector3f(0.25f, 0.465f, 0.25f),
+                    new AxisAngle4f(0, 1, 0, 0)
+            );
+            case SOUTH -> new Transformation(
+                    new Vector3f(0.375f, 0.660f, 0.05f),
+                    new AxisAngle4f(0.4f, 1f, 0f, 0f),
+                    new Vector3f(0.25f, 0.465f, 0.25f),
+                    new AxisAngle4f(0, 1, 0, 0)
+            );
+            case EAST -> new Transformation(
+                    new Vector3f(0.05f, 0.660f, 0.375f),
+                    new AxisAngle4f(0.4f, 0f, 0f, -1f),
+                    new Vector3f(0.25f, 0.465f, 0.25f),
+                    new AxisAngle4f(0, 1, 0, 0)
+            );
+            case WEST -> new Transformation(
+                    new Vector3f(0.715f, 0.5715f, 0.375f),
+                    new AxisAngle4f(0.4f, 0f, 0f, 1f),
+                    new Vector3f(0.25f, 0.465f, 0.25f),
+                    new AxisAngle4f(0, 1, 0, 0)
+            );
+            default -> new Transformation(
+                    new Vector3f(0f, 0f, 0f),
+                    new AxisAngle4f(0f, 0f, 0f, 0f),
+                    new Vector3f(0, 0f, 0f),
+                    new AxisAngle4f(0, 0f, 0f, 0f)
+            );
         };
     }
+
 }
 

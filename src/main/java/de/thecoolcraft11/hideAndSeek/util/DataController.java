@@ -9,7 +9,7 @@ public class DataController {
 
     private static DataController instance;
     private List<UUID> hiders;
-    private List<UUID> seekers;
+    private final List<UUID> seekers;
     private final Map<UUID, Block> hiddenBlocks;
     private final Map<UUID, org.bukkit.Material> chosenBlocks;
     private final Map<UUID, BlockData> chosenBlockData;
@@ -24,6 +24,7 @@ public class DataController {
     private String currentMapName;
     private final Map<UUID, Long> blockDamageOverrideUntil;
     private final Map<UUID, Boolean> glowingState;
+    private org.bukkit.Location roundSpawnPoint;
 
 
     public DataController() {
@@ -66,20 +67,12 @@ public class DataController {
         return hiddenBlocks.get(uuid);
     }
 
-    public Map<UUID, Block> getHiddenBlocks() {
-        return hiddenBlocks;
-    }
-
     public List<UUID> getSeekers() {
         return seekers;
     }
 
     public List<UUID> getHiders() {
         return hiders;
-    }
-
-    public void setSeekers(List<UUID> seekers) {
-        this.seekers = seekers;
     }
 
     public void setHiders(List<UUID> hiders) {
@@ -100,7 +93,7 @@ public class DataController {
 
     public void reset() {
         if (hiders != null) hiders.clear();
-        if (seekers != null) seekers.clear();
+        seekers.clear();
         hiddenBlocks.clear();
         chosenBlocks.clear();
         chosenBlockData.clear();
@@ -112,6 +105,7 @@ public class DataController {
         playerPoints.clear();
         blockDamageOverrideUntil.clear();
         glowingState.clear();
+        roundSpawnPoint = null;
         for (org.bukkit.entity.Entity entity : sittingEntities.values()) {
             if (entity != null && entity.isValid()) {
                 entity.remove();
@@ -142,10 +136,6 @@ public class DataController {
         return chosenBlocks.get(uuid);
     }
 
-    public Map<UUID, org.bukkit.Material> getChosenBlocks() {
-        return chosenBlocks;
-    }
-
     public void setChosenBlockData(UUID uuid, BlockData blockData) {
         if (blockData != null) {
             chosenBlockData.put(uuid, blockData);
@@ -154,10 +144,6 @@ public class DataController {
 
     public BlockData getChosenBlockData(UUID uuid) {
         return chosenBlockData.get(uuid);
-    }
-
-    public Map<UUID, BlockData> getChosenBlockDatas() {
-        return chosenBlockData;
     }
 
     public void setBlockDisplay(UUID uuid, org.bukkit.entity.BlockDisplay display) {
@@ -247,14 +233,6 @@ public class DataController {
         playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
     }
 
-    public int getPoints(UUID uuid) {
-        return playerPoints.getOrDefault(uuid, 0);
-    }
-
-    public void setPoints(UUID uuid, int points) {
-        playerPoints.put(uuid, points);
-    }
-
     public Map<UUID, Integer> getAllPoints() {
         return new HashMap<>(playerPoints);
     }
@@ -293,5 +271,13 @@ public class DataController {
 
     public void removeGlowing(UUID uuid) {
         glowingState.remove(uuid);
+    }
+
+    public void setRoundSpawnPoint(org.bukkit.Location location) {
+        this.roundSpawnPoint = location;
+    }
+
+    public org.bukkit.Location getRoundSpawnPoint() {
+        return this.roundSpawnPoint;
     }
 }

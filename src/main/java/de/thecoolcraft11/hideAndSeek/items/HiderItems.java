@@ -19,10 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Candle;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Firework;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -37,26 +34,27 @@ import org.bukkit.util.Vector;
 import java.util.*;
 
 public final class HiderItems {
-    public static final String SOUND_ITEM_ID = "had_hider_sound";
-    public static final String EXPLOSION_ITEM_ID = "had_hider_explosion";
-    public static final String RANDOM_BLOCK_ITEM_ID = "had_hider_random_block";
-    public static final String SPEED_BOOST_ITEM_ID = "had_hider_speed_boost";
-    public static final String TRACKER_CROSSBOW_ITEM_ID = "had_hider_crossbow";
-    public static final String APPEARANCE_ITEM_ID = "had_hider_appearance";
-    public static final String BLOCK_SELECTOR_ITEM_ID = "had_hider_block_selector";
-    public static final String KNOCKBACK_STICK_ITEM_ID = "had_hider_knockback_stick";
-    public static final String BLOCK_SWAP_ITEM_ID = "had_hider_block_swap";
-    public static final String BIG_FIRECRACKER_ITEM_ID = "had_hider_big_firecracker";
-    public static final String FIREWORK_ROCKET_ITEM_ID = "had_hider_firework_rocket";
-    public static final String MEDKIT_ITEM_ID = "had_hider_medkit";
-    public static final String TOTEM_ITEM_ID = "had_hider_totem";
-    public static final String INK_FACE_ID = "had_hider_ink_face";
+    public static final String SOUND_ITEM_ID = "has_hider_sound";
+    public static final String EXPLOSION_ITEM_ID = "has_hider_explosion";
+    public static final String RANDOM_BLOCK_ITEM_ID = "has_hider_random_block";
+    public static final String SPEED_BOOST_ITEM_ID = "has_hider_speed_boost";
+    public static final String TRACKER_CROSSBOW_ITEM_ID = "has_hider_crossbow";
+    public static final String APPEARANCE_ITEM_ID = "has_hider_appearance";
+    public static final String BLOCK_SELECTOR_ITEM_ID = "has_hider_block_selector";
+    public static final String KNOCKBACK_STICK_ITEM_ID = "has_hider_knockback_stick";
+    public static final String BLOCK_SWAP_ITEM_ID = "has_hider_block_swap";
+    public static final String BIG_FIRECRACKER_ITEM_ID = "has_hider_big_firecracker";
+    public static final String FIREWORK_ROCKET_ITEM_ID = "has_hider_firework_rocket";
+    public static final String MEDKIT_ITEM_ID = "has_hider_medkit";
+    public static final String TOTEM_ITEM_ID = "has_hider_totem";
+    public static final String INK_FACE_ID = "has_hider_ink_face";
+    public static final String INVISIBILITY_CLOAK_ITEM_ID = "has_hider_invisibility_cloak";
+    public static final String SLOWNESS_BALL_ITEM_ID = "has_hider_slowness_ball";
 
     private static final Map<UUID, Integer> speedLevels = new HashMap<>();
     private static final Map<UUID, Integer> knockbackLevels = new HashMap<>();
     private static final Map<UUID, Integer> trackerHits = new HashMap<>();
     private static final Map<UUID, Long> totemActiveUntil = new HashMap<>();
-    private static final Map<UUID, Boolean> velocityBoostActive = new HashMap<>();
 
 
     private HiderItems() {
@@ -111,6 +109,8 @@ public final class HiderItems {
         plugin.getCustomItemManager().unregisterItem(BIG_FIRECRACKER_ITEM_ID);
         plugin.getCustomItemManager().unregisterItem(FIREWORK_ROCKET_ITEM_ID);
         plugin.getCustomItemManager().unregisterItem(MEDKIT_ITEM_ID);
+        plugin.getCustomItemManager().unregisterItem(INVISIBILITY_CLOAK_ITEM_ID);
+        plugin.getCustomItemManager().unregisterItem(SLOWNESS_BALL_ITEM_ID);
 
         for (int level = 0; level <= 5; level++) {
             plugin.getCustomItemManager().unregisterItem(SPEED_BOOST_ITEM_ID + "_" + level);
@@ -278,6 +278,36 @@ public final class HiderItems {
                 .cancelDefaultAction(true)
                 .withUsesExhaustedHandler((context, isTeamLimit) -> context.getPlayer().sendMessage(Component.text("You've already used your totem!", NamedTextColor.RED)))
                 .build());
+
+        int invisibilityCloakCooldown = plugin.getSettingRegistry().get("hider-items.invisibility-cloak.cooldown", 20);
+        plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createInvisibilityCloakItem(), INVISIBILITY_CLOAK_ITEM_ID)
+                .withAction(ItemActionType.RIGHT_CLICK_AIR, context -> useInvisibilityCloak(context.getPlayer(), plugin))
+                .withAction(ItemActionType.RIGHT_CLICK_BLOCK, context -> useInvisibilityCloak(context.getPlayer(), plugin))
+                .withDescription("Make yourself invisible for a short time")
+                .withDropPrevention(true)
+                .withCraftPrevention(true)
+                .withVanillaCooldown(invisibilityCloakCooldown * 20)
+                .withCustomCooldown(invisibilityCloakCooldown * 1000L)
+                .withVanillaCooldownDisplay(true)
+                .allowOffHand(false)
+                .allowArmor(false)
+                .cancelDefaultAction(true)
+                .build());
+
+        int slownessBallCooldown = plugin.getSettingRegistry().get("hider-items.slowness-ball.cooldown", 10);
+        plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createSlownessBallItem(), SLOWNESS_BALL_ITEM_ID)
+                .withAction(ItemActionType.RIGHT_CLICK_AIR, context -> throwSlownessBall(context, plugin))
+                .withAction(ItemActionType.RIGHT_CLICK_BLOCK, context -> throwSlownessBall(context, plugin))
+                .withDescription("Throw a snowball that slows seekers")
+                .withDropPrevention(true)
+                .withCraftPrevention(true)
+                .withVanillaCooldown(slownessBallCooldown * 20)
+                .withCustomCooldown(slownessBallCooldown * 1000L)
+                .withVanillaCooldownDisplay(true)
+                .allowOffHand(false)
+                .allowArmor(false)
+                .cancelDefaultAction(true)
+                .build());
     }
 
     private static void openBlockSelectorUnhidden(Player player, BlockSelectorGUI blockSelectorGUI) {
@@ -319,7 +349,7 @@ public final class HiderItems {
         for (int level = 1; level <= 5; level++) {
             String levelId = KNOCKBACK_STICK_ITEM_ID + "_" + level;
             plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createKnockbackStickItem(level), levelId)
-                    .withAction(ItemActionType.LEFT_CLICK_ENTITY, context -> knockbackHit(context, plugin))
+                    .withAction(ItemActionType.LEFT_CLICK_ENTITY, HiderItems::knockbackHit)
                     .withDescription("Knock away seekers")
                     .withDropPrevention(true)
                     .withCraftPrevention(true)
@@ -333,17 +363,16 @@ public final class HiderItems {
         }
     }
 
-    private static void knockbackHit(ItemInteractionContext context, HideAndSeek plugin) {
+    private static void knockbackHit(ItemInteractionContext context) {
         Player attacker = context.getPlayer();
-        if (context.getEntity() instanceof Player) {
-            Player victim = (Player) context.getEntity();
+        if (context.getEntity() instanceof Player victim) {
             Location victimLoc = victim.getLocation().add(0, 1, 0);
             Vector fromAttacker = victimLoc.toVector().subtract(attacker.getLocation().add(0, 1, 0).toVector());
             if (fromAttacker.lengthSquared() < 0.01) {
                 return;
             }
 
-            
+
             Vector backDir = fromAttacker.normalize().multiply(-0.25);
             for (int i = 0; i < 5; i++) {
                 Location point = victimLoc.clone().add(backDir.clone().multiply(i));
@@ -546,48 +575,6 @@ public final class HiderItems {
         }
     }
 
-    private static boolean shouldGiveAppearanceItem(HideAndSeek plugin) {
-        String currentMap = HideAndSeek.getDataController().getCurrentMapName();
-        if (currentMap == null || currentMap.isEmpty()) {
-            return false;
-        }
-
-        List<String> allowedBlocks = plugin.getMapManager().getAllowedBlocksForMap(currentMap);
-        if (allowedBlocks == null || allowedBlocks.isEmpty()) {
-            return false;
-        }
-
-
-        for (String pattern : allowedBlocks) {
-            BlockAppearanceConfig config = BlockAppearanceConfig.parse(pattern);
-            if (config == null) {
-                continue;
-            }
-
-
-            if (config.isAllowAllVariants()) {
-                return true;
-            }
-
-
-            if (config.isAllowAllBlockStates()) {
-                return true;
-            }
-
-
-            if (!config.getAllowedProperties().isEmpty()) {
-                return true;
-            }
-
-
-            if (!config.getAllowedStates().isEmpty()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 
     public static void ensureArrow(Player player) {
         if (player == null) {
@@ -637,24 +624,24 @@ public final class HiderItems {
     }
 
     private static void upgradeLoadoutItems(Player player, HideAndSeek plugin) {
-        
+
         var loadout = plugin.getLoadoutManager().getLoadout(player.getUniqueId());
         Set<LoadoutItemType> hiderItems = loadout.getHiderItems();
 
         boolean hasSpeedBoost = hiderItems.contains(LoadoutItemType.SPEED_BOOST);
         boolean hasKnockbackStick = hiderItems.contains(LoadoutItemType.KNOCKBACK_STICK);
 
-        
+
         if (hasSpeedBoost) {
             upgradeSpeedItem(player);
         }
 
-        
+
         if (hasKnockbackStick) {
             upgradeKnockbackItem(player);
         }
 
-        
+
         if (!hasSpeedBoost && !hasKnockbackStick) {
             player.sendMessage(Component.text("You don't have Speed Boost or Knockback Stick selected!", NamedTextColor.YELLOW));
         }
@@ -677,6 +664,9 @@ public final class HiderItems {
             player.sendMessage(Component.text("You cant transform into a new block while being hidden!", NamedTextColor.RED));
             return;
         }
+
+
+        player.getInventory().remove(Material.COMPARATOR);
 
         String currentMap = HideAndSeek.getDataController().getCurrentMapName();
         if (currentMap == null || currentMap.isEmpty()) {
@@ -762,7 +752,7 @@ public final class HiderItems {
         int amplifier = Math.max(0, getSpeedLevel(player.getUniqueId()));
 
         if (boostType == SpeedBoostType.VELOCITY_BOOST) {
-            
+
             double boostPower = plugin.getSettingRegistry().get("hider-items.speed-boost.boost-power", 0.5);
             boostPower += (amplifier * amplifierBonus);
 
@@ -771,21 +761,17 @@ public final class HiderItems {
             player.sendMessage(Component.text("Velocity boost activated! ", NamedTextColor.YELLOW)
                     .append(Component.text("(Level " + (amplifier + 1) + ")", NamedTextColor.GOLD)));
 
-            
-            velocityBoostActive.put(player.getUniqueId(), true);
 
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (!player.isOnline()) {
-                        velocityBoostActive.remove(player.getUniqueId());
                         cancel();
                         return;
                     }
 
-                    
+
                     if (player.isOnGround()) {
-                        velocityBoostActive.remove(player.getUniqueId());
                         cancel();
                         return;
                     }
@@ -796,7 +782,7 @@ public final class HiderItems {
             }.runTaskTimer(plugin, 1L, 2L);
 
         } else {
-            
+
             player.addPotionEffect(new PotionEffect(
                     PotionEffectType.SPEED,
                     durationSeconds * 20,
@@ -808,10 +794,10 @@ public final class HiderItems {
             player.sendMessage(Component.text("Speed boost activated! ", NamedTextColor.YELLOW)
                     .append(Component.text("(Level " + (amplifier + 1) + ")", NamedTextColor.GOLD)));
 
-            
+
             new BukkitRunnable() {
                 int ticks = 0;
-                int maxTicks = durationSeconds * 20;
+                final int maxTicks = durationSeconds * 20;
 
                 @Override
                 public void run() {
@@ -821,7 +807,7 @@ public final class HiderItems {
                     }
 
                     Location loc = player.getLocation();
-                    
+
                     if (ticks % 4 == 0) {
                         player.getWorld().spawnParticle(Particle.CLOUD, loc.add(0.5, 0.1, 0.5), 1, 0.15, 0.05, 0.15, 0.02);
                     }
@@ -878,7 +864,7 @@ public final class HiderItems {
         hider.sendMessage(Component.text("You have used the taunt ", NamedTextColor.GREEN).append(Component.text("\"Cat\"", NamedTextColor.YELLOW)));
         hider.sendMessage(Component.text("+" + tauntPoints + " points", NamedTextColor.GOLD));
 
-        
+
         Location particleLoc = hider.getEyeLocation();
         hider.getWorld().spawnParticle(Particle.NOTE, particleLoc, 8, 0.3, 0.3, 0.3, 1.0);
         hider.getWorld().spawnParticle(Particle.HEART, particleLoc, 4, 0.2, 0.2, 0.2, 0);
@@ -933,7 +919,7 @@ public final class HiderItems {
                             0.05, 0.1, 0.05,
                             0.01
                     );
-                    
+
                     location.getWorld().spawnParticle(
                             Particle.FLAME,
                             smokeLoc.clone().add(0, -0.2, 0),
@@ -961,7 +947,7 @@ public final class HiderItems {
                                 1,
                                 0, 0, 0, 0
                         );
-                        
+
                         target.getWorld().spawnParticle(
                                 Particle.DUST,
                                 explosionLoc,
@@ -1198,6 +1184,10 @@ public final class HiderItems {
 
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+            player.getInventory().remove(Material.COMPARATOR);
+            finalTarget.getInventory().remove(Material.COMPARATOR);
+
             HideAndSeek.getDataController().setChosenBlock(player.getUniqueId(), targetMat);
             HideAndSeek.getDataController().setChosenBlock(finalTarget.getUniqueId(), playerMat);
             HideAndSeek.getDataController().setChosenBlockData(player.getUniqueId(), targetData);
@@ -1214,17 +1204,17 @@ public final class HiderItems {
                 targetDisplay.setRotation(finalTarget.getLocation().getYaw(), 0f);
             }
 
-            
+
             player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 20, 0.2, 0.5, 0.2, 1.0);
             finalTarget.getWorld().spawnParticle(Particle.PORTAL, finalTarget.getLocation(), 20, 0.2, 0.5, 0.2, 1.0);
             player.getWorld().spawnParticle(Particle.DRAGON_BREATH, player.getLocation(), 10, 0.3, 0.3, 0.3, 0.05);
             finalTarget.getWorld().spawnParticle(Particle.DRAGON_BREATH, finalTarget.getLocation(), 10, 0.3, 0.3, 0.3, 0.05);
 
-            
+
             player.getWorld().spawnParticle(Particle.GLOW, player.getLocation().add(0, 1, 0), 15, 0.25, 0.4, 0.25, 0.08);
             finalTarget.getWorld().spawnParticle(Particle.GLOW, finalTarget.getLocation().add(0, 1, 0), 15, 0.25, 0.4, 0.25, 0.08);
 
-            
+
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
             finalTarget.getWorld().playSound(finalTarget.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
 
@@ -1267,9 +1257,9 @@ public final class HiderItems {
             for (Player target : Bukkit.getOnlinePlayers()) {
                 Location explosionLoc = location.clone().add(0.5, 0.5, 0.5);
                 target.getWorld().spawnParticle(Particle.EXPLOSION, explosionLoc, 3, 0.3, 0.3, 0.3, 0.05);
-                
+
                 target.getWorld().spawnParticle(Particle.FLAME, explosionLoc, 15, 0.4, 0.4, 0.4, 0.08);
-                
+
                 target.getWorld().spawnParticle(Particle.DUST, explosionLoc, 20, 0.4, 0.4, 0.4,
                         new Particle.DustOptions(Color.fromARGB(255, 255, 80, 0), 1.5f));
                 target.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, (float) volume, (float) pitch);
@@ -1417,10 +1407,10 @@ public final class HiderItems {
         plugin.getLogger().info("Consuming medkit for " + player.getName());
         int channelTime = plugin.getSettingRegistry().get("hider-items.medkit.channel-time", 5);
 
-        
+
         new BukkitRunnable() {
             int ticks = 0;
-            int maxTicks = channelTime * 20;
+            final int maxTicks = channelTime * 20;
 
             @Override
             public void run() {
@@ -1430,7 +1420,7 @@ public final class HiderItems {
                 }
 
                 Location loc = player.getLocation().add(0, 1, 0);
-                
+
                 player.getWorld().spawnParticle(Particle.HEART, loc, 2, 0.2, 0.3, 0.2, 0.05);
                 player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc, 3, 0.15, 0.25, 0.15, 0.02);
 
@@ -1468,10 +1458,10 @@ public final class HiderItems {
         player.getInventory().removeItem(new ItemStack(Material.TOTEM_OF_UNDYING, 1));
         player.sendMessage(Component.text("Revive mode activated for " + duration + " seconds!", NamedTextColor.GOLD));
 
-        
+
         new BukkitRunnable() {
             int ticks = 0;
-            int maxTicks = duration * 20;
+            final int maxTicks = duration * 20;
 
             @Override
             public void run() {
@@ -1481,10 +1471,10 @@ public final class HiderItems {
                 }
 
                 Location loc = player.getLocation().add(0, 1, 0);
-                
+
                 player.getWorld().spawnParticle(Particle.GLOW, loc, 8, 0.4, 0.4, 0.4, 0.05);
 
-                
+
                 if (ticks % 5 == 0) {
                     player.getWorld().spawnParticle(Particle.DUST, loc, 5, 0.3, 0.3, 0.3,
                             new Particle.DustOptions(Color.fromARGB(255, 255, 200, 0), 1.0f));
@@ -1511,7 +1501,7 @@ public final class HiderItems {
         totemActiveUntil.remove(playerId);
     }
 
-    public static void reviveWithTotem(Player player, HideAndSeek plugin) {
+    public static void reviveWithTotem(Player player) {
         if (player == null) {
             return;
         }
@@ -1521,13 +1511,10 @@ public final class HiderItems {
         player.setHealth(Math.max(1.0, Objects.requireNonNull(player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)).getValue()));
         player.setFoodLevel(20);
 
-        String mapName = HideAndSeek.getDataController().getCurrentMapName();
-        var mapData = (mapName != null) ? plugin.getMapManager().getMapData(mapName) : null;
-        if (mapData != null && !mapData.getSpawnPoints().isEmpty()) {
-            var spawnWithBorder = mapData.getSpawnPointWithBorder();
-            if (spawnWithBorder != null) {
-                player.teleport(spawnWithBorder.spawnPoint().toLocation(player.getWorld()));
-            }
+
+        org.bukkit.Location roundSpawn = HideAndSeek.getDataController().getRoundSpawnPoint();
+        if (roundSpawn != null) {
+            player.teleport(roundSpawn);
         }
 
         player.sendMessage(Component.text("You were revived!", NamedTextColor.GOLD));
@@ -1670,5 +1657,148 @@ public final class HiderItems {
         }
 
         randomizeBlock(player, plugin);
+    }
+
+    private static ItemStack createInvisibilityCloakItem() {
+        ItemStack item = new ItemStack(Material.PHANTOM_MEMBRANE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text("Invisibility Cloak", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD)
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.lore(List.of(
+                    Component.text("Right click to become invisible", NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false)
+            ));
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static void useInvisibilityCloak(Player player, HideAndSeek plugin) {
+        if (!HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())) {
+            player.sendMessage(Component.text("Only hiders can use this item.", NamedTextColor.RED));
+            return;
+        }
+
+        int duration = plugin.getSettingRegistry().get("hider-items.invisibility-cloak.duration", 8);
+
+        var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
+        Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;
+        String gameMode = gameModeObj != null ? gameModeObj.toString() : "";
+
+        if ("BLOCK".equals(gameMode)) {
+
+            player.addPotionEffect(new PotionEffect(
+                    PotionEffectType.INVISIBILITY,
+                    duration * 20,
+                    0,
+                    false,
+                    true,
+                    true
+            ));
+
+
+            BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(player.getUniqueId());
+            if (display != null && display.isValid()) {
+                display.setVisibleByDefault(false);
+            }
+        } else {
+
+            player.addPotionEffect(new PotionEffect(
+                    PotionEffectType.INVISIBILITY,
+                    duration * 20,
+                    0,
+                    false,
+                    true,
+                    true
+            ));
+        }
+
+        player.sendMessage(Component.text("You are now invisible!", NamedTextColor.AQUA));
+
+
+        Location loc = player.getLocation().add(0, 1, 0);
+        player.getWorld().spawnParticle(Particle.POOF, loc, 30, 0.5, 0.5, 0.5, 0.15);
+        player.getWorld().spawnParticle(Particle.GLOW, loc, 15, 0.4, 0.4, 0.4, 0.1);
+        player.playSound(player.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 1.0f, 1.5f);
+
+
+        new BukkitRunnable() {
+            int ticks = 0;
+            final int maxTicks = duration * 20;
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || ticks >= maxTicks) {
+                    cancel();
+
+                    if ("BLOCK".equals(gameMode)) {
+                        BlockDisplay display = HideAndSeek.getDataController().getBlockDisplay(player.getUniqueId());
+                        if (display != null && display.isValid()) {
+                            display.setVisibleByDefault(true);
+                        }
+                    }
+                    return;
+                }
+
+
+                if (ticks % 10 == 0) {
+                    Location particleLoc = player.getLocation().add(0, 1, 0);
+                    player.getWorld().spawnParticle(Particle.SOUL, particleLoc, 2, 0.2, 0.2, 0.2, 0.02);
+                }
+
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    private static ItemStack createSlownessBallItem() {
+        ItemStack item = new ItemStack(Material.SNOWBALL);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text("Slowness Ball", NamedTextColor.AQUA, TextDecoration.BOLD)
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.lore(List.of(
+                    Component.text("Right click to throw at seekers", NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false)
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static void throwSlownessBall(ItemInteractionContext context, HideAndSeek plugin) {
+        Player player = context.getPlayer();
+        if (!HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())) {
+            player.sendMessage(Component.text("Only hiders can use this item.", NamedTextColor.RED));
+            return;
+        }
+
+        int duration = plugin.getSettingRegistry().get("hider-items.slowness-ball.duration", 6);
+        int amplifier = plugin.getSettingRegistry().get("hider-items.slowness-ball.amplifier", 1);
+
+        org.bukkit.entity.Snowball snowball = player.launchProjectile(org.bukkit.entity.Snowball.class);
+        snowball.setVelocity(snowball.getVelocity().multiply(1.5));
+        snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball"), PersistentDataType.BOOLEAN, true);
+        snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball_duration"), PersistentDataType.INTEGER, duration);
+        snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball_amplifier"), PersistentDataType.INTEGER, amplifier);
+
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!snowball.isValid()) {
+                    cancel();
+                    return;
+                }
+
+                snowball.getWorld().spawnParticle(Particle.SNOWFLAKE, snowball.getLocation(), 3, 0.1, 0.1, 0.1, 0.05);
+            }
+        }.runTaskTimer(plugin, 1L, 2L);
+
+
+        Bukkit.getScheduler().runTaskLater(plugin, snowball::remove, 200L);
     }
 }

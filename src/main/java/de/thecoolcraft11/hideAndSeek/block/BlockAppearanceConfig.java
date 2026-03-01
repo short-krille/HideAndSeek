@@ -22,7 +22,6 @@ public class BlockAppearanceConfig {
     private static final Pattern BLOCKSTATE_PATTERN = Pattern.compile("(\\w+)\\[([^]]+)]");
 
     private static final Pattern CUSTOM_LIST_PATTERN = Pattern.compile("\\{([^}]+)}");
-    private static final Pattern TAG_PATTERN = Pattern.compile("#(\\w+)");
 
     private String baseBlockType;
     private String defaultVariant;
@@ -311,25 +310,6 @@ public class BlockAppearanceConfig {
         return hasVariantGroup;
     }
 
-    public boolean isPropertyAllowed(String propertyName) {
-        if (propertyName == null) return false;
-
-
-        if (allowAllBlockStates) return true;
-
-
-        if (allowedProperties.isEmpty() && allowedStates.isEmpty()) {
-            return true;
-        }
-
-
-        if (!allowedProperties.isEmpty()) {
-            return allowedProperties.contains(propertyName);
-        }
-
-
-        return allowedStates.containsKey(propertyName);
-    }
 
     public boolean isBlockStateAllowed(BlockData blockData) {
         if (blockData == null) {

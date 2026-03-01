@@ -9,6 +9,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -108,7 +109,7 @@ public class PlayerHitListener implements Listener {
 
             if (HiderItems.isTotemActive(victim.getUniqueId()) && event.getFinalDamage() >= victim.getHealth()) {
                 event.setCancelled(true);
-                HiderItems.reviveWithTotem(victim, plugin);
+                HiderItems.reviveWithTotem(victim);
                 return;
             }
 
@@ -170,13 +171,41 @@ public class PlayerHitListener implements Listener {
                     (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
 
 
-            if (gameStyle == GameStyleEnum.INFINITE &&
+            if (!HideAndSeek.getDataController().getHiders().contains(player.getUniqueId()) &&
+                    HideAndSeek.getDataController().getSeekers().contains(player.getUniqueId())) {
+
+                if (gameStyle == GameStyleEnum.SPECTATOR) {
+
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        player.setGameMode(GameMode.SPECTATOR);
+                        player.setHealth(20.0);
+                    }, 1L);
+                } else if (gameStyle == GameStyleEnum.INVASION) {
+
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        player.setGameMode(GameMode.SURVIVAL);
+                        player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
+                        player.setFoodLevel(20);
+                        player.sendMessage(Component.text("You were transformed! You're now a seeker!", NamedTextColor.GREEN));
+                    }, 1L);
+                }
+            } else if (gameStyle == GameStyleEnum.INFINITE &&
                     HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())) {
+
+
+                Location roundSpawn = HideAndSeek.getDataController().getRoundSpawnPoint();
+                if (roundSpawn != null) {
+                    event.setRespawnLocation(roundSpawn);
+                }
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     player.setGameMode(GameMode.SURVIVAL);
                     player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
                     player.setFoodLevel(20);
+
+
+                    HiderItems.giveItems(player, plugin, false);
+
                     player.sendMessage(Component.text("You respawned! Keep hiding!", NamedTextColor.GREEN));
                 }, 1L);
             }
@@ -186,7 +215,7 @@ public class PlayerHitListener implements Listener {
     private void handleHiderElimination(Player hider, Player seeker, GameStyleEnum gameStyle) {
 
 
-        var seekerPoints = plugin.getSettingRegistry().get("had.points.seeker-find", 10);
+        var seekerPoints = plugin.getSettingRegistry().get("has.points.seeker-find", 10);
         HideAndSeek.getDataController().addPoints(seeker.getUniqueId(), seekerPoints);
         seeker.sendMessage(Component.text("+" + seekerPoints + " points for finding " + hider.getName() + "!", NamedTextColor.GOLD));
 

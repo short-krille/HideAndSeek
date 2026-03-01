@@ -7,11 +7,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 
 public class HiderTotemListener implements Listener {
-    private final HideAndSeek plugin;
 
-    public HiderTotemListener(HideAndSeek plugin) {
-        this.plugin = plugin;
-    }
 
     @EventHandler(ignoreCancelled = true)
     public void onResurrect(EntityResurrectEvent event) {
@@ -23,7 +19,7 @@ public class HiderTotemListener implements Listener {
             return;
         }
 
-        
+
         event.setCancelled(true);
     }
 }

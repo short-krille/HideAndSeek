@@ -255,6 +255,19 @@ public class HidingPhase implements GamePhase {
             }
         }
 
+        for (Player spectator : plugin.getTeamManager().getPlayersInTeam(plugin.getTeamManager().getSpectatorTeam())) {
+            spectator.setGameMode(GameMode.SPECTATOR);
+            spectator.setAllowFlight(true);
+            spectator.setFlying(true);
+            spectator.setWalkSpeed(0.2f);
+            spectator.setHealth(0);
+            spectator.setFoodLevel(0);
+            spectator.setFireTicks(0);
+            spectator.setGlowing(false);
+            spectator.setInvulnerable(true);
+            spectator.setSilent(true);
+        }
+
         if (gameMode == GameModeEnum.BLOCK) {
             for (java.util.UUID hiderId : HideAndSeek.getDataController().getHiders()) {
                 org.bukkit.entity.Player hider = org.bukkit.Bukkit.getPlayer(hiderId);

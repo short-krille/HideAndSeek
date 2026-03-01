@@ -9,7 +9,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Axis;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.*;
@@ -106,7 +105,7 @@ public class AppearanceGUI {
 
         if (config.isAllowAllBlockStates() || !config.getAllowedStates().isEmpty() || !config.getAllowedProperties().isEmpty()) {
             slot = startSection(inventory, slot, "Block States", maxContentSlot);
-            slot = addBlockStatesSection(inventory, slot, player, chosenBlock, config, maxContentSlot);
+            addBlockStatesSection(inventory, slot, player, chosenBlock, config, maxContentSlot);
         }
 
         addFooter(inventory);
@@ -390,12 +389,12 @@ public class AppearanceGUI {
 
 
         if (!allowedRotationProperties.isEmpty()) {
-            slot = addBlockStateSubsection(inventory, slot, player, block, config, allowedRotationProperties, "Rotation", maxContentSlot);
+            slot = addBlockStateSubsection(inventory, slot, player, block, allowedRotationProperties, maxContentSlot);
         }
 
 
         if (!allowedOtherProperties.isEmpty()) {
-            slot = addBlockStateSubsection(inventory, slot, player, block, config, allowedOtherProperties, "Other States", maxContentSlot);
+            slot = addBlockStateSubsection(inventory, slot, player, block, allowedOtherProperties, maxContentSlot);
         }
 
         slot = alignToNextRow(slot);
@@ -446,10 +445,9 @@ public class AppearanceGUI {
     }
 
     private int addBlockStateSubsection(FrameworkInventory inventory, int slot, Player player, Material block,
-                                        BlockAppearanceConfig config, List<String> propertyNames, String sectionName, int maxContentSlot) {
+                                        List<String> propertyNames, int maxContentSlot) {
         BlockData blockData = block.createBlockData();
         List<String> validProperties = propertyNames.stream()
-                .filter(prop -> isPropertySupported(blockData, prop))
                 .toList();
 
         if (validProperties.isEmpty()) {
@@ -491,11 +489,6 @@ public class AppearanceGUI {
         }));
     }
 
-    private boolean isPropertySupported(BlockData blockData, String propertyName) {
-
-
-        return true;
-    }
 
     private void cyclePropertyValue(Player player, String property, boolean reverse) {
         BlockData current = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
@@ -549,10 +542,15 @@ public class AppearanceGUI {
             String newDataString = buildDataStringWithProperty(dataString, property, nextValue);
 
 
-            return Bukkit.createBlockData(newDataString);
+            try {
+                return org.bukkit.Bukkit.createBlockData(newDataString);
+            } catch (IllegalArgumentException e) {
 
+                plugin.getLogger().warning("Failed to set property " + property + " to " + nextValue + ": " + e.getMessage());
+                return null;
+            }
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to cycle property '" + property + "': " + e.getMessage());
+            plugin.getLogger().warning("Error in getNextBlockData: " + e.getMessage());
             return null;
         }
     }
@@ -726,8 +724,7 @@ public class AppearanceGUI {
         if (isIntegerProperty(property)) {
             try {
                 int intValue = Integer.parseInt(value);
-                ItemStack item = new ItemStack(Material.REDSTONE, Math.min(intValue, 64));
-                return item;
+                return new ItemStack(Material.REDSTONE, Math.min(intValue, 64));
             } catch (NumberFormatException e) {
                 return new ItemStack(Material.REDSTONE);
             }
@@ -804,10 +801,6 @@ public class AppearanceGUI {
         return value.isEmpty() ? "n/a" : value;
     }
 
-    private ItemStack createStateItem(String stateName) {
-        return createStateItem(stateName, null, null);
-    }
-
     private void confirmAppearance(Player player) {
         BlockData chosenData = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
         if (chosenData != null) {
@@ -821,30 +814,8 @@ public class AppearanceGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text(("") + formatName(material.name()),
+            meta.displayName(Component.text(formatName(material.name()),
                             isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW, TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    private ItemStack createTitleItem(String title, NamedTextColor color) {
-        ItemStack item = new ItemStack(Material.NAME_TAG);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text("═══ " + title + " ═══", color, TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    private ItemStack createSubsectionItem(String title) {
-        ItemStack item = new ItemStack(Material.ANVIL);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text("▪ " + title, NamedTextColor.GOLD, TextDecoration.BOLD)
                     .decoration(TextDecoration.ITALIC, false));
             item.setItemMeta(meta);
         }
@@ -883,91 +854,167 @@ public class AppearanceGUI {
     }
 
     private void applyStateFromSource(BlockData source, BlockData target, String property) {
-        switch (property) {
-            case "facing" -> {
-                if (source instanceof Directional src && target instanceof Directional dst) {
-                    dst.setFacing(src.getFacing());
+        try {
+            switch (property) {
+                case "facing" -> {
+                    if (source instanceof Directional src && target instanceof Directional dst) {
+                        try {
+                            dst.setFacing(src.getFacing());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy facing property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "axis" -> {
-                if (source instanceof Orientable src && target instanceof Orientable dst) {
-                    dst.setAxis(src.getAxis());
+                case "axis" -> {
+                    if (source instanceof Orientable src && target instanceof Orientable dst) {
+                        try {
+                            dst.setAxis(src.getAxis());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy axis property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "rotation" -> {
-                if (source instanceof Rotatable src && target instanceof Rotatable dst) {
-                    dst.setRotation(src.getRotation());
+                case "rotation" -> {
+                    if (source instanceof Rotatable src && target instanceof Rotatable dst) {
+                        try {
+                            dst.setRotation(src.getRotation());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy rotation property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "lit" -> {
-                if (source instanceof Lightable src && target instanceof Lightable dst) {
-                    dst.setLit(src.isLit());
+                case "lit" -> {
+                    if (source instanceof Lightable src && target instanceof Lightable dst) {
+                        try {
+                            dst.setLit(src.isLit());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy lit property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "waterlogged" -> {
-                if (source instanceof Waterlogged src && target instanceof Waterlogged dst) {
-                    dst.setWaterlogged(src.isWaterlogged());
+                case "waterlogged" -> {
+                    if (source instanceof Waterlogged src && target instanceof Waterlogged dst) {
+                        try {
+                            dst.setWaterlogged(src.isWaterlogged());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy waterlogged property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "candles" -> {
-                if (source instanceof Candle src && target instanceof Candle dst) {
-                    dst.setCandles(src.getCandles());
+                case "candles" -> {
+                    if (source instanceof Candle src && target instanceof Candle dst) {
+                        try {
+                            dst.setCandles(src.getCandles());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy candles property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "powered" -> {
-                if (source instanceof Powerable src && target instanceof Powerable dst) {
-                    dst.setPowered(src.isPowered());
+                case "powered" -> {
+                    if (source instanceof Powerable src && target instanceof Powerable dst) {
+                        try {
+                            dst.setPowered(src.isPowered());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy powered property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "level" -> {
-                if (source instanceof Levelled src && target instanceof Levelled dst) {
-                    dst.setLevel(src.getLevel());
+                case "level" -> {
+                    if (source instanceof Levelled src && target instanceof Levelled dst) {
+                        try {
+                            dst.setLevel(src.getLevel());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy level property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "age" -> {
-                if (source instanceof Ageable src && target instanceof Ageable dst) {
-                    dst.setAge(src.getAge());
+                case "age" -> {
+                    if (source instanceof Ageable src && target instanceof Ageable dst) {
+                        try {
+                            dst.setAge(src.getAge());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy age property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "half" -> {
-                if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
-                    dst.setHalf(src.getHalf());
-                } else if (source instanceof org.bukkit.block.data.type.TrapDoor src && target instanceof org.bukkit.block.data.type.TrapDoor dst) {
-                    dst.setHalf(src.getHalf());
-                } else if (source instanceof org.bukkit.block.data.type.Stairs src && target instanceof org.bukkit.block.data.type.Stairs dst) {
-                    dst.setHalf(src.getHalf());
+                case "half" -> {
+                    if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
+                        try {
+                            dst.setHalf(src.getHalf());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy half property (Door): " + e.getMessage());
+                        }
+                    } else if (source instanceof org.bukkit.block.data.type.TrapDoor src && target instanceof org.bukkit.block.data.type.TrapDoor dst) {
+                        try {
+                            dst.setHalf(src.getHalf());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy half property (TrapDoor): " + e.getMessage());
+                        }
+                    } else if (source instanceof org.bukkit.block.data.type.Stairs src && target instanceof org.bukkit.block.data.type.Stairs dst) {
+                        try {
+                            dst.setHalf(src.getHalf());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy half property (Stairs): " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "hinge" -> {
-                if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
-                    dst.setHinge(src.getHinge());
+                case "hinge" -> {
+                    if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
+                        try {
+                            dst.setHinge(src.getHinge());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy hinge property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "open" -> {
-                if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
-                    dst.setOpen(src.isOpen());
-                } else if (source instanceof org.bukkit.block.data.type.TrapDoor src && target instanceof org.bukkit.block.data.type.TrapDoor dst) {
-                    dst.setOpen(src.isOpen());
+                case "open" -> {
+                    if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
+                        try {
+                            dst.setOpen(src.isOpen());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy open property (Door): " + e.getMessage());
+                        }
+                    } else if (source instanceof org.bukkit.block.data.type.TrapDoor src && target instanceof org.bukkit.block.data.type.TrapDoor dst) {
+                        try {
+                            dst.setOpen(src.isOpen());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy open property (TrapDoor): " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "triggered" -> {
-                if (source instanceof org.bukkit.block.data.type.Dispenser src && target instanceof org.bukkit.block.data.type.Dispenser dst) {
-                    dst.setTriggered(src.isTriggered());
+                case "triggered" -> {
+                    if (source instanceof org.bukkit.block.data.type.Dispenser src && target instanceof org.bukkit.block.data.type.Dispenser dst) {
+                        try {
+                            dst.setTriggered(src.isTriggered());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy triggered property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "type" -> {
-                if (source instanceof org.bukkit.block.data.type.Slab src && target instanceof org.bukkit.block.data.type.Slab dst) {
-                    dst.setType(src.getType());
+                case "type" -> {
+                    if (source instanceof org.bukkit.block.data.type.Slab src && target instanceof org.bukkit.block.data.type.Slab dst) {
+                        try {
+                            dst.setType(src.getType());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy type property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            case "shape" -> {
-                if (source instanceof org.bukkit.block.data.type.Stairs src && target instanceof org.bukkit.block.data.type.Stairs dst) {
-                    dst.setShape(src.getShape());
+                case "shape" -> {
+                    if (source instanceof org.bukkit.block.data.type.Stairs src && target instanceof org.bukkit.block.data.type.Stairs dst) {
+                        try {
+                            dst.setShape(src.getShape());
+                        } catch (Exception e) {
+                            plugin.getLogger().fine("Could not copy shape property: " + e.getMessage());
+                        }
+                    }
                 }
-            }
-            default -> {
+                default -> {
 
+                }
             }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Unexpected error applying block state from source for property " + property + ": " + e.getMessage());
         }
     }
 }

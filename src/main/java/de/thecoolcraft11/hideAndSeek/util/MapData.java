@@ -68,12 +68,6 @@ public class MapData {
         return allowedBlocks;
     }
 
-    public void addAllowedBlock(String block) {
-        if (!this.allowedBlocks.contains(block)) {
-            this.allowedBlocks.add(block);
-        }
-    }
-
     public void setAllowedBlocks(List<String> blocks) {
         this.allowedBlocks.clear();
         if (blocks != null) {
@@ -81,40 +75,11 @@ public class MapData {
         }
     }
 
-    public SpawnPoint getRandomSpawnPoint() {
-        if (spawnPoints.isEmpty()) {
-            return null;
-        }
-        return spawnPoints.get((int) (Math.random() * spawnPoints.size()));
-    }
-
-    public SpawnPoint getSpawnPoint(int index) {
-        if (spawnPoints.isEmpty() || index < 0 || index >= spawnPoints.size()) {
-            return null;
-        }
-        return spawnPoints.get(index);
-    }
-
     public WorldBorderData getWorldBorder(int index) {
         if (worldBorders.isEmpty() || index < 0 || index >= worldBorders.size()) {
             return null;
         }
         return worldBorders.get(index);
-    }
-
-    public void applyWorldBorders(World world) {
-        if (world == null) return;
-
-
-        if (worldBorders.isEmpty()) {
-            return;
-        }
-
-
-        WorldBorderData borderData = worldBorders.getFirst();
-        WorldBorder border = world.getWorldBorder();
-        border.setCenter(borderData.centerX(), borderData.centerZ());
-        border.setSize(borderData.radius() * 2);
     }
 
     public void applyWorldBorder(World world, int index) {

@@ -9,7 +9,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 
 public class TimerManager {
 
@@ -72,7 +71,7 @@ public class TimerManager {
 
             TimerInstance timer = new TimerBuilder(plugin.getTimerApi(), plugin.getTimerPlugin())
                     .name("Hiding")
-                    .targetId("had_hiding_timer")
+                    .targetId("has_hiding_timer")
                     .color1(color1)
                     .color2(color2)
                     .countingUp(false)
@@ -94,7 +93,7 @@ public class TimerManager {
             }
 
 
-            timer.addTarget("had_hiding_complete", 0, () -> {
+            timer.addTarget("has_hiding_complete", 0, () -> {
                 try {
 
                     timer.stop();
@@ -141,7 +140,7 @@ public class TimerManager {
 
             TimerInstance timer = new TimerBuilder(plugin.getTimerApi(), plugin.getTimerPlugin())
                     .name("Seeking")
-                    .targetId("had_seeking_timer")
+                    .targetId("has_seeking_timer")
                     .color1(color1)
                     .color2(color2)
                     .countingUp(false)
@@ -163,7 +162,7 @@ public class TimerManager {
             }
 
 
-            timer.addTarget("had_seeking_complete", 0, () -> {
+            timer.addTarget("has_seeking_complete", 0, () -> {
                 try {
 
                     timer.stop();
@@ -192,8 +191,7 @@ public class TimerManager {
         Number hidingTime = plugin.getSettingRegistry().get("game.hiding_time");
         int timeRemaining = hidingTime.intValue();
 
-        BukkitTask[] task = new BukkitTask[1];
-        task[0] = new BukkitRunnable() {
+        new BukkitRunnable() {
             int time = timeRemaining;
 
             @Override
@@ -219,8 +217,7 @@ public class TimerManager {
         Number seekingTime = plugin.getSettingRegistry().get("game.seeking_time");
         int timeRemaining = seekingTime.intValue();
 
-        BukkitTask[] task = new BukkitTask[1];
-        task[0] = new BukkitRunnable() {
+        new BukkitRunnable() {
             int time = timeRemaining;
 
             @Override

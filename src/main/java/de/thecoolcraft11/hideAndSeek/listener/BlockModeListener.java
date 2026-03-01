@@ -226,7 +226,7 @@ public class BlockModeListener implements Listener {
         Player attacker = event.getPlayer();
         Entity entity = event.getRightClicked();
 
-        
+
         if (!(entity instanceof Interaction interaction)) {
             return;
         }
@@ -241,19 +241,18 @@ public class BlockModeListener implements Listener {
         }
 
         try {
-            java.util.UUID hiderUUID = java.util.UUID.fromString(hiderId);
+            UUID hiderUUID = java.util.UUID.fromString(hiderId);
 
-            
+
             if (attacker.getUniqueId().equals(hiderUUID)) {
-                event.setCancelled(false); 
+                event.setCancelled(false);
                 return;
             }
 
-            
-            
+
             event.setCancelled(true);
-        } catch (IllegalArgumentException e) {
-            
+        } catch (IllegalArgumentException ignored) {
+
         }
     }
 
@@ -279,7 +278,7 @@ public class BlockModeListener implements Listener {
         try {
             java.util.UUID hiderUUID = java.util.UUID.fromString(hiderId);
 
-            
+
             if (attacker.getUniqueId().equals(hiderUUID)) {
                 event.setCancelled(true);
                 return;
@@ -311,14 +310,13 @@ public class BlockModeListener implements Listener {
                 return;
             }
 
-            
+
             if (!HideAndSeek.getDataController().getSeekers().contains(attacker.getUniqueId())) {
                 return;
             }
 
-            
             if (HideAndSeek.getDataController().isHidden(hiderUUID)) {
-                
+
                 Location hiddenLocation = HideAndSeek.getDataController().getLastLocation(hiderUUID);
                 if (hiddenLocation != null) {
                     Block hiddenBlock = hiddenLocation.getBlock();
@@ -327,10 +325,16 @@ public class BlockModeListener implements Listener {
                     plugin.getLogger().info(attacker.getName() + " hit hidden hider " + hider.getName() + " via interaction entity");
                 }
             } else {
-                
+
                 double attackDamage = getDamage(attacker);
                 hider.damage(attackDamage, attacker);
                 plugin.getLogger().info(attacker.getName() + " hit walking hider " + hider.getName() + " via interaction for " + attackDamage + " damage");
+            }
+
+
+            org.bukkit.inventory.ItemStack mainHand = attacker.getInventory().getItemInMainHand();
+            if (mainHand.getType() == Material.IRON_SWORD) {
+                attacker.setCooldown(Material.IRON_SWORD, 10);
             }
         } catch (IllegalArgumentException e) {
             plugin.getLogger().warning("Invalid hider UUID in interaction entity: " + hiderId);
@@ -392,7 +396,7 @@ public class BlockModeListener implements Listener {
             display = createBlockDisplay(player, playerLoc, blockData);
             HideAndSeek.getDataController().setBlockDisplay(player.getUniqueId(), display);
 
-            
+
             ensureInteractionPassenger(player, display);
         } else {
 
@@ -410,7 +414,7 @@ public class BlockModeListener implements Listener {
                 display.setGlowColorOverride(toGlowColor(hiderTeam));
             }
 
-            
+
             ensureInteractionPassenger(player, display);
         }
 
@@ -453,8 +457,7 @@ public class BlockModeListener implements Listener {
             ));
             bd.setBrightness(new Display.Brightness(15, 15));
 
-            
-            
+
             bd.setInvisible(true);
 
             if (HideAndSeek.getDataController().isGlowing(player.getUniqueId())) {
@@ -473,7 +476,7 @@ public class BlockModeListener implements Listener {
 
         Entity existingInteraction = HideAndSeek.getDataController().getInteractionEntity(player.getUniqueId());
 
-        
+
         if (existingInteraction != null && existingInteraction.isValid()) {
             if (existingInteraction.getVehicle() != display) {
                 display.addPassenger(existingInteraction);
@@ -481,12 +484,12 @@ public class BlockModeListener implements Listener {
             return;
         }
 
-        
+
         Interaction interaction = display.getWorld().spawn(display.getLocation(), Interaction.class, entity -> {
             entity.setResponsive(true);
             entity.setInteractionWidth(1.0f);
             entity.setInteractionHeight(1.0f);
-            
+
             entity.setInvisible(true);
             entity.getPersistentDataContainer().set(
                     new org.bukkit.NamespacedKey(plugin, "hidingBlock"),
@@ -575,8 +578,6 @@ public class BlockModeListener implements Listener {
 
         Location loc = player.getLocation();
         Block blockAtFeet = loc.getBlock();
-        Block blockAbove = blockAtFeet.getRelative(BlockFace.UP);
-        Block blockAboveAbove = blockAbove.getRelative(BlockFace.UP);
 
         boolean inLiquid = blockAtFeet.getType() == Material.WATER || blockAtFeet.getType() == Material.LAVA;
         int maxAirAbove = Math.max(0, plugin.getConfig().getInt("game.max-air-above-liquid", 2));
@@ -895,28 +896,12 @@ public class BlockModeListener implements Listener {
     }
 
     private static Color toGlowColor(org.bukkit.scoreboard.Team team) {
-        if (team == null || team.getColor() == null) {
+        if (team == null) {
             return null;
+        } else {
+            team.color();
         }
-        return switch (team.getColor()) {
-            case BLACK -> Color.BLACK;
-            case DARK_BLUE -> Color.NAVY;
-            case DARK_GREEN -> Color.GREEN;
-            case DARK_AQUA -> Color.TEAL;
-            case DARK_RED -> Color.MAROON;
-            case DARK_PURPLE -> Color.PURPLE;
-            case GOLD -> Color.ORANGE;
-            case GRAY -> Color.GRAY;
-            case DARK_GRAY -> Color.SILVER;
-            case BLUE -> Color.BLUE;
-            case GREEN -> Color.LIME;
-            case AQUA -> Color.AQUA;
-            case RED -> Color.RED;
-            case LIGHT_PURPLE -> Color.FUCHSIA;
-            case YELLOW -> Color.YELLOW;
-            case WHITE -> Color.WHITE;
-            default -> null;
-        };
+        return Color.fromRGB(team.color().red(), team.color().green(), team.color().blue());
     }
 
 }

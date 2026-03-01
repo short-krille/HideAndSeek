@@ -12,11 +12,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class BlockStatsCommand implements MinigameSubcommand {
-    private final HideAndSeek plugin;
     private final BlockStatsGUI gui;
 
     public BlockStatsCommand(HideAndSeek plugin) {
-        this.plugin = plugin;
         this.gui = new BlockStatsGUI(plugin);
     }
 
