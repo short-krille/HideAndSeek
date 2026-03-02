@@ -114,12 +114,18 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.game.small_mode_size", Double.class, 0.5);
         plugin.getConfigRegistry().register("settings.game.random_team_distribution", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.use_preferred_modes", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.game.use_map_specific_timings", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.game.use_map_specific_seeker_count", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.game.use_map_specific_player_limits", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.fixed_seeker_team", String.class, "");
         plugin.getConfigRegistry().register("settings.game.seeker_count", Integer.class, 1);
         plugin.getConfigRegistry().register("settings.game.hider_health", Integer.class, 20);
         plugin.getConfigRegistry().register("settings.game.block_view_height", Float.class, 0.1f);
         plugin.getConfigRegistry().register("settings.game.block_size_to_block", Boolean.class, false);
         plugin.getConfigRegistry().register("settings.game.seeker_kill_mode", String.class, "NORMAL");
+        plugin.getConfigRegistry().register("settings.game.gaze_kill_max_distance", Double.class, 10.0);
+        plugin.getConfigRegistry().register("settings.game.gaze_kill_fov", Double.class, 30.0);
+        plugin.getConfigRegistry().register("settings.game.gaze_kill_show_particles", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.auto_cleanup_after_round", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.small_mode_seeker_size", Double.class, 1.0);
 
@@ -167,6 +173,9 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.hider-items.slowness-ball.cooldown", Integer.class, 10);
         plugin.getConfigRegistry().register("settings.hider-items.slowness-ball.duration", Integer.class, 6);
         plugin.getConfigRegistry().register("settings.hider-items.slowness-ball.amplifier", Integer.class, 1);
+        plugin.getConfigRegistry().register("settings.hider-items.smoke-bomb.cooldown", Integer.class, 15);
+        plugin.getConfigRegistry().register("settings.hider-items.smoke-bomb.duration", Integer.class, 8);
+        plugin.getConfigRegistry().register("settings.hider-items.smoke-bomb.radius", Integer.class, 4);
 
 
         plugin.getConfigRegistry().register("settings.timer.hiding_color1", String.class, "#FF0000");
@@ -199,6 +208,7 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.cooldown", Integer.class, 5);
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.range", Double.class, 8.0);
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.duration", Integer.class, 60);
+        plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.fov-angle", Double.class, 90.0);
         plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.cooldown", Integer.class, 5);
         plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.range", Double.class, 5.0);
         plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.duration", Integer.class, 60);
@@ -299,6 +309,36 @@ public class SettingRegisterer {
                 ))
                 .build());
 
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.use_map_specific_timings", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "game.use_map_specific_timings", true))
+                .description("Use hiding/seeking times from map config if available, otherwise use global settings")
+                .customIcon(Material.CLOCK)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.CLOCK, true),
+                        false, setEnchanted(Material.CLOCK, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.use_map_specific_seeker_count", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "game.use_map_specific_seeker_count", true))
+                .description("Use seeker configuration from map config if available, otherwise use global settings")
+                .customIcon(Material.DIAMOND_SWORD)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.DIAMOND_SWORD, true),
+                        false, setEnchanted(Material.DIAMOND_SWORD, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.use_map_specific_player_limits", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "game.use_map_specific_player_limits", true))
+                .description("Use player count recommendations from map config if available")
+                .customIcon(Material.PLAYER_HEAD)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.PLAYER_HEAD, true),
+                        false, setEnchanted(Material.PLAYER_HEAD, false)
+                ))
+                .build());
+
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.fixed_seeker_team", SettingType.STRING, String.class)
                 .defaultValue(getConfigValue(plugin, "game.fixed_seeker_team", ""))
                 .description("Fixed seeker team (leave empty for random). Set to a team name to always use that team as seekers")
@@ -343,6 +383,30 @@ public class SettingRegisterer {
                         SeekerKillModeEnum.NORMAL, Material.IRON_SWORD,
                         SeekerKillModeEnum.ONE_HIT, Material.DIAMOND_SWORD,
                         SeekerKillModeEnum.GAZE_KILL, Material.ENDER_EYE
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.gaze_kill_max_distance", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "game.gaze_kill_max_distance", 10.0))
+                .rangeDouble(5.0, 50.0)
+                .description("Maximum distance for gaze kill in blocks")
+                .customIcon(Material.ENDER_EYE)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.gaze_kill_fov", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "game.gaze_kill_fov", 30.0))
+                .rangeDouble(10.0, 180.0)
+                .description("Field of view angle for gaze kill in degrees")
+                .customIcon(Material.BOW)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.gaze_kill_show_particles", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "game.gaze_kill_show_particles", true))
+                .description("Show particles when looking at hiders during gaze kill mode")
+                .customIcon(Material.REDSTONE)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.REDSTONE, true),
+                        false, setEnchanted(Material.REDSTONE, false)
                 ))
                 .build());
 
@@ -698,7 +762,29 @@ public class SettingRegisterer {
                 .customIcon(Material.SNOWBALL)
                 .build());
 
+        plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.smoke-bomb.cooldown", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "hider-items.smoke-bomb.cooldown", 15))
+                .range(0, 60)
+                .description("Cooldown for smoke bomb in seconds")
+                .customIcon(Material.GRAY_DYE)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.smoke-bomb.duration", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "hider-items.smoke-bomb.duration", 8))
+                .range(1, 30)
+                .description("Duration of smoke cloud in seconds")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.smoke-bomb.radius", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "hider-items.smoke-bomb.radius", 4))
+                .range(1, 15)
+                .description("Radius of smoke cloud in blocks")
+                .customIcon(Material.COMPASS)
+                .build());
+
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.grappling-hook.cooldown", SettingType.INTEGER, Integer.class)
+
                 .defaultValue(getConfigValue(plugin, "seeker-items.grappling-hook.cooldown", 2))
                 .range(0, 30)
                 .description("Cooldown for grappling hook in seconds")
@@ -842,14 +928,21 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.proximity-sensor.range", 8.0))
                 .rangeDouble(1.0, 50.0)
                 .description("Detection range for proximity sensor")
-                .customIcon(Material.REDSTONE_TORCH)
+                .customIcon(Material.COMPASS)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.proximity-sensor.duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.proximity-sensor.duration", 60))
                 .range(-1, 600)
                 .description("Duration of proximity sensor in seconds (-1 = until round ends)")
-                .customIcon(Material.REDSTONE_TORCH)
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.proximity-sensor.fov-angle", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "seeker-items.proximity-sensor.fov-angle", 90.0))
+                .rangeDouble(30.0, 360.0)
+                .description("Field of view angle for wall-mounted sensors in degrees (360 = full circle)")
+                .customIcon(Material.BOW)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.cooldown", SettingType.INTEGER, Integer.class)

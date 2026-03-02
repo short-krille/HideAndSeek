@@ -149,6 +149,7 @@ public class HidingPhase implements GamePhase {
                 seeker.setAllowFlight(false);
                 seeker.setFlying(false);
                 seeker.sendMessage(Component.text("Wait for the hiders to hide...", NamedTextColor.RED));
+                seeker.setGlowing(false);
 
 
                 seeker.addPotionEffect(new PotionEffect(
@@ -193,6 +194,7 @@ public class HidingPhase implements GamePhase {
                 hider.clearActivePotionEffects();
                 hider.setGameMode(GameMode.SURVIVAL);
                 hider.setWalkSpeed(0.2f);
+                hider.setGlowing(false);
 
                 var maxHealth = hider.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
                 if (maxHealth != null) {
@@ -266,6 +268,7 @@ public class HidingPhase implements GamePhase {
             spectator.setGlowing(false);
             spectator.setInvulnerable(true);
             spectator.setSilent(true);
+            spectator.setGlowing(false);
         }
 
         if (gameMode == GameModeEnum.BLOCK) {

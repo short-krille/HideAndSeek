@@ -11,6 +11,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -50,6 +51,22 @@ public class SeekingPhase implements GamePhase {
 
         plugin.getLogger().info("Seeking phase started - " + timeRemaining + " seconds");
 
+        
+        World gameWorld = Bukkit.getWorld("hid_" + HideAndSeek.getDataController().getCurrentMapName());
+        if (gameWorld != null) {
+            String mapName = HideAndSeek.getDataController().getCurrentMapName();
+            de.thecoolcraft11.hideAndSeek.util.MapData mapData = hideAndSeekPlugin.getMapManager().getMapData(mapName);
+
+            int borderIndex = HideAndSeek.getDataController().getCurrentBorderIndex();
+
+            if (mapData != null && !mapData.getWorldBorders().isEmpty() && borderIndex >= 0) {
+                
+                mapData.applyWorldBorder(gameWorld, borderIndex);
+                plugin.getLogger().info("Re-applied world border #" + borderIndex + " for seeking phase on map: " + mapName);
+            } else if (borderIndex < 0) {
+                plugin.getLogger().info("No world borders configured for this map");
+            }
+        }
 
         var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
         Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;

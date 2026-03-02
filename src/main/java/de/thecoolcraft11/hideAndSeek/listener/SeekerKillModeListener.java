@@ -4,7 +4,10 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.util.SeekerKillModeEnum;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.*;
+import org.bukkit.Color;
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -95,6 +98,10 @@ public class SeekerKillModeListener implements Listener {
             return;
         }
 
+        double maxDistance = plugin.getSettingRegistry().get("game.gaze_kill_max_distance", 10.0);
+        double fovDegrees = plugin.getSettingRegistry().get("game.gaze_kill_fov", 30.0);
+        boolean showParticles = plugin.getSettingRegistry().get("game.gaze_kill_show_particles", true);
+
 
         for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
             Player hider = org.bukkit.Bukkit.getPlayer(hiderId);
@@ -108,7 +115,7 @@ public class SeekerKillModeListener implements Listener {
             }
 
 
-            if (canSeePlayer(seeker, hider, 10, 30, true)) {
+            if (canSeePlayer(seeker, hider, maxDistance, fovDegrees, showParticles)) {
 
                 hider.damage(Objects.requireNonNull(hider.getAttribute(Attribute.MAX_HEALTH)).getBaseValue(), seeker);
                 lastGazeKillTime.put(seekerId, now);
@@ -125,9 +132,7 @@ public class SeekerKillModeListener implements Listener {
         }
     }
 
-    public static boolean canSeePlayer(Player seeker, Player hider, double maxDistance, double fovDegrees, boolean debug) {
-
-
+    private static boolean canSeePlayer(Player seeker, Player hider, double maxDistance, double fovDegrees, boolean showParticles) {
         if (!seeker.getWorld().equals(hider.getWorld())) return false;
 
         Location seekerEyes = seeker.getEyeLocation();
@@ -136,9 +141,7 @@ public class SeekerKillModeListener implements Listener {
         double distance = seekerEyes.distance(hiderEyes);
         if (distance > maxDistance) return false;
 
-
         Vector toHider = hiderEyes.toVector().subtract(seekerEyes.toVector()).normalize();
-
 
         if (fovDegrees > 0) {
             Vector lookDir = seekerEyes.getDirection().normalize();
@@ -146,7 +149,6 @@ public class SeekerKillModeListener implements Listener {
             double cosFOV = Math.cos(Math.toRadians(fovDegrees / 2));
             if (dot < cosFOV) return false;
         }
-
 
         RayTraceResult result = seeker.getWorld().rayTrace(
                 seekerEyes,
@@ -158,29 +160,44 @@ public class SeekerKillModeListener implements Listener {
                 entity -> entity.equals(hider)
         );
 
+        boolean canSee = result != null && result.getHitEntity() != null;
 
-        if (debug) {
-            debugRay(seekerEyes, toHider, distance, seeker.getWorld());
-            if (result != null) {
-                result.getHitPosition();
-                Location hitLoc = result.getHitPosition().toLocation(seeker.getWorld());
-                seeker.getWorld().spawnParticle(Particle.FLAME, hitLoc, 20);
-            }
+        if (showParticles && canSee) {
+            drawLaserLine(seekerEyes, hiderEyes, seeker.getWorld());
+
+            hider.getWorld().spawnParticle(
+                    Particle.DUST,
+                    hiderEyes,
+                    5,
+                    0.3, 0.3, 0.3,
+                    new Particle.DustOptions(Color.RED, 1.5f)
+            );
         }
 
-        return result != null && result.getHitEntity() != null;
+        return canSee;
     }
 
-    private static void debugRay(Location start, Vector direction, double maxDistance, World world) {
-        Vector step = direction.clone().multiply(0.2);
+    private static void drawLaserLine(Location start, Location end, org.bukkit.World world) {
+        Vector direction = end.toVector().subtract(start.toVector());
+        double distance = direction.length();
+        Vector step = direction.normalize().multiply(0.2);
+
         Location point = start.clone();
-        for (double d = 0; d < maxDistance; d += 0.2) {
-            world.spawnParticle(Particle.DUST, point, 1, new Particle.DustOptions(Color.RED, 1f));
+        for (double d = 0; d < distance; d += 0.2) {
+            world.spawnParticle(
+                    Particle.DUST,
+                    point,
+                    1,
+                    0,
+                    0,
+                    0,
+                    new Particle.DustOptions(Color.RED, 0.8f)
+            );
             point.add(step);
         }
     }
-
 }
+
 
 
 

@@ -294,6 +294,7 @@ public class LoadoutGUI implements Listener {
             case TOTEM_OF_UNDYING -> "Revive from death once";
             case INVISIBILITY_CLOAK -> "Become invisible temporarily";
             case SLOWNESS_BALL -> "Slow down pursuing seekers";
+            case SMOKE_BOMB -> "Create a smoke cloud for cover";
             case GRAPPLING_HOOK -> "Launch towards your target";
             case INK_SPLASH -> "Blind nearby hiders";
             case LIGHTNING_FREEZE -> "Freeze all hiders briefly";
@@ -344,6 +345,7 @@ public class LoadoutGUI implements Listener {
             case TOTEM_OF_UNDYING -> Material.TOTEM_OF_UNDYING;
             case INVISIBILITY_CLOAK -> Material.PHANTOM_MEMBRANE;
             case SLOWNESS_BALL -> Material.SNOWBALL;
+            case SMOKE_BOMB -> Material.GRAY_DYE;
             case GRAPPLING_HOOK -> Material.FISHING_ROD;
             case INK_SPLASH -> Material.INK_SAC;
             case LIGHTNING_FREEZE -> Material.LIGHTNING_ROD;

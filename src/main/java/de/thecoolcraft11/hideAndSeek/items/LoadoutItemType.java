@@ -15,6 +15,7 @@ public enum LoadoutItemType {
     TOTEM_OF_UNDYING(true, false, ItemRarity.LEGENDARY, HiderItems.TOTEM_ITEM_ID),
     INVISIBILITY_CLOAK(true, false, ItemRarity.EPIC, HiderItems.INVISIBILITY_CLOAK_ITEM_ID),
     SLOWNESS_BALL(true, false, ItemRarity.UNCOMMON, HiderItems.SLOWNESS_BALL_ITEM_ID),
+    SMOKE_BOMB(true, false, ItemRarity.UNCOMMON, HiderItems.SMOKE_BOMB_ITEM_ID),
 
 
     GRAPPLING_HOOK(false, true, ItemRarity.COMMON, SeekerItems.GRAPPLING_HOOK_ITEM_ID),

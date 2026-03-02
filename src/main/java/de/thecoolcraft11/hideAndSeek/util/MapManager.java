@@ -120,6 +120,18 @@ public class MapManager {
         String description = section.getString("description", "");
         mapData.setDescription(description);
 
+        
+        String author = section.getString("author");
+        if (author != null && !author.isEmpty()) {
+            mapData.setAuthor(author);
+        }
+
+        
+        String size = section.getString("size");
+        if (size != null && !size.isEmpty()) {
+            mapData.setSize(size);
+        }
+
 
         List<String> spawnPointStrings = section.getStringList("spawn-points");
         if (spawnPointStrings.isEmpty()) {
@@ -166,6 +178,45 @@ public class MapManager {
         mapData.setAllowedBlocks(allowedBlockStrings);
         if (!allowedBlockStrings.isEmpty()) {
             plugin.getLogger().info("Loaded " + allowedBlockStrings.size() + " allowed block patterns for map " + mapName);
+        }
+
+        
+        ConfigurationSection playersSection = section.getConfigurationSection("players");
+        if (playersSection != null) {
+            if (playersSection.contains("min")) {
+                mapData.setMinPlayers(playersSection.getInt("min"));
+            }
+            if (playersSection.contains("recommended")) {
+                mapData.setRecommendedPlayers(playersSection.getInt("recommended"));
+            }
+            if (playersSection.contains("max")) {
+                mapData.setMaxPlayers(playersSection.getInt("max"));
+            }
+        }
+
+        
+        ConfigurationSection seekersSection = section.getConfigurationSection("seekers");
+        if (seekersSection != null) {
+            if (seekersSection.contains("min")) {
+                mapData.setMinSeekers(seekersSection.getInt("min"));
+            }
+            if (seekersSection.contains("per-players")) {
+                mapData.setSeekersPerPlayers(seekersSection.getInt("per-players"));
+            }
+            if (seekersSection.contains("max")) {
+                mapData.setMaxSeekers(seekersSection.getInt("max"));
+            }
+        }
+
+        
+        ConfigurationSection timingsSection = section.getConfigurationSection("timings");
+        if (timingsSection != null) {
+            if (timingsSection.contains("hiding-time")) {
+                mapData.setHidingTime(timingsSection.getInt("hiding-time"));
+            }
+            if (timingsSection.contains("seeking-time")) {
+                mapData.setSeekingTime(timingsSection.getInt("seeking-time"));
+            }
         }
 
         return mapData;
@@ -317,24 +368,32 @@ public class MapManager {
                 plugin.getLogger().info("Using configured spawn point #" + spawnWithBorder.spawnIndex() + " from MapData for map: " + mapName);
 
 
-                if (!mapData.getWorldBorders().isEmpty()) {
+                if (!mapData.getWorldBorders().isEmpty() && spawnWithBorder.borderIndex() >= 0) {
                     mapData.applyWorldBorder(workingWorld, spawnWithBorder.borderIndex());
                     plugin.getLogger().info("Applied world border #" + spawnWithBorder.borderIndex() + " for spawn #" + spawnWithBorder.spawnIndex());
+
+                    
+                    HideAndSeek.getDataController().setCurrentBorderIndex(spawnWithBorder.borderIndex());
+                } else {
+                    plugin.getLogger().info("No world borders configured for this map");
+                    HideAndSeek.getDataController().setCurrentBorderIndex(-1);
                 }
             } else {
 
                 spawnLocation = workingWorld.getSpawnLocation();
                 spawnLocation.setY(spawnLocation.getY() + 1);
                 plugin.getLogger().warning("Failed to get spawn point for map " + mapName + ", using world spawn");
+                HideAndSeek.getDataController().setCurrentBorderIndex(-1);
             }
         } else {
 
             spawnLocation = workingWorld.getSpawnLocation();
             spawnLocation.setY(spawnLocation.getY() + 1);
             plugin.getLogger().warning("No spawn points configured for map " + mapName + ", using world spawn");
+            HideAndSeek.getDataController().setCurrentBorderIndex(-1);
         }
 
-        
+
         HideAndSeek.getDataController().setRoundSpawnPoint(spawnLocation);
 
         for (Player player : Bukkit.getOnlinePlayers()) {

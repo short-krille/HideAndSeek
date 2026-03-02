@@ -5,6 +5,8 @@
 # Format:
 # world-name:
 #   description: "A brief description of the map"
+#   author: "Map Creator"                          # Optional: Name of the map creator
+#   size: "MEDIUM"                                 # Optional: Map size - SMALL, MEDIUM, LARGE
 #   spawn-points:
 #     - "x,y,z,yaw,pitch"
 #     - "x2,y2,z2,yaw2,pitch2"
@@ -19,6 +21,17 @@
 #     - "*CANDLE{RED_CANDLE}"
 #     - "OAK_LOG[*]"
 #     - "OAK_TRAPDOOR[half,open,facing]"
+#   players:                                       # Optional: Player count recommendations
+#     min: 4                                       # Minimum players for this map
+#     recommended: 8                               # Recommended number of players
+#     max: 16                                      # Maximum players for this map
+#   seekers:                                       # Optional: Seeker configuration
+#     min: 1                                       # Minimum number of seekers
+#     per-players: 8                               # Add 1 seeker per X players (0 = disabled)
+#     max: 4                                       # Maximum number of seekers
+#   timings:                                       # Optional: Recommended game timings
+#     hiding-time: 60                              # Recommended hiding time in seconds
+#     seeking-time: 300                            # Recommended seeking time in seconds
 
 # Note: If spawn-points and world-borders have equal counts, they are matched by index
 # Example: Spawn 1 → Border 1, Spawn 2 → Border 2, etc.
@@ -33,11 +46,24 @@
 # Map 1: Default map
 map1:
   description: "Default map"
+  author: "Server Admin"
+  size: "MEDIUM"
   spawn-points:
     - "0,65,0,0,0"     # Format: x,y,z,yaw,pitch
   world-borders: [ ]    # Optional, format: centerX,centerZ,radius
   preferred-modes:
     - "BLOCK"
+  players:
+    min: 4
+    recommended: 8
+    max: 16
+  seekers:
+    min: 1
+    per-players: 8
+    max: 4
+  timings:
+    hiding-time: 60
+    seeking-time: 300
   allowed-blocks:
     - "STONE"
     - "DIRT"

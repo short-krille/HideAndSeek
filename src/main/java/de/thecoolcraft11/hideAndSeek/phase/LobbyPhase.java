@@ -41,6 +41,7 @@ public class LobbyPhase implements GamePhase {
             player.setHealth(20.0);
             player.setFoodLevel(20);
             player.getInventory().clear();
+            player.setGlowing(false);
 
             Objects.requireNonNull(player.getAttribute(Attribute.SCALE)).setBaseValue(1.0);
 

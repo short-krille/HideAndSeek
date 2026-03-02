@@ -12,18 +12,44 @@ import java.util.List;
 public class MapData {
     private final String name;
     private String description;
+    private String author;
+    private String size;
     private final List<SpawnPoint> spawnPoints;
     private final List<WorldBorderData> worldBorders;
     private final List<GameModeEnum> preferredModes;
     private final List<String> allowedBlocks;
 
+
+    private Integer minPlayers;
+    private Integer recommendedPlayers;
+    private Integer maxPlayers;
+
+
+    private Integer minSeekers;
+    private Integer seekersPerPlayers;
+    private Integer maxSeekers;
+
+
+    private Integer hidingTime;
+    private Integer seekingTime;
+
     public MapData(String name) {
         this.name = name;
         this.description = "";
+        this.author = null;
+        this.size = null;
         this.spawnPoints = new ArrayList<>();
         this.worldBorders = new ArrayList<>();
         this.preferredModes = new ArrayList<>();
         this.allowedBlocks = new ArrayList<>();
+        this.minPlayers = null;
+        this.recommendedPlayers = null;
+        this.maxPlayers = null;
+        this.minSeekers = null;
+        this.seekersPerPlayers = null;
+        this.maxSeekers = null;
+        this.hidingTime = null;
+        this.seekingTime = null;
     }
 
     public String getName() {
@@ -36,6 +62,22 @@ public class MapData {
 
     public void setDescription(String description) {
         this.description = description != null ? description : "";
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
     }
 
     public List<SpawnPoint> getSpawnPoints() {
@@ -75,6 +117,73 @@ public class MapData {
         }
     }
 
+
+    public Integer getMinPlayers() {
+        return minPlayers;
+    }
+
+    public void setMinPlayers(Integer minPlayers) {
+        this.minPlayers = minPlayers;
+    }
+
+    public Integer getRecommendedPlayers() {
+        return recommendedPlayers;
+    }
+
+    public void setRecommendedPlayers(Integer recommendedPlayers) {
+        this.recommendedPlayers = recommendedPlayers;
+    }
+
+    public Integer getMaxPlayers() {
+        return maxPlayers;
+    }
+
+    public void setMaxPlayers(Integer maxPlayers) {
+        this.maxPlayers = maxPlayers;
+    }
+
+
+    public Integer getMinSeekers() {
+        return minSeekers;
+    }
+
+    public void setMinSeekers(Integer minSeekers) {
+        this.minSeekers = minSeekers;
+    }
+
+    public Integer getSeekersPerPlayers() {
+        return seekersPerPlayers;
+    }
+
+    public void setSeekersPerPlayers(Integer seekersPerPlayers) {
+        this.seekersPerPlayers = seekersPerPlayers;
+    }
+
+    public Integer getMaxSeekers() {
+        return maxSeekers;
+    }
+
+    public void setMaxSeekers(Integer maxSeekers) {
+        this.maxSeekers = maxSeekers;
+    }
+
+
+    public Integer getHidingTime() {
+        return hidingTime;
+    }
+
+    public void setHidingTime(Integer hidingTime) {
+        this.hidingTime = hidingTime;
+    }
+
+    public Integer getSeekingTime() {
+        return seekingTime;
+    }
+
+    public void setSeekingTime(Integer seekingTime) {
+        this.seekingTime = seekingTime;
+    }
+
     public WorldBorderData getWorldBorder(int index) {
         if (worldBorders.isEmpty() || index < 0 || index >= worldBorders.size()) {
             return null;
@@ -108,8 +217,19 @@ public class MapData {
         int spawnIndex = (int) (Math.random() * spawnPoints.size());
         SpawnPoint spawn = spawnPoints.get(spawnIndex);
 
+        int borderIndex;
 
-        int borderIndex = (spawnPoints.size() == worldBorders.size()) ? spawnIndex : 0;
+
+        if (spawnPoints.size() == worldBorders.size()) {
+
+            borderIndex = spawnIndex;
+        } else if (!worldBorders.isEmpty()) {
+
+            borderIndex = (int) (Math.random() * worldBorders.size());
+        } else {
+
+            borderIndex = -1;
+        }
 
         return new SpawnWithBorder(spawnIndex, spawn, borderIndex);
     }

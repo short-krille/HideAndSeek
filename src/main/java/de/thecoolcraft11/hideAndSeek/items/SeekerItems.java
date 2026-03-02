@@ -693,14 +693,6 @@ public final class SeekerItems {
         }
     }
 
-    /**
-     * Applies a glowing effect to a hider for a specified duration.
-     * Works in all game modes - uses block display glow in BLOCK mode, player glow in others.
-     *
-     * @param hider    The hider to glow
-     * @param duration Duration of glow in seconds
-     * @param plugin   Reference to the plugin
-     */
     private static void applyGlowEffect(Player hider, int duration, HideAndSeek plugin) {
         UUID hiderId = hider.getUniqueId();
 
@@ -831,10 +823,6 @@ public final class SeekerItems {
         seeker.sendMessage(Component.text("Blocks randomized! (" + count + " hiders)", NamedTextColor.GREEN));
     }
 
-    /**
-     * Finds a safe landing location for teleporting a player.
-     * Ensures the location is not inside a solid block by checking nearby positions.
-     */
     private static Location findSafeLandingLocation(Location loc, World world) {
         Location checkLoc = loc.clone();
 
@@ -1123,6 +1111,7 @@ public final class SeekerItems {
     private static void placeProximitySensor(ItemInteractionContext context, HideAndSeek plugin) {
         double range = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.range", 8.0);
         int sensorDuration = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.duration", 60);
+        double fovAngle = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.fov-angle", 160.0);
 
 
         Block clickedBlock = context.getLocation().getBlock();
@@ -1174,6 +1163,7 @@ public final class SeekerItems {
             BlockDisplay display = (BlockDisplay) torchBlock.getLocation().getWorld().spawnEntity(torchBlock.getLocation(), EntityType.BLOCK_DISPLAY);
             display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-type"), PersistentDataType.STRING, "proximity");
             display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-block"), PersistentDataType.STRING, torchBlock.getLocation().toString());
+            display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-facing"), PersistentDataType.STRING, "UP");
             BlockData data = Material.SCULK_SENSOR.createBlockData();
 
             display.setBlock(data);
@@ -1200,6 +1190,7 @@ public final class SeekerItems {
                 BlockDisplay display = (BlockDisplay) torchBlock.getLocation().getWorld().spawnEntity(torchBlock.getLocation(), EntityType.BLOCK_DISPLAY);
                 display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-type"), PersistentDataType.STRING, "proximity");
                 display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-block"), PersistentDataType.STRING, torchBlock.getLocation().toString());
+                display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-facing"), PersistentDataType.STRING, clickedFace.name());
                 BlockData data = Material.SCULK_SENSOR.createBlockData();
 
                 display.setBlock(data);
@@ -1214,6 +1205,11 @@ public final class SeekerItems {
 
         Location sensorLocation = torchBlock.getLocation().clone().add(0.5, 0.5, 0.5);
 
+        BlockDisplay sensorDisplay = sensorDisplays.get(torchBlock.getLocation());
+        String facingStr = sensorDisplay != null ?
+                sensorDisplay.getPersistentDataContainer().get(new NamespacedKey(plugin, "sensor-facing"), PersistentDataType.STRING) :
+                "UP";
+        BlockFace sensorFacing = facingStr != null ? BlockFace.valueOf(facingStr) : BlockFace.UP;
 
         Map<UUID, Long> glowingHiders = new HashMap<>();
 
@@ -1270,6 +1266,30 @@ public final class SeekerItems {
 
                     double distance = hider.getLocation().distance(sensorLocation);
                     if (distance < range) {
+                        if (sensorFacing != BlockFace.UP) {
+                            Vector toHider = hider.getLocation().toVector().subtract(sensorLocation.toVector()).normalize();
+                            Vector sensorDirection = getSensorDirection(sensorFacing);
+
+                            double angle = Math.toDegrees(Math.acos(sensorDirection.dot(toHider)));
+
+                            if (angle > fovAngle / 2) {
+                                continue;
+                            }
+                        }
+
+                        Location hiderEyeLocation = hider.getEyeLocation();
+                        RayTraceResult rayTrace = sensorLocation.getWorld().rayTraceBlocks(
+                                sensorLocation,
+                                hiderEyeLocation.toVector().subtract(sensorLocation.toVector()).normalize(),
+                                distance,
+                                org.bukkit.FluidCollisionMode.NEVER,
+                                true
+                        );
+
+                        if (rayTrace != null && rayTrace.getHitBlock() != null) {
+                            continue;
+                        }
+
                         hidersInRange.add(hiderId);
 
                         if (!glowingHiders.containsKey(hiderId)) {
@@ -1288,6 +1308,12 @@ public final class SeekerItems {
                                 new Vibration(new Vibration.Destination.BlockDestination(hiderLoc), 5)
                         );
 
+                        HideAndSeek.getDataController().getSeekers().forEach(seekerUUID -> {
+                            Player seeker = Bukkit.getPlayer(seekerUUID);
+                            if (seeker != null) {
+                                seeker.playSound(seeker.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
+                            }
+                        });
 
                         if (!glowingHiders.containsKey(hiderId)) {
                             applyProximitySensorGlow(hider, plugin);
@@ -1311,7 +1337,7 @@ public final class SeekerItems {
                     glowingHiders.remove(hiderId);
                 }
             }
-        }.runTaskTimer(plugin, 0L, 10L);
+        }.runTaskTimer(plugin, 0L, 4L);
 
         String durationMsg = sensorDuration == -1 ? "until round ends" : sensorDuration + " seconds";
         context.getPlayer().sendMessage(Component.text("Proximity sensor placed! (" + durationMsg + ")", NamedTextColor.GREEN));
@@ -1406,12 +1432,48 @@ public final class SeekerItems {
         for (int x = -halfSize; x <= halfSize; x++) {
             for (int y = 0; y < 3; y++) {
                 for (int z = -halfSize; z <= halfSize; z++) {
+                    boolean isEdge = Math.abs(x) == halfSize || Math.abs(z) == halfSize;
+                    boolean isFloor = y == 0;
+                    boolean isCeiling = y == 2;
 
-                    if ((Math.abs(x) == halfSize || Math.abs(z) == halfSize) || y == 0 || y == 2) {
+
+                    if (isEdge || isFloor || isCeiling) {
                         Location blockLoc = hiderLoc.clone().add(x, y, z);
+                        Material blockMaterial;
+
+
+                        if (isEdge && !isFloor && !isCeiling) {
+                            blockMaterial = Material.IRON_BARS;
+                        } else {
+                            blockMaterial = Material.BARRIER;
+                        }
+
                         BlockDisplay blockDisplay = blockLoc.getWorld().spawn(blockLoc, BlockDisplay.class, display -> {
-                            display.setBlock(Material.IRON_BARS.createBlockData());
+                            org.bukkit.block.data.BlockData blockData = blockMaterial.createBlockData();
+
+
+                            if (blockMaterial == Material.IRON_BARS) {
+                                if (blockData instanceof org.bukkit.block.data.type.Fence bars) {
+
+                                    bars.setFace(org.bukkit.block.BlockFace.NORTH, true);
+                                    bars.setFace(org.bukkit.block.BlockFace.SOUTH, true);
+                                    bars.setFace(org.bukkit.block.BlockFace.EAST, true);
+                                    bars.setFace(org.bukkit.block.BlockFace.WEST, true);
+                                }
+                            }
+
+                            display.setBlock(blockData);
                             display.setVisibleByDefault(false);
+
+
+                            if (blockMaterial == Material.IRON_BARS) {
+                                display.setTransformation(new org.bukkit.util.Transformation(
+                                        new org.joml.Vector3f(0, 0, 0),
+                                        new org.joml.AxisAngle4f(0, 0, 0, 1),
+                                        new org.joml.Vector3f(1, 1, 1),
+                                        new org.joml.AxisAngle4f(0, 0, 0, 1)
+                                ));
+                            }
                         });
 
 
@@ -1452,10 +1514,6 @@ public final class SeekerItems {
         hider.playSound(hider.getLocation(), Sound.BLOCK_IRON_DOOR_CLOSE, 1.0f, 0.8f);
     }
 
-    /**
-     * Apply glow effect for proximity sensor (continuous, no removal scheduled).
-     * Keeps hider glowing as long as they're in sensor range.
-     */
     private static void applyProximitySensorGlow(Player hider, HideAndSeek plugin) {
         UUID hiderId = hider.getUniqueId();
 
@@ -1513,9 +1571,6 @@ public final class SeekerItems {
 
     }
 
-    /**
-     * Remove glow effect for proximity sensor.
-     */
     private static void removeProximitySensorGlow(Player hider, HideAndSeek plugin) {
         UUID hiderId = hider.getUniqueId();
         HideAndSeek.getDataController().removeGlowing(hiderId);
@@ -1576,6 +1631,18 @@ public final class SeekerItems {
                     new Vector3f(0, 0f, 0f),
                     new AxisAngle4f(0, 0f, 0f, 0f)
             );
+        };
+    }
+
+    private static Vector getSensorDirection(BlockFace face) {
+        return switch (face) {
+            case NORTH -> new Vector(0, 0, -1);
+            case SOUTH -> new Vector(0, 0, 1);
+            case EAST -> new Vector(1, 0, 0);
+            case WEST -> new Vector(-1, 0, 0);
+            case UP -> new Vector(0, 1, 0);
+            case DOWN -> new Vector(0, -1, 0);
+            default -> new Vector(0, 1, 0);
         };
     }
 

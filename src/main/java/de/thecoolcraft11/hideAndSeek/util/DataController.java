@@ -22,6 +22,7 @@ public class DataController {
     private final Map<UUID, org.bukkit.entity.Entity> interactionEntities;
     private final Map<UUID, Integer> playerPoints;
     private String currentMapName;
+    private int currentBorderIndex;
     private final Map<UUID, Long> blockDamageOverrideUntil;
     private final Map<UUID, Boolean> glowingState;
     private org.bukkit.Location roundSpawnPoint;
@@ -42,6 +43,7 @@ public class DataController {
         this.interactionEntities = new HashMap<>();
         this.playerPoints = new HashMap<>();
         this.currentMapName = null;
+        this.currentBorderIndex = -1;
         this.blockDamageOverrideUntil = new HashMap<>();
         this.glowingState = new HashMap<>();
     }
@@ -243,6 +245,14 @@ public class DataController {
 
     public String getCurrentMapName() {
         return this.currentMapName;
+    }
+
+    public void setCurrentBorderIndex(int borderIndex) {
+        this.currentBorderIndex = borderIndex;
+    }
+
+    public int getCurrentBorderIndex() {
+        return this.currentBorderIndex;
     }
 
     public void setBlockDamageOverride(UUID uuid, long untilEpochMs) {

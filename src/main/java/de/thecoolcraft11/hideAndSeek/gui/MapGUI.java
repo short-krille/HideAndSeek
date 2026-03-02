@@ -173,6 +173,19 @@ public class MapGUI implements Listener {
                     lore.add(Component.empty());
                 }
 
+                
+                if (mapData.getAuthor() != null && !mapData.getAuthor().isEmpty()) {
+                    lore.add(Component.text("By: ", NamedTextColor.WHITE)
+                            .append(Component.text(mapData.getAuthor(), NamedTextColor.YELLOW))
+                            .decoration(TextDecoration.ITALIC, false));
+                }
+
+                
+                if (mapData.getSize() != null && !mapData.getSize().isEmpty()) {
+                    lore.add(Component.text("Size: ", NamedTextColor.WHITE)
+                            .append(Component.text(mapData.getSize(), NamedTextColor.YELLOW))
+                            .decoration(TextDecoration.ITALIC, false));
+                }
 
                 int spawnCount = mapData.getSpawnPoints().size();
                 lore.add(Component.text("Spawns: " + spawnCount, NamedTextColor.YELLOW)
@@ -187,6 +200,54 @@ public class MapGUI implements Listener {
                         modesStr.append(preferredModes.get(i).name());
                     }
                     lore.add(Component.text("Modes: " + modesStr, NamedTextColor.YELLOW)
+                            .decoration(TextDecoration.ITALIC, false));
+                }
+
+                lore.add(Component.empty());
+
+                
+                if (mapData.getMinPlayers() != null || mapData.getRecommendedPlayers() != null || mapData.getMaxPlayers() != null) {
+                    StringBuilder playerStr = new StringBuilder("Players: ");
+                    if (mapData.getMinPlayers() != null) {
+                        playerStr.append(mapData.getMinPlayers()).append("-");
+                    }
+                    if (mapData.getMaxPlayers() != null) {
+                        playerStr.append(mapData.getMaxPlayers());
+                    }
+                    if (mapData.getRecommendedPlayers() != null) {
+                        playerStr.append(" (").append(mapData.getRecommendedPlayers()).append(" recommended)");
+                    }
+                    lore.add(Component.text(playerStr.toString(), NamedTextColor.LIGHT_PURPLE)
+                            .decoration(TextDecoration.ITALIC, false));
+                }
+
+                
+                if (mapData.getMinSeekers() != null || mapData.getMaxSeekers() != null) {
+                    StringBuilder seekerStr = new StringBuilder("Seekers: ");
+                    if (mapData.getMinSeekers() != null) {
+                        seekerStr.append(mapData.getMinSeekers()).append("-");
+                    }
+                    if (mapData.getMaxSeekers() != null) {
+                        seekerStr.append(mapData.getMaxSeekers());
+                    }
+                    if (mapData.getSeekersPerPlayers() != null && mapData.getSeekersPerPlayers() > 0) {
+                        seekerStr.append(" (1 per ").append(mapData.getSeekersPerPlayers()).append(" players)");
+                    }
+                    lore.add(Component.text(seekerStr.toString(), NamedTextColor.LIGHT_PURPLE)
+                            .decoration(TextDecoration.ITALIC, false));
+                }
+
+                
+                if (mapData.getHidingTime() != null || mapData.getSeekingTime() != null) {
+                    StringBuilder timingStr = new StringBuilder("Time: ");
+                    if (mapData.getHidingTime() != null) {
+                        timingStr.append(mapData.getHidingTime()).append("s hiding");
+                    }
+                    if (mapData.getSeekingTime() != null) {
+                        if (mapData.getHidingTime() != null) timingStr.append(", ");
+                        timingStr.append(mapData.getSeekingTime()).append("s seeking");
+                    }
+                    lore.add(Component.text(timingStr.toString(), NamedTextColor.LIGHT_PURPLE)
                             .decoration(TextDecoration.ITALIC, false));
                 }
             }

@@ -19,9 +19,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.scoreboard.Team;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.UUID;
 
 public class PlayerHitListener implements Listener {
     private final HideAndSeek plugin;
@@ -176,11 +178,19 @@ public class PlayerHitListener implements Listener {
 
                 if (gameStyle == GameStyleEnum.SPECTATOR) {
 
+                    Location deathLocation = player.getLocation();
+                    event.setRespawnLocation(deathLocation);
+
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         player.setGameMode(GameMode.SPECTATOR);
                         player.setHealth(20.0);
+                        player.setAllowFlight(true);
+                        player.setFlying(true);
                     }, 1L);
                 } else if (gameStyle == GameStyleEnum.INVASION) {
+
+                    Location deathLocation = player.getLocation();
+                    event.setRespawnLocation(deathLocation);
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         player.setGameMode(GameMode.SURVIVAL);
@@ -252,14 +262,30 @@ public class PlayerHitListener implements Listener {
         HideAndSeek.getDataController().removeHider(hider.getUniqueId());
         HideAndSeek.getDataController().addSeeker(hider.getUniqueId());
 
+        
+        Team seekerTeam = null;
+        for (Team team : plugin.getTeamManager().getAllTeams()) {
+            if (!plugin.getTeamManager().isSpectatorTeam(team.getName())) {
+                
+                for (UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
+                    if (seekerId.equals(hider.getUniqueId())) continue; 
 
-        var seekerTeams = plugin.getTeamManager().getAllTeams().stream()
-                .filter(t -> !plugin.getTeamManager().isSpectatorTeam(t.getName()))
-                .findFirst();
+                    Player seeker = Bukkit.getPlayer(seekerId);
+                    if (seeker != null) {
+                        String seekerTeamName = plugin.getTeamManager().getPlayerTeam(seeker);
+                        if (seekerTeamName != null && seekerTeamName.equals(team.getName())) {
+                            seekerTeam = team;
+                            break;
+                        }
+                    }
+                }
+                if (seekerTeam != null) break;
+            }
+        }
 
-        if (seekerTeams.isPresent()) {
-            plugin.getTeamManager().addPlayerToTeam(hider, seekerTeams.get().getName());
-            plugin.getLogger().info("Moved " + hider.getName() + " to seeker team: " + seekerTeams.get().getName());
+        if (seekerTeam != null) {
+            plugin.getTeamManager().addPlayerToTeam(hider, seekerTeam.getName());
+            plugin.getLogger().info("Moved " + hider.getName() + " to seeker team: " + seekerTeam.getName());
         } else {
             plugin.getLogger().warning("Could not find seeker team for eliminated hider!");
         }
@@ -289,14 +315,30 @@ public class PlayerHitListener implements Listener {
         HideAndSeek.getDataController().removeHider(hider.getUniqueId());
         HideAndSeek.getDataController().addSeeker(hider.getUniqueId());
 
+        
+        Team seekerTeam = null;
+        for (Team team : plugin.getTeamManager().getAllTeams()) {
+            if (!plugin.getTeamManager().isSpectatorTeam(team.getName())) {
+                
+                for (UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
+                    if (seekerId.equals(hider.getUniqueId())) continue; 
 
-        var seekerTeams = plugin.getTeamManager().getAllTeams().stream()
-                .filter(t -> !plugin.getTeamManager().isSpectatorTeam(t.getName()))
-                .findFirst();
+                    Player seeker = Bukkit.getPlayer(seekerId);
+                    if (seeker != null) {
+                        String seekerTeamName = plugin.getTeamManager().getPlayerTeam(seeker);
+                        if (seekerTeamName != null && seekerTeamName.equals(team.getName())) {
+                            seekerTeam = team;
+                            break;
+                        }
+                    }
+                }
+                if (seekerTeam != null) break;
+            }
+        }
 
-        if (seekerTeams.isPresent()) {
-            plugin.getTeamManager().addPlayerToTeam(hider, seekerTeams.get().getName());
-            plugin.getLogger().info("Added " + hider.getName() + " to seeker team: " + seekerTeams.get().getName());
+        if (seekerTeam != null) {
+            plugin.getTeamManager().addPlayerToTeam(hider, seekerTeam.getName());
+            plugin.getLogger().info("Added " + hider.getName() + " to seeker team: " + seekerTeam.getName());
         } else {
             plugin.getLogger().warning("Could not find seeker team for INVASION mode conversion!");
         }
@@ -309,6 +351,7 @@ public class PlayerHitListener implements Listener {
             hider.setHealth(20.0);
             hider.setFoodLevel(20);
             hider.getInventory().clear();
+            hider.getInventory().setHelmet(null);
 
 
             cleanupBlockModeHider(hider);
@@ -316,7 +359,6 @@ public class PlayerHitListener implements Listener {
 
             SeekerItems.giveItems(hider, plugin);
             SeekerItems.giveGrapplingHook(hider, plugin);
-            SeekerItems.applyMask(hider, plugin);
 
 
             var gameModeResult = plugin.getSettingService().getSetting("game.gametype");

@@ -50,6 +50,7 @@ public final class HiderItems {
     public static final String INK_FACE_ID = "has_hider_ink_face";
     public static final String INVISIBILITY_CLOAK_ITEM_ID = "has_hider_invisibility_cloak";
     public static final String SLOWNESS_BALL_ITEM_ID = "has_hider_slowness_ball";
+    public static final String SMOKE_BOMB_ITEM_ID = "has_hider_smoke_bomb";
 
     private static final Map<UUID, Integer> speedLevels = new HashMap<>();
     private static final Map<UUID, Integer> knockbackLevels = new HashMap<>();
@@ -111,6 +112,7 @@ public final class HiderItems {
         plugin.getCustomItemManager().unregisterItem(MEDKIT_ITEM_ID);
         plugin.getCustomItemManager().unregisterItem(INVISIBILITY_CLOAK_ITEM_ID);
         plugin.getCustomItemManager().unregisterItem(SLOWNESS_BALL_ITEM_ID);
+        plugin.getCustomItemManager().unregisterItem(SMOKE_BOMB_ITEM_ID);
 
         for (int level = 0; level <= 5; level++) {
             plugin.getCustomItemManager().unregisterItem(SPEED_BOOST_ITEM_ID + "_" + level);
@@ -303,6 +305,21 @@ public final class HiderItems {
                 .withCraftPrevention(true)
                 .withVanillaCooldown(slownessBallCooldown * 20)
                 .withCustomCooldown(slownessBallCooldown * 1000L)
+                .withVanillaCooldownDisplay(true)
+                .allowOffHand(false)
+                .allowArmor(false)
+                .cancelDefaultAction(true)
+                .build());
+
+        int smokeBombCooldown = plugin.getSettingRegistry().get("hider-items.smoke-bomb.cooldown", 15);
+        plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createSmokeBombItem(), SMOKE_BOMB_ITEM_ID)
+                .withAction(ItemActionType.RIGHT_CLICK_AIR, context -> throwSmokeBomb(context, plugin))
+                .withAction(ItemActionType.RIGHT_CLICK_BLOCK, context -> throwSmokeBomb(context, plugin))
+                .withDescription("Throw a smoke bomb to create cover")
+                .withDropPrevention(true)
+                .withCraftPrevention(true)
+                .withVanillaCooldown(smokeBombCooldown * 20)
+                .withCustomCooldown(smokeBombCooldown * 1000L)
                 .withVanillaCooldownDisplay(true)
                 .allowOffHand(false)
                 .allowArmor(false)
@@ -1780,6 +1797,7 @@ public final class HiderItems {
         int amplifier = plugin.getSettingRegistry().get("hider-items.slowness-ball.amplifier", 1);
 
         org.bukkit.entity.Snowball snowball = player.launchProjectile(org.bukkit.entity.Snowball.class);
+        snowball.setItem(new ItemStack(Material.ICE));
         snowball.setVelocity(snowball.getVelocity().multiply(1.5));
         snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball"), PersistentDataType.BOOLEAN, true);
         snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball_duration"), PersistentDataType.INTEGER, duration);
@@ -1800,5 +1818,54 @@ public final class HiderItems {
 
 
         Bukkit.getScheduler().runTaskLater(plugin, snowball::remove, 200L);
+    }
+
+    private static ItemStack createSmokeBombItem() {
+        ItemStack item = new ItemStack(Material.GRAY_DYE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text("Smoke Bomb", NamedTextColor.DARK_GRAY, TextDecoration.BOLD)
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.lore(List.of(
+                    Component.text("Right click to throw", NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false),
+                    Component.text("Creates a smoke cloud for cover", NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false)
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static void throwSmokeBomb(ItemInteractionContext context, HideAndSeek plugin) {
+        Player player = context.getPlayer();
+        if (!HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())) {
+            player.sendMessage(Component.text("Only hiders can use this item.", NamedTextColor.RED));
+            return;
+        }
+
+        int duration = plugin.getSettingRegistry().get("hider-items.smoke-bomb.duration", 8);
+        int radius = plugin.getSettingRegistry().get("hider-items.smoke-bomb.radius", 4);
+
+        org.bukkit.entity.Snowball smokeBomb = player.launchProjectile(org.bukkit.entity.Snowball.class);
+        smokeBomb.setItem(new ItemStack(Material.BLACK_CONCRETE_POWDER));
+        smokeBomb.setVelocity(smokeBomb.getVelocity().multiply(1.2));
+        smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb"), PersistentDataType.BOOLEAN, true);
+        smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb_duration"), PersistentDataType.INTEGER, duration);
+        smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb_radius"), PersistentDataType.INTEGER, radius);
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!smokeBomb.isValid()) {
+                    cancel();
+                    return;
+                }
+
+                smokeBomb.getWorld().spawnParticle(Particle.SMOKE, smokeBomb.getLocation(), 2, 0.1, 0.1, 0.1, 0.02);
+            }
+        }.runTaskTimer(plugin, 1L, 2L);
+
+        Bukkit.getScheduler().runTaskLater(plugin, smokeBomb::remove, 200L);
     }
 }
