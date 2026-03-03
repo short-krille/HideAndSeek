@@ -4,6 +4,7 @@
 # These must match the world names in maps.yml
 maps:
   - "map1"
+  - "map2"
 
 # NOTE: Map-specific configuration (spawn-points, allowed-blocks, world-borders, preferred-modes)
 # is saved in maps.yml. See that file for per-map settings.
@@ -144,13 +145,13 @@ settings:
       pull-power: 2.0
       slowness-duration: 3
     proximity-sensor:
-      cooldown: 5
+      cooldown: 20
       range: 8.0
       duration: 60
     cage-trap:
-      cooldown: 5
-      range: 5.0
-      duration: 60
+      cooldown: 20
+      range: 3.0
+      duration: -1
       paralyze-duration: 5
 
   loadout:

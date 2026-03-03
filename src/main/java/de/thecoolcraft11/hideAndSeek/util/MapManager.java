@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class MapManager {
-    private static final String WORKING_WORLD_PREFIX = "hid_";
+    private static final String WORKING_WORLD_PREFIX = "has_";
     private final HideAndSeek plugin;
     private final Map<String, MapData> mapDataCache;
 
@@ -120,13 +120,13 @@ public class MapManager {
         String description = section.getString("description", "");
         mapData.setDescription(description);
 
-        
+
         String author = section.getString("author");
         if (author != null && !author.isEmpty()) {
             mapData.setAuthor(author);
         }
 
-        
+
         String size = section.getString("size");
         if (size != null && !size.isEmpty()) {
             mapData.setSize(size);
@@ -180,7 +180,7 @@ public class MapManager {
             plugin.getLogger().info("Loaded " + allowedBlockStrings.size() + " allowed block patterns for map " + mapName);
         }
 
-        
+
         ConfigurationSection playersSection = section.getConfigurationSection("players");
         if (playersSection != null) {
             if (playersSection.contains("min")) {
@@ -194,7 +194,7 @@ public class MapManager {
             }
         }
 
-        
+
         ConfigurationSection seekersSection = section.getConfigurationSection("seekers");
         if (seekersSection != null) {
             if (seekersSection.contains("min")) {
@@ -208,7 +208,7 @@ public class MapManager {
             }
         }
 
-        
+
         ConfigurationSection timingsSection = section.getConfigurationSection("timings");
         if (timingsSection != null) {
             if (timingsSection.contains("hiding-time")) {
@@ -286,16 +286,32 @@ public class MapManager {
     }
 
     public World selectAndCopyMap() {
+        return selectAndCopyMap(0);
+    }
+
+    public World selectAndCopyMap(int playerCount) {
+        String selectedMap = selectRandomMapName(playerCount);
+        if (selectedMap == null || selectedMap.isEmpty()) {
+            return null;
+        }
+
+        return copyMapToWorkingWorld(selectedMap);
+    }
+
+    public String selectRandomMapName(int playerCount) {
         List<String> maps = getAvailableMapsByPreferredMode();
         if (maps.isEmpty()) {
             plugin.getLogger().warning("No maps configured in config.yml!");
             return null;
         }
 
+        if (playerCount > 0) {
+            maps = MapConfigHelper.filterMapsByPlayerCount(plugin, maps, playerCount);
+        }
+
         String selectedMap = maps.get((int) (Math.random() * maps.size()));
         plugin.getLogger().info("Selected map: " + selectedMap);
-
-        return copyMapToWorkingWorld(selectedMap);
+        return selectedMap;
     }
 
     public World copyMapToWorkingWorld(String mapName) {
@@ -372,7 +388,7 @@ public class MapManager {
                     mapData.applyWorldBorder(workingWorld, spawnWithBorder.borderIndex());
                     plugin.getLogger().info("Applied world border #" + spawnWithBorder.borderIndex() + " for spawn #" + spawnWithBorder.spawnIndex());
 
-                    
+
                     HideAndSeek.getDataController().setCurrentBorderIndex(spawnWithBorder.borderIndex());
                 } else {
                     plugin.getLogger().info("No world borders configured for this map");

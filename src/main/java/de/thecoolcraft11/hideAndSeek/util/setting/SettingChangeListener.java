@@ -17,7 +17,10 @@ public class SettingChangeListener {
             "hider-items.block-swap.cooldown",
             "hider-items.big-firecracker.cooldown",
             "hider-items.firework-rocket.cooldown",
-            "hider-items.medkit.cooldown"
+            "hider-items.medkit.cooldown",
+            "hider-items.invisibility-cloak.cooldown",
+            "hider-items.slowness-ball.cooldown",
+            "hider-items.smoke-bomb.cooldown"
     );
 
     private static final Set<String> SEEKER_COOLDOWN_KEYS = Set.of(
@@ -27,7 +30,9 @@ public class SettingChangeListener {
             "seeker-items.glowing-compass.cooldown",
             "seeker-items.curse-spell.cooldown",
             "seeker-items.block-randomizer.cooldown",
-            "seeker-items.chain-pull.cooldown"
+            "seeker-items.chain-pull.cooldown",
+            "seeker-items.proximity-sensor.cooldown",
+            "seeker-items.cage-trap.cooldown"
     );
 
     private static final Set<String> ALL_COOLDOWN_KEYS = Set.of(
@@ -41,13 +46,18 @@ public class SettingChangeListener {
             "hider-items.big-firecracker.cooldown",
             "hider-items.firework-rocket.cooldown",
             "hider-items.medkit.cooldown",
+            "hider-items.invisibility-cloak.cooldown",
+            "hider-items.slowness-ball.cooldown",
+            "hider-items.smoke-bomb.cooldown",
             "seeker-items.grappling-hook.cooldown",
             "seeker-items.ink-splash.cooldown",
             "seeker-items.lightning-freeze.cooldown",
             "seeker-items.glowing-compass.cooldown",
             "seeker-items.curse-spell.cooldown",
             "seeker-items.block-randomizer.cooldown",
-            "seeker-items.chain-pull.cooldown"
+            "seeker-items.chain-pull.cooldown",
+            "seeker-items.proximity-sensor.cooldown",
+            "seeker-items.cage-trap.cooldown"
     );
 
     private final HideAndSeek plugin;

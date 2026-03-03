@@ -1,6 +1,8 @@
 package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.util.MapConfigHelper;
+import de.thecoolcraft11.hideAndSeek.util.MapData;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
 import de.thecoolcraft11.minigameframework.game.GamePhase;
 import net.kyori.adventure.text.Component;
@@ -80,6 +82,14 @@ public class LobbyPhase implements GamePhase {
             return;
         }
 
+        String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
+        if (currentMapName == null || currentMapName.isEmpty()) {
+            String randomMapName = ((HideAndSeek) plugin).getMapManager().selectRandomMapName(Bukkit.getOnlinePlayers().size());
+            if (randomMapName != null && !randomMapName.isEmpty()) {
+                HideAndSeek.getDataController().setCurrentMapName(randomMapName);
+            }
+        }
+
         Team hidersTeam;
         Team seekersTeam;
 
@@ -91,18 +101,30 @@ public class LobbyPhase implements GamePhase {
         if (randomDistribution) {
 
             plugin.getLogger().info("Random team distribution enabled");
-            var seekerCountResult = plugin.getSettingService().getSetting("game.seeker_count");
-            Object seekerCountObj = seekerCountResult.isSuccess() ? seekerCountResult.getValue() : 1;
-            int seekerCount = (seekerCountObj instanceof Integer) ? (Integer) seekerCountObj : 1;
 
-            Random random = new Random();
-            hidersTeam = teams.get(random.nextInt(2));
-            seekersTeam = teams.get((teams.indexOf(hidersTeam) + 1) % 2);
+            
+            currentMapName = HideAndSeek.getDataController().getCurrentMapName();
+            MapData currentMapData = null;
+            if (currentMapName != null && !currentMapName.isEmpty()) {
+                currentMapData = ((HideAndSeek) plugin).getMapManager().getMapData(currentMapName);
+            }
 
+            
             List<Player> allPlayers = new ArrayList<>();
             for (Team team : teams) {
                 allPlayers.addAll(plugin.getTeamManager().getPlayersInTeam(team));
             }
+
+            
+            int seekerCount = MapConfigHelper.calculateSeekerCount(
+                    plugin,
+                    allPlayers.size(),
+                    currentMapData
+            );
+
+            Random random = new Random();
+            hidersTeam = teams.get(random.nextInt(2));
+            seekersTeam = teams.get((teams.indexOf(hidersTeam) + 1) % 2);
 
             java.util.Collections.shuffle(allPlayers);
 

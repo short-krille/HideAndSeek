@@ -57,7 +57,7 @@ public class TimerManager {
         }
 
         try {
-            Number hidingTime = plugin.getSettingRegistry().get("game.hiding_time");
+            int hidingTime = resolveHidingTime(plugin);
             String color1 = plugin.getSettingRegistry().get("timer.hiding_color1");
             String color2 = plugin.getSettingRegistry().get("timer.hiding_color2");
             Object animationTypeObj = plugin.getSettingRegistry().get("timer.animation_type");
@@ -75,8 +75,8 @@ public class TimerManager {
                     .color1(color1)
                     .color2(color2)
                     .countingUp(false)
-                    .maxTime(hidingTime.longValue())
-                    .initialTime(hidingTime.longValue())
+                    .maxTime(hidingTime)
+                    .initialTime(hidingTime)
                     .visible(true)
                     .showName(false)
                     .animationType(animationType)
@@ -126,7 +126,7 @@ public class TimerManager {
         }
 
         try {
-            Number seekingTime = plugin.getSettingRegistry().get("game.seeking_time");
+            int seekingTime = resolveSeekingTime(plugin);
             String color1 = plugin.getSettingRegistry().get("timer.seeking_color1");
             String color2 = plugin.getSettingRegistry().get("timer.seeking_color2");
             Object animationTypeObj = plugin.getSettingRegistry().get("timer.animation_type");
@@ -144,8 +144,8 @@ public class TimerManager {
                     .color1(color1)
                     .color2(color2)
                     .countingUp(false)
-                    .maxTime(seekingTime.longValue())
-                    .initialTime(seekingTime.longValue())
+                    .maxTime(seekingTime)
+                    .initialTime(seekingTime)
                     .visible(true)
                     .showName(false)
                     .animationType(animationType)
@@ -188,8 +188,7 @@ public class TimerManager {
 
 
     private static void startHidingTimerFallback(HideAndSeek plugin) {
-        Number hidingTime = plugin.getSettingRegistry().get("game.hiding_time");
-        int timeRemaining = hidingTime.intValue();
+        int timeRemaining = resolveHidingTime(plugin);
 
         new BukkitRunnable() {
             int time = timeRemaining;
@@ -214,8 +213,7 @@ public class TimerManager {
     }
 
     private static void startSeekingTimerFallback(HideAndSeek plugin) {
-        Number seekingTime = plugin.getSettingRegistry().get("game.seeking_time");
-        int timeRemaining = seekingTime.intValue();
+        int timeRemaining = resolveSeekingTime(plugin);
 
         new BukkitRunnable() {
             int time = timeRemaining;
@@ -243,5 +241,17 @@ public class TimerManager {
                 return String.format("%d:%02d", minutes, secs);
             }
         }.runTaskTimer(plugin, 0L, 20L);
+    }
+
+    private static int resolveHidingTime(HideAndSeek plugin) {
+        String mapName = HideAndSeek.getDataController().getCurrentMapName();
+        MapData mapData = (mapName == null || mapName.isEmpty()) ? null : plugin.getMapManager().getMapData(mapName);
+        return MapConfigHelper.getHidingTime(plugin, mapData);
+    }
+
+    private static int resolveSeekingTime(HideAndSeek plugin) {
+        String mapName = HideAndSeek.getDataController().getCurrentMapName();
+        MapData mapData = (mapName == null || mapName.isEmpty()) ? null : plugin.getMapManager().getMapData(mapName);
+        return MapConfigHelper.getSeekingTime(plugin, mapData);
     }
 }

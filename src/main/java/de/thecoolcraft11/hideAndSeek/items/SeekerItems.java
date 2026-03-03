@@ -32,6 +32,7 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.*;
@@ -176,7 +177,7 @@ public final class SeekerItems {
                 .allowOffHand(false)
                 .allowArmor(false)
                 .build());
-        int proximityCooldown = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.cooldown", 5);
+        int proximityCooldown = plugin.getSettingRegistry().get("seeker-items.proximity-sensor.cooldown", 20);
         plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createProximitySensorItem(), PROXIMITY_SENSOR_ITEM_ID)
                 .withAction(ItemActionType.RIGHT_CLICK_BLOCK, context -> placeProximitySensor(context, plugin))
                 .withDescription("Place a proximity sensor")
@@ -190,7 +191,7 @@ public final class SeekerItems {
                 .cancelDefaultAction(true)
                 .build());
 
-        int cageCooldown = plugin.getSettingRegistry().get("seeker-items.cage-trap.cooldown", 5);
+        int cageCooldown = plugin.getSettingRegistry().get("seeker-items.cage-trap.cooldown", 20);
         plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createCageTrapItem(), CAGE_TRAP_ITEM_ID)
                 .withAction(ItemActionType.RIGHT_CLICK_BLOCK, context -> placeCageTrap(context, plugin))
                 .withDescription("Place an invisible cage trap")
@@ -1360,18 +1361,68 @@ public final class SeekerItems {
 
     private static void placeCageTrap(ItemInteractionContext context, HideAndSeek plugin) {
         Location location = context.getLocation().clone().add(0.5, 1, 0.5);
-        double range = plugin.getSettingRegistry().get("seeker-items.cage-trap.range", 5.0);
+        double range = plugin.getSettingRegistry().get("seeker-items.cage-trap.range", 3.0);
         int paralyzeDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.paralyze-duration", 5);
-        int trapDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.duration", 60);
-        int setupTime = 5;
+        int trapDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.duration", -1);
+        int setupTime = plugin.getSettingRegistry().get("seeker-items.cage-trap.setup-time", 5);
 
-
-        BlockDisplay cageDisplay = location.getWorld().spawn(location, BlockDisplay.class, display -> {
-            display.setBlock(Material.IRON_BARS.createBlockData());
+        ItemDisplay[] trapIndicators = new ItemDisplay[3];
+        Location indicatorLoc = location.clone().add(0, 0, 0);
+        ItemDisplay trapIndicator1 = indicatorLoc.getWorld().spawn(indicatorLoc, ItemDisplay.class, display -> {
+            ItemStack ironBars = new ItemStack(Material.IRON_BARS);
+            display.setItemStack(ironBars);
             display.setVisibleByDefault(false);
-            display.getPersistentDataContainer().set(new NamespacedKey(plugin, "cage_trap"), PersistentDataType.BOOLEAN, true);
+            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+            display.setTransformation(new Transformation(
+                    new Vector3f(0, 0, 0),
+                    new AxisAngle4f((float) Math.toRadians(90), 1, 0, 0),
+                    new Vector3f(1.2f, 1.2f, 1.2f),
+                    new AxisAngle4f(0, 0, 0, 0)
+            ));
+            display.getPersistentDataContainer().set(new NamespacedKey(plugin, "cage_trap_indicator"), PersistentDataType.BOOLEAN, true);
         });
 
+        ItemDisplay trapIndicator2 = indicatorLoc.getWorld().spawn(indicatorLoc, ItemDisplay.class, display -> {
+            ItemStack ironBars = new ItemStack(Material.IRON_BARS);
+            display.setItemStack(ironBars);
+            display.setVisibleByDefault(false);
+            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+            display.setTransformation(new Transformation(
+                    new Vector3f(0f, 0.001f, 0f),
+                    new Quaternionf(0.5f, -0.5f, 0.5f, 0.5f),
+                    new Vector3f(1.2f, 1.2f, 1.2f),
+                    new Quaternionf(0, 0, 0, 1)
+            ));
+
+            display.getPersistentDataContainer().set(new NamespacedKey(plugin, "cage_trap_indicator"), PersistentDataType.BOOLEAN, true);
+        });
+
+        ItemDisplay trapIndicator3 = indicatorLoc.getWorld().spawn(indicatorLoc, ItemDisplay.class, display -> {
+            ItemStack ironBars = new ItemStack(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
+            display.setItemStack(ironBars);
+            display.setVisibleByDefault(false);
+            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+            display.setTransformation(new Transformation(
+                    new Vector3f(0f, 0.28f, 0f),
+                    new AxisAngle4f((float) Math.toRadians(90), 0, 1, 0),
+                    new Vector3f(1.2f, 1.2f, 1.2f),
+                    new AxisAngle4f(0, 0, 0, 0)
+            ));
+
+        });
+
+        trapIndicators[0] = trapIndicator1;
+        trapIndicators[1] = trapIndicator2;
+        trapIndicators[2] = trapIndicator3;
+
+        for (UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
+            Player seeker = Bukkit.getPlayer(seekerId);
+            if (seeker != null && seeker.isOnline()) {
+                for (ItemDisplay indicator : trapIndicators) {
+                    seeker.showEntity(plugin, indicator);
+                }
+            }
+        }
 
         new BukkitRunnable() {
             final long startTime = System.currentTimeMillis();
@@ -1384,24 +1435,23 @@ public final class SeekerItems {
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 long setupTimeMs = setupTime * 1000L;
 
-
                 if (!readyToTrigger && elapsedTime >= setupTimeMs) {
                     readyToTrigger = true;
                 }
 
-                if (!cageDisplay.isValid() || (trapDuration != -1 && elapsedTime > durationMs)) {
-                    if (cageDisplay.isValid()) {
-                        cageDisplay.remove();
+                if (trapDuration != -1 && elapsedTime > durationMs) {
+                    for (ItemDisplay trapIndicator : trapIndicators) {
+                        if (trapIndicator != null && trapIndicator.isValid()) {
+                            trapIndicator.remove();
+                        }
                     }
                     cancel();
                     return;
                 }
 
-
                 if (!readyToTrigger) {
                     return;
                 }
-
 
                 for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
                     Player hider = Bukkit.getPlayer(hiderId);
@@ -1412,6 +1462,13 @@ public final class SeekerItems {
                     if (distance < range && !triggered) {
                         triggered = true;
                         triggerCageTrap(hider, plugin, paralyzeDuration);
+                        for (ItemDisplay trapIndicator : trapIndicators) {
+                            if (trapIndicator != null && trapIndicator.isValid()) {
+                                trapIndicator.remove();
+                            }
+                        }
+                        cancel();
+                        return;
                     }
                 }
             }
@@ -1421,67 +1478,61 @@ public final class SeekerItems {
         context.getPlayer().sendMessage(Component.text("Cage trap placed! (Ready in 5s, lasts " + durationMsg + ")", NamedTextColor.GREEN));
     }
 
-    private static void triggerCageTrap(Player hider, HideAndSeek plugin,
-                                        int paralyzeDuration) {
-        Location hiderLoc = hider.getLocation();
+    private static void triggerCageTrap(Player hider, HideAndSeek plugin, int paralyzeDuration) {
 
+        Location hiderLoc = hider.getLocation().getBlock().getLocation().add(0.5, 0, 0.5);
+        hider.teleport(hiderLoc);
 
         int cageSize = 3;
         int halfSize = cageSize / 2;
 
-        for (int x = -halfSize; x <= halfSize; x++) {
-            for (int y = 0; y < 3; y++) {
+        for (int y = 0; y < 3; y++) {
+            for (int x = -halfSize; x <= halfSize; x++) {
                 for (int z = -halfSize; z <= halfSize; z++) {
+
                     boolean isEdge = Math.abs(x) == halfSize || Math.abs(z) == halfSize;
-                    boolean isFloor = y == 0;
-                    boolean isCeiling = y == 2;
+                    boolean isFloor = (y == 0);
+                    boolean isCeiling = (y == 2);
 
 
                     if (isEdge || isFloor || isCeiling) {
-                        Location blockLoc = hiderLoc.clone().add(x, y, z);
+                        Location blockLoc = hiderLoc.clone().add(x, y, z).getBlock().getLocation();
                         Material blockMaterial;
 
 
-                        if (isEdge && !isFloor && !isCeiling) {
+                        if (isEdge) {
                             blockMaterial = Material.IRON_BARS;
                         } else {
                             blockMaterial = Material.BARRIER;
                         }
 
+                        final int fx = x;
+                        final int fz = z;
+
                         BlockDisplay blockDisplay = blockLoc.getWorld().spawn(blockLoc, BlockDisplay.class, display -> {
                             org.bukkit.block.data.BlockData blockData = blockMaterial.createBlockData();
 
 
-                            if (blockMaterial == Material.IRON_BARS) {
-                                if (blockData instanceof org.bukkit.block.data.type.Fence bars) {
-
-                                    bars.setFace(org.bukkit.block.BlockFace.NORTH, true);
-                                    bars.setFace(org.bukkit.block.BlockFace.SOUTH, true);
-                                    bars.setFace(org.bukkit.block.BlockFace.EAST, true);
-                                    bars.setFace(org.bukkit.block.BlockFace.WEST, true);
-                                }
+                            if (blockData instanceof org.bukkit.block.data.type.Fence bars) {
+                                bars.setFace(org.bukkit.block.BlockFace.NORTH, isCageBar(fx, fz - 1, halfSize));
+                                bars.setFace(org.bukkit.block.BlockFace.SOUTH, isCageBar(fx, fz + 1, halfSize));
+                                bars.setFace(org.bukkit.block.BlockFace.EAST, isCageBar(fx + 1, fz, halfSize));
+                                bars.setFace(org.bukkit.block.BlockFace.WEST, isCageBar(fx - 1, fz, halfSize));
                             }
 
                             display.setBlock(blockData);
                             display.setVisibleByDefault(false);
 
-
-                            if (blockMaterial == Material.IRON_BARS) {
-                                display.setTransformation(new org.bukkit.util.Transformation(
-                                        new org.joml.Vector3f(0, 0, 0),
-                                        new org.joml.AxisAngle4f(0, 0, 0, 1),
-                                        new org.joml.Vector3f(1, 1, 1),
-                                        new org.joml.AxisAngle4f(0, 0, 0, 1)
-                                ));
-                            }
+                            display.setTransformation(new Transformation(
+                                    new Vector3f(0, 0, 0),
+                                    new AxisAngle4f(0, 0, 0, 0),
+                                    new Vector3f(1, 1, 1),
+                                    new AxisAngle4f(0, 0, 0, 0)
+                            ));
                         });
 
 
-                        for (Player p : Bukkit.getOnlinePlayers()) {
-                            if (p.getUniqueId().equals(hider.getUniqueId())) {
-                                p.showEntity(plugin, blockDisplay);
-                            }
-                        }
+                        hider.showEntity(plugin, blockDisplay);
 
 
                         Bukkit.getScheduler().runTaskLater(plugin, blockDisplay::remove, paralyzeDuration * 20L);
@@ -1491,13 +1542,14 @@ public final class SeekerItems {
         }
 
 
+        hider.setVelocity(new Vector(0, 0, 0));
+
+
         hider.addPotionEffect(new PotionEffect(
                 PotionEffectType.SLOWNESS,
                 paralyzeDuration * 20,
                 10,
-                false,
-                false,
-                false
+                false, false, false
         ));
 
 
@@ -1505,13 +1557,16 @@ public final class SeekerItems {
                 PotionEffectType.JUMP_BOOST,
                 paralyzeDuration * 20,
                 250,
-                false,
-                false,
-                false
+                false, false, false
         ));
 
         hider.sendMessage(Component.text("You've been trapped by a cage!", NamedTextColor.DARK_RED));
-        hider.playSound(hider.getLocation(), Sound.BLOCK_IRON_DOOR_CLOSE, 1.0f, 0.8f);
+        hider.playSound(hiderLoc, Sound.BLOCK_IRON_DOOR_CLOSE, 1.0f, 0.8f);
+        hider.playSound(hiderLoc, Sound.BLOCK_CHAIN_PLACE, 1.0f, 1.2f);
+    }
+
+    private static boolean isCageBar(int x, int z, int halfSize) {
+        return (Math.abs(x) == halfSize || Math.abs(z) == halfSize);
     }
 
     private static void applyProximitySensorGlow(Player hider, HideAndSeek plugin) {
@@ -1640,7 +1695,6 @@ public final class SeekerItems {
             case SOUTH -> new Vector(0, 0, 1);
             case EAST -> new Vector(1, 0, 0);
             case WEST -> new Vector(-1, 0, 0);
-            case UP -> new Vector(0, 1, 0);
             case DOWN -> new Vector(0, -1, 0);
             default -> new Vector(0, 1, 0);
         };

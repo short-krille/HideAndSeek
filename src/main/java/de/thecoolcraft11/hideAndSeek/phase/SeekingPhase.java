@@ -45,14 +45,7 @@ public class SeekingPhase implements GamePhase {
 
         TimerManager.cleanupTimers(hideAndSeekPlugin);
 
-        var seekingTimeResult = plugin.getSettingService().getSetting("game.seeking_time");
-        Object seekingTimeObj = seekingTimeResult.isSuccess() ? seekingTimeResult.getValue() : 300;
-        int timeRemaining = (seekingTimeObj instanceof Integer) ? (Integer) seekingTimeObj : 300;
-
-        plugin.getLogger().info("Seeking phase started - " + timeRemaining + " seconds");
-
-        
-        World gameWorld = Bukkit.getWorld("hid_" + HideAndSeek.getDataController().getCurrentMapName());
+        World gameWorld = Bukkit.getWorld("has_" + HideAndSeek.getDataController().getCurrentMapName());
         if (gameWorld != null) {
             String mapName = HideAndSeek.getDataController().getCurrentMapName();
             de.thecoolcraft11.hideAndSeek.util.MapData mapData = hideAndSeekPlugin.getMapManager().getMapData(mapName);
@@ -60,7 +53,7 @@ public class SeekingPhase implements GamePhase {
             int borderIndex = HideAndSeek.getDataController().getCurrentBorderIndex();
 
             if (mapData != null && !mapData.getWorldBorders().isEmpty() && borderIndex >= 0) {
-                
+
                 mapData.applyWorldBorder(gameWorld, borderIndex);
                 plugin.getLogger().info("Re-applied world border #" + borderIndex + " for seeking phase on map: " + mapName);
             } else if (borderIndex < 0) {

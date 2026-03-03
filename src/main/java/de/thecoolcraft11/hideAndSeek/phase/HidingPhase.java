@@ -4,6 +4,8 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
 import de.thecoolcraft11.hideAndSeek.util.GameModeEnum;
+import de.thecoolcraft11.hideAndSeek.util.MapConfigHelper;
+import de.thecoolcraft11.hideAndSeek.util.MapData;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
 import de.thecoolcraft11.minigameframework.game.GamePhase;
@@ -55,7 +57,7 @@ public class HidingPhase implements GamePhase {
         } else {
 
             plugin.getLogger().info("No specific map selected, choosing random map");
-            gameWorld = hideAndSeekPlugin.getMapManager().selectAndCopyMap();
+            gameWorld = hideAndSeekPlugin.getMapManager().selectAndCopyMap(Bukkit.getOnlinePlayers().size());
 
 
             if (gameWorld != null) {
@@ -73,12 +75,15 @@ public class HidingPhase implements GamePhase {
         }
 
 
-        var hidingTimeResult = plugin.getSettingService().getSetting("game.hiding_time");
-        Object hidingTimeObj = hidingTimeResult.isSuccess() ? hidingTimeResult.getValue() : 60;
-        int timeRemaining = (hidingTimeObj instanceof Integer) ? (Integer) hidingTimeObj : 60;
+        
+        String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
+        MapData currentMapData = null;
+        if (currentMapName != null && !currentMapName.isEmpty()) {
+            currentMapData = hideAndSeekPlugin.getMapManager().getMapData(currentMapName);
+        }
 
-        plugin.getLogger().info("Hiding time setting retrieved: " + hidingTimeObj + " (type: " +
-                (hidingTimeObj != null ? hidingTimeObj.getClass().getSimpleName() : "null") + ")");
+        
+        int timeRemaining = MapConfigHelper.getHidingTime(plugin, currentMapData);
         plugin.getLogger().info("Hiding phase started - " + timeRemaining + " seconds");
 
 
@@ -105,7 +110,6 @@ public class HidingPhase implements GamePhase {
 
 
         if (gameMode == GameModeEnum.BLOCK) {
-            String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
 
             for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
                 if (HideAndSeek.getDataController().getChosenBlock(hiderId) == null) {

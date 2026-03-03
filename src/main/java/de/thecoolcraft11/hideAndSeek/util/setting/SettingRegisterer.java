@@ -205,14 +205,15 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.seeker-items.chain-pull.range", Double.class, 30.0);
         plugin.getConfigRegistry().register("settings.seeker-items.chain-pull.pull-power", Double.class, 2.0);
         plugin.getConfigRegistry().register("settings.seeker-items.chain-pull.slowness-duration", Integer.class, 3);
-        plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.cooldown", Integer.class, 5);
+        plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.cooldown", Integer.class, 20);
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.range", Double.class, 8.0);
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.duration", Integer.class, 60);
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.fov-angle", Double.class, 90.0);
-        plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.cooldown", Integer.class, 5);
-        plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.range", Double.class, 5.0);
-        plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.duration", Integer.class, 60);
+        plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.cooldown", Integer.class, 20);
+        plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.range", Double.class, 3.0);
+        plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.duration", Integer.class, -1);
         plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.paralyze-duration", Integer.class, 5);
+        plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.setup-time", Integer.class, 5);
 
 
         plugin.getConfigRegistry().register("settings.loadout.hider-max-items", Integer.class, 3);
@@ -233,7 +234,7 @@ public class SettingRegisterer {
         plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items").icon(Material.PLAYER_HEAD).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("timer").icon(Material.CLOCK).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items").icon(Material.ENDER_EYE).build());
-        plugin.getSectionRegistry().register(SectionDefinition.builder("loadout").icon(Material.CHEST).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("loadout").icon(Material.ARMOR_STAND).build());
     }
 
     public static void registerSettings(HideAndSeek plugin) {
@@ -918,7 +919,7 @@ public class SettingRegisterer {
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.proximity-sensor.cooldown", SettingType.INTEGER, Integer.class)
-                .defaultValue(getConfigValue(plugin, "seeker-items.proximity-sensor.cooldown", 5))
+                .defaultValue(getConfigValue(plugin, "seeker-items.proximity-sensor.cooldown", 20))
                 .range(0, 60)
                 .description("Cooldown for proximity sensor in seconds")
                 .customIcon(Material.REDSTONE_TORCH)
@@ -946,21 +947,21 @@ public class SettingRegisterer {
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.cooldown", SettingType.INTEGER, Integer.class)
-                .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.cooldown", 5))
+                .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.cooldown", 20))
                 .range(0, 60)
                 .description("Cooldown for cage trap in seconds")
                 .customIcon(Material.IRON_BARS)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.range", SettingType.DOUBLE, Double.class)
-                .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.range", 5.0))
+                .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.range", 3.0))
                 .rangeDouble(1.0, 50.0)
                 .description("Trigger range for cage trap")
                 .customIcon(Material.IRON_BARS)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.duration", SettingType.INTEGER, Integer.class)
-                .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.duration", 60))
+                .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.duration", -1))
                 .range(-1, 600)
                 .description("Duration of cage trap in seconds (-1 = until round ends)")
                 .customIcon(Material.IRON_BARS)
@@ -970,6 +971,13 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.paralyze-duration", 5))
                 .range(1, 60)
                 .description("Duration of paralyze effect when trapped in seconds")
+                .customIcon(Material.IRON_BARS)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.setup-time", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.setup-time", 5))
+                .range(0, 60)
+                .description("Time in seconds the cage trap takes to set up before it can trap a player")
                 .customIcon(Material.IRON_BARS)
                 .build());
 
