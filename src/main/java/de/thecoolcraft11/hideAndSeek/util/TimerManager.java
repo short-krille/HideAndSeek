@@ -1,6 +1,8 @@
 package de.thecoolcraft11.hideAndSeek.util;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.util.map.MapConfigHelper;
+import de.thecoolcraft11.hideAndSeek.util.map.MapData;
 import de.thecoolcraft11.timer.AnimationType;
 import de.thecoolcraft11.timer.MultiTimerManager.TimerType;
 import de.thecoolcraft11.timer.TimerInstance;

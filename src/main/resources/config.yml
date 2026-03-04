@@ -51,6 +51,49 @@ settings:
     auto_cleanup_after_round: true
     small_mode_seeker_size: 1.0
 
+  points:
+    tracking:
+      interval-seconds: 1
+    hider:
+      survival:
+        amount: 5
+        interval-seconds: 20
+        start-delay-seconds: 20
+      proximity:
+        amount-per-second: 2
+        range: 8.0
+      near-miss:
+        amount: 50
+        range: 3.0
+        escape-seconds: 4
+      taunt:
+        small: 25
+        large: 75
+      sharpshooter:
+        amount: 20
+      survivor:
+        amount: 100
+      special:
+        ghost: 200
+        distractor: 200
+    seeker:
+      active-hunter:
+        amount-per-second: 2
+        range: 16.0
+      utility-success:
+        amount: 40
+      interception:
+        amount: 15
+      kill:
+        amount: 300
+      assist:
+        amount: 100
+        range: 16.0
+      special:
+        bloodhound: 200
+      first-blood:
+        amount: 100
+
   blockstats:
     show-names: false
 
@@ -108,14 +151,6 @@ settings:
       cooldown: 10
       duration: 6
       amplifier: 1
-
-  timer:
-    hiding_color1: "#FF0000"
-    hiding_color2: "#0000FF"
-    seeking_color1: "#FFFF00"
-    seeking_color2: "#00FFFF"
-    animation_type: "WAVE"
-    animation_speed: 0.5
 
   seeker-items:
     grappling-hook:

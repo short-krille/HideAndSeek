@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek.items;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.gui.BlockStatsGUI;
 import de.thecoolcraft11.hideAndSeek.listener.HiderEquipmentChangeListener;
+import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
 import de.thecoolcraft11.minigameframework.items.ItemInteractionContext;
@@ -620,6 +621,9 @@ public final class SeekerItems {
             if (!HideAndSeek.getDataController().getHiders().contains(hider.getUniqueId())) continue;
             if (hider.getLocation().distance(seeker.getLocation()) > radius) continue;
 
+            plugin.getPointService().award(seeker.getUniqueId(), PointAction.SEEKER_UTILITY_SUCCESS);
+            plugin.getPointService().markUtilitySpotted(hider.getUniqueId());
+
             ItemStack previous = hider.getInventory().getHelmet();
             inkHelmetBackup.put(hider.getUniqueId(), previous);
             HiderItems.applyMask(hider, plugin);
@@ -651,6 +655,9 @@ public final class SeekerItems {
         for (Player hider : Bukkit.getOnlinePlayers()) {
             if (!HideAndSeek.getDataController().getHiders().contains(hider.getUniqueId())) continue;
             if (!hider.getWorld().equals(seeker.getWorld())) continue;
+
+            plugin.getPointService().award(seeker.getUniqueId(), PointAction.SEEKER_UTILITY_SUCCESS);
+            plugin.getPointService().markUtilitySpotted(hider.getUniqueId());
 
             hider.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, duration * 20, 10, false, false));
             hider.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, duration * 20, 250, false, false));
@@ -688,6 +695,8 @@ public final class SeekerItems {
 
         if (nearest != null) {
             applyGlowEffect(nearest, duration, plugin);
+            plugin.getPointService().award(seeker.getUniqueId(), PointAction.SEEKER_UTILITY_SUCCESS);
+            plugin.getPointService().markUtilitySpotted(nearest.getUniqueId());
             seeker.sendMessage(Component.text(nearest.getName() + " is now glowing!", NamedTextColor.GOLD));
         } else {
             seeker.sendMessage(Component.text("No hiders found nearby!", NamedTextColor.RED));
@@ -1318,6 +1327,8 @@ public final class SeekerItems {
 
                         if (!glowingHiders.containsKey(hiderId)) {
                             applyProximitySensorGlow(hider, plugin);
+                            plugin.getPointService().award(context.getPlayer().getUniqueId(), PointAction.SEEKER_UTILITY_SUCCESS);
+                            plugin.getPointService().markUtilitySpotted(hiderId);
                         }
                         glowingHiders.put(hiderId, System.currentTimeMillis());
                     }

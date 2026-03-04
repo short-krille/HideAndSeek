@@ -225,6 +225,32 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.loadout.token-cost-rare", Integer.class, 4);
         plugin.getConfigRegistry().register("settings.loadout.token-cost-epic", Integer.class, 6);
         plugin.getConfigRegistry().register("settings.loadout.token-cost-legendary", Integer.class, 10);
+
+        plugin.getConfigRegistry().register("settings.points.tracking.interval-seconds", Integer.class, 1);
+        plugin.getConfigRegistry().register("settings.points.hider.survival.amount", Integer.class, 5);
+        plugin.getConfigRegistry().register("settings.points.hider.survival.interval-seconds", Integer.class, 20);
+        plugin.getConfigRegistry().register("settings.points.hider.survival.start-delay-seconds", Integer.class, 20);
+        plugin.getConfigRegistry().register("settings.points.hider.proximity.amount-per-second", Integer.class, 2);
+        plugin.getConfigRegistry().register("settings.points.hider.proximity.range", Double.class, 8.0);
+        plugin.getConfigRegistry().register("settings.points.hider.near-miss.amount", Integer.class, 50);
+        plugin.getConfigRegistry().register("settings.points.hider.near-miss.range", Double.class, 3.0);
+        plugin.getConfigRegistry().register("settings.points.hider.near-miss.escape-seconds", Integer.class, 4);
+        plugin.getConfigRegistry().register("settings.points.hider.taunt.small", Integer.class, 25);
+        plugin.getConfigRegistry().register("settings.points.hider.taunt.large", Integer.class, 75);
+        plugin.getConfigRegistry().register("settings.points.hider.sharpshooter.amount", Integer.class, 20);
+        plugin.getConfigRegistry().register("settings.points.hider.survivor.amount", Integer.class, 100);
+        plugin.getConfigRegistry().register("settings.points.hider.special.ghost", Integer.class, 200);
+        plugin.getConfigRegistry().register("settings.points.hider.special.distractor", Integer.class, 200);
+
+        plugin.getConfigRegistry().register("settings.points.seeker.active-hunter.amount-per-second", Integer.class, 2);
+        plugin.getConfigRegistry().register("settings.points.seeker.active-hunter.range", Double.class, 16.0);
+        plugin.getConfigRegistry().register("settings.points.seeker.utility-success.amount", Integer.class, 40);
+        plugin.getConfigRegistry().register("settings.points.seeker.interception.amount", Integer.class, 15);
+        plugin.getConfigRegistry().register("settings.points.seeker.kill.amount", Integer.class, 300);
+        plugin.getConfigRegistry().register("settings.points.seeker.assist.amount", Integer.class, 100);
+        plugin.getConfigRegistry().register("settings.points.seeker.assist.range", Double.class, 16.0);
+        plugin.getConfigRegistry().register("settings.points.seeker.special.bloodhound", Integer.class, 200);
+        plugin.getConfigRegistry().register("settings.points.seeker.first-blood.amount", Integer.class, 100);
     }
 
 
@@ -1045,6 +1071,173 @@ public class SettingRegisterer {
                 .customIcon(Material.NETHERITE_BLOCK)
                 .build());
 
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.tracking.interval-seconds", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.tracking.interval-seconds", 1))
+                .range(1, 5)
+                .description("Global update interval for dynamic point tracking")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.survival.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.survival.amount", 5))
+                .range(0, 1000)
+                .description("Points awarded per hider survival tick")
+                .customIcon(Material.EMERALD)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.survival.interval-seconds", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.survival.interval-seconds", 20))
+                .range(1, 300)
+                .description("Seconds between hider survival tick awards")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.survival.start-delay-seconds", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.survival.start-delay-seconds", 20))
+                .range(0, 300)
+                .description("Delay before first hider survival tick award")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.proximity.amount-per-second", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.proximity.amount-per-second", 2))
+                .range(0, 1000)
+                .description("Points per second for hiders near seekers")
+                .customIcon(Material.SCULK_SENSOR)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.proximity.range", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.proximity.range", 8.0))
+                .rangeDouble(1.0, 64.0)
+                .description("Range for hider proximity bonus")
+                .customIcon(Material.COMPASS)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.near-miss.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.near-miss.amount", 50))
+                .range(0, 1000)
+                .description("Points for escaping a near miss")
+                .customIcon(Material.TOTEM_OF_UNDYING)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.near-miss.range", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.near-miss.range", 3.0))
+                .rangeDouble(0.5, 16.0)
+                .description("Distance that counts as near-miss danger")
+                .customIcon(Material.PLAYER_HEAD)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.near-miss.escape-seconds", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.near-miss.escape-seconds", 4))
+                .range(1, 60)
+                .description("Seconds to survive after leaving near-miss danger")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.taunt.small", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.taunt.small", 25))
+                .range(0, 1000)
+                .description("Points for small hider taunts")
+                .customIcon(Material.CAT_SPAWN_EGG)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.taunt.large", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.taunt.large", 75))
+                .range(0, 2000)
+                .description("Points for large hider taunts")
+                .customIcon(Material.FIREWORK_ROCKET)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.sharpshooter.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.sharpshooter.amount", 20))
+                .range(0, 1000)
+                .description("Points for each hider crossbow hit")
+                .customIcon(Material.CROSSBOW)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.survivor.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.survivor.amount", 100))
+                .range(0, 2000)
+                .description("Round-end points for surviving hiders")
+                .customIcon(Material.SHIELD)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.special.ghost", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.special.ghost", 200))
+                .range(0, 5000)
+                .description("Special bonus for never being utility-spotted")
+                .customIcon(Material.GHAST_TEAR)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.special.distractor", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.hider.special.distractor", 200))
+                .range(0, 5000)
+                .description("Special bonus for most hider proximity time")
+                .customIcon(Material.BELL)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.active-hunter.amount-per-second", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.active-hunter.amount-per-second", 2))
+                .range(0, 1000)
+                .description("Points per second for seekers near hiders")
+                .customIcon(Material.IRON_SWORD)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.active-hunter.range", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.active-hunter.range", 16.0))
+                .rangeDouble(1.0, 64.0)
+                .description("Range for active hunter points")
+                .customIcon(Material.COMPASS)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.utility-success.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.utility-success.amount", 40))
+                .range(0, 2000)
+                .description("Points for successful seeker utility usage")
+                .customIcon(Material.ENDER_EYE)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.interception.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.interception.amount", 15))
+                .range(0, 1000)
+                .description("Points for damaging a hider without killing")
+                .customIcon(Material.IRON_SWORD)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.kill.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.kill.amount", 300))
+                .range(0, 5000)
+                .description("Points for eliminating a hider")
+                .customIcon(Material.NETHERITE_SWORD)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.assist.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.assist.amount", 100))
+                .range(0, 5000)
+                .description("Points for assist on hider elimination")
+                .customIcon(Material.CHAINMAIL_CHESTPLATE)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.assist.range", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.assist.range", 16.0))
+                .rangeDouble(1.0, 64.0)
+                .description("Assist range when another seeker gets the kill")
+                .customIcon(Material.COMPASS)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.special.bloodhound", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.special.bloodhound", 200))
+                .range(0, 5000)
+                .description("Special bonus for most captures")
+                .customIcon(Material.WOLF_SPAWN_EGG)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.first-blood.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.first-blood.amount", 100))
+                .range(0, 5000)
+                .description("Bonus for first kill of the round")
+                .customIcon(Material.REDSTONE)
+                .build());
     }
 
     private static ItemStack setEnchanted(Material material, boolean enchanted) {

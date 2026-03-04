@@ -45,6 +45,8 @@ public class EndedPhase implements GamePhase {
             }
         }
 
+        hideAndSeekPlugin.getPointService().awardRoundEndBonuses(activeHiders);
+
         boolean hidersWin = !activeHiders.isEmpty();
 
         announceWinner(plugin, hidersWin);
@@ -276,4 +278,3 @@ public class EndedPhase implements GamePhase {
         return false;
     }
 }
-

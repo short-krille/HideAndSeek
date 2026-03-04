@@ -4,9 +4,10 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
 import de.thecoolcraft11.hideAndSeek.util.GameModeEnum;
-import de.thecoolcraft11.hideAndSeek.util.MapConfigHelper;
-import de.thecoolcraft11.hideAndSeek.util.MapData;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
+import de.thecoolcraft11.hideAndSeek.util.map.MapConfigHelper;
+import de.thecoolcraft11.hideAndSeek.util.map.MapData;
+import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
 import de.thecoolcraft11.minigameframework.game.GamePhase;
 import net.kyori.adventure.text.Component;
@@ -43,6 +44,7 @@ public class HidingPhase implements GamePhase {
     public void onStart(MinigameFramework plugin) {
 
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
+        hideAndSeekPlugin.getPointService().resetRoundState();
 
         TimerManager.cleanupTimers(hideAndSeekPlugin);
 
@@ -75,14 +77,13 @@ public class HidingPhase implements GamePhase {
         }
 
 
-        
         String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
         MapData currentMapData = null;
         if (currentMapName != null && !currentMapName.isEmpty()) {
             currentMapData = hideAndSeekPlugin.getMapManager().getMapData(currentMapName);
         }
 
-        
+
         int timeRemaining = MapConfigHelper.getHidingTime(plugin, currentMapData);
         plugin.getLogger().info("Hiding phase started - " + timeRemaining + " seconds");
 
@@ -396,9 +397,9 @@ public class HidingPhase implements GamePhase {
     }
 
     private void startHiderPointsTask(MinigameFramework plugin) {
-        var hiderPointsResult = plugin.getSettingService().getSetting("game.hider-points");
-        Object hiderPointsObj = hiderPointsResult.isSuccess() ? hiderPointsResult.getValue() : 1;
-        int hiderPoints = (hiderPointsObj instanceof Integer) ? (Integer) hiderPointsObj : 1;
+        HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
+        int startDelaySeconds = Math.max(0, hideAndSeekPlugin.getPointService().getInt("points.hider.survival.start-delay-seconds", 20));
+        int intervalSeconds = Math.max(1, hideAndSeekPlugin.getPointService().getInt("points.hider.survival.interval-seconds", 20));
 
         pointsTask = new BukkitRunnable() {
             @Override
@@ -406,11 +407,11 @@ public class HidingPhase implements GamePhase {
                 for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
                     Player hider = Bukkit.getPlayer(hiderId);
                     if (hider != null && hider.isOnline() && hider.getGameMode() != GameMode.SPECTATOR) {
-                        HideAndSeek.getDataController().addPoints(hiderId, hiderPoints);
+                        hideAndSeekPlugin.getPointService().award(hiderId, PointAction.HIDER_SURVIVAL_TICK);
                     }
                 }
             }
-        }.runTaskTimer(plugin, 100L, 100L);
+        }.runTaskTimer(plugin, startDelaySeconds * 20L, intervalSeconds * 20L);
     }
 
     @Override

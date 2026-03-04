@@ -13,7 +13,8 @@ import de.thecoolcraft11.hideAndSeek.phase.HidingPhase;
 import de.thecoolcraft11.hideAndSeek.phase.LobbyPhase;
 import de.thecoolcraft11.hideAndSeek.phase.SeekingPhase;
 import de.thecoolcraft11.hideAndSeek.util.DataController;
-import de.thecoolcraft11.hideAndSeek.util.MapManager;
+import de.thecoolcraft11.hideAndSeek.util.map.MapManager;
+import de.thecoolcraft11.hideAndSeek.util.points.PointService;
 import de.thecoolcraft11.hideAndSeek.util.setting.SettingChangeListener;
 import de.thecoolcraft11.hideAndSeek.util.setting.SettingRegisterer;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
@@ -33,6 +34,7 @@ public final class HideAndSeek extends MinigameFramework {
     private LoadoutManager loadoutManager;
     private LoadoutGUI loadoutGUI;
     private MapGUI mapGUI;
+    private PointService pointService;
 
     @Override
     protected void onGameEnable() {
@@ -43,6 +45,7 @@ public final class HideAndSeek extends MinigameFramework {
         loadoutManager = new LoadoutManager(this);
         loadoutGUI = new LoadoutGUI(loadoutManager);
         mapGUI = new MapGUI(this);
+        pointService = new PointService(this);
 
 
         mapManager.loadDisallowedBlockStates();
@@ -143,6 +146,10 @@ public final class HideAndSeek extends MinigameFramework {
 
     public MapGUI getMapGUI() {
         return mapGUI;
+    }
+
+    public PointService getPointService() {
+        return pointService;
     }
 
     private void registerLoadoutMenu() {

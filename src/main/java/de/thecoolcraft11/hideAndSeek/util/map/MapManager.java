@@ -1,7 +1,8 @@
-package de.thecoolcraft11.hideAndSeek.util;
+package de.thecoolcraft11.hideAndSeek.util.map;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.block.BlockStateFilter;
+import de.thecoolcraft11.hideAndSeek.util.GameModeEnum;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;

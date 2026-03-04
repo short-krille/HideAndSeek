@@ -2,7 +2,7 @@ package de.thecoolcraft11.hideAndSeek.gui;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.util.GameModeEnum;
-import de.thecoolcraft11.hideAndSeek.util.MapData;
+import de.thecoolcraft11.hideAndSeek.util.map.MapData;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -173,14 +173,14 @@ public class MapGUI implements Listener {
                     lore.add(Component.empty());
                 }
 
-                
+
                 if (mapData.getAuthor() != null && !mapData.getAuthor().isEmpty()) {
                     lore.add(Component.text("By: ", NamedTextColor.WHITE)
                             .append(Component.text(mapData.getAuthor(), NamedTextColor.YELLOW))
                             .decoration(TextDecoration.ITALIC, false));
                 }
 
-                
+
                 if (mapData.getSize() != null && !mapData.getSize().isEmpty()) {
                     lore.add(Component.text("Size: ", NamedTextColor.WHITE)
                             .append(Component.text(mapData.getSize(), NamedTextColor.YELLOW))
@@ -205,7 +205,7 @@ public class MapGUI implements Listener {
 
                 lore.add(Component.empty());
 
-                
+
                 if (mapData.getMinPlayers() != null || mapData.getRecommendedPlayers() != null || mapData.getMaxPlayers() != null) {
                     StringBuilder playerStr = new StringBuilder("Players: ");
                     if (mapData.getMinPlayers() != null) {
@@ -221,7 +221,7 @@ public class MapGUI implements Listener {
                             .decoration(TextDecoration.ITALIC, false));
                 }
 
-                
+
                 if (mapData.getMinSeekers() != null || mapData.getMaxSeekers() != null) {
                     StringBuilder seekerStr = new StringBuilder("Seekers: ");
                     if (mapData.getMinSeekers() != null) {
@@ -237,7 +237,7 @@ public class MapGUI implements Listener {
                             .decoration(TextDecoration.ITALIC, false));
                 }
 
-                
+
                 if (mapData.getHidingTime() != null || mapData.getSeekingTime() != null) {
                     StringBuilder timingStr = new StringBuilder("Time: ");
                     if (mapData.getHidingTime() != null) {

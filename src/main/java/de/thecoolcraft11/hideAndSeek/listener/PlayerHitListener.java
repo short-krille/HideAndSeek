@@ -115,6 +115,7 @@ public class PlayerHitListener implements Listener {
                 return;
             }
 
+            plugin.getPointService().onHiderDamagedBySeeker(attacker, victim, event.getFinalDamage());
             event.setCancelled(false);
             return;
         }
@@ -224,9 +225,7 @@ public class PlayerHitListener implements Listener {
 
     private void handleHiderElimination(Player hider, Player seeker, GameStyleEnum gameStyle) {
 
-
-        var seekerPoints = plugin.getSettingRegistry().get("has.points.seeker-find", 10);
-        HideAndSeek.getDataController().addPoints(seeker.getUniqueId(), seekerPoints);
+        int seekerPoints = plugin.getPointService().onHiderEliminated(hider, seeker);
         seeker.sendMessage(Component.text("+" + seekerPoints + " points for finding " + hider.getName() + "!", NamedTextColor.GOLD));
 
         Component announcement = Component.text(seeker.getName(), NamedTextColor.RED)
@@ -262,13 +261,13 @@ public class PlayerHitListener implements Listener {
         HideAndSeek.getDataController().removeHider(hider.getUniqueId());
         HideAndSeek.getDataController().addSeeker(hider.getUniqueId());
 
-        
+
         Team seekerTeam = null;
         for (Team team : plugin.getTeamManager().getAllTeams()) {
             if (!plugin.getTeamManager().isSpectatorTeam(team.getName())) {
-                
+
                 for (UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
-                    if (seekerId.equals(hider.getUniqueId())) continue; 
+                    if (seekerId.equals(hider.getUniqueId())) continue;
 
                     Player seeker = Bukkit.getPlayer(seekerId);
                     if (seeker != null) {
@@ -315,13 +314,13 @@ public class PlayerHitListener implements Listener {
         HideAndSeek.getDataController().removeHider(hider.getUniqueId());
         HideAndSeek.getDataController().addSeeker(hider.getUniqueId());
 
-        
+
         Team seekerTeam = null;
         for (Team team : plugin.getTeamManager().getAllTeams()) {
             if (!plugin.getTeamManager().isSpectatorTeam(team.getName())) {
-                
+
                 for (UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
-                    if (seekerId.equals(hider.getUniqueId())) continue; 
+                    if (seekerId.equals(hider.getUniqueId())) continue;
 
                     Player seeker = Bukkit.getPlayer(seekerId);
                     if (seeker != null) {

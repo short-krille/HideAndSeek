@@ -6,6 +6,7 @@ import de.thecoolcraft11.hideAndSeek.gui.AppearanceGUI;
 import de.thecoolcraft11.hideAndSeek.gui.BlockSelectorGUI;
 import de.thecoolcraft11.hideAndSeek.listener.HiderEquipmentChangeListener;
 import de.thecoolcraft11.hideAndSeek.util.SpeedBoostType;
+import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
 import de.thecoolcraft11.minigameframework.items.ItemInteractionContext;
@@ -628,6 +629,10 @@ public final class HiderItems {
         if (hider == null) {
             return;
         }
+
+        int hitPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_SHARPSHOOTER);
+        hider.sendMessage(Component.text("Crossbow hit! +" + hitPoints + " points", NamedTextColor.GOLD));
+
         int hits = trackerHits.getOrDefault(hider.getUniqueId(), 0) + 1;
         trackerHits.put(hider.getUniqueId(), hits);
 
@@ -873,11 +878,10 @@ public final class HiderItems {
     }
 
     private static void playSoundForAll(Location location, HideAndSeek plugin, Player hider) {
-        var tauntPoints = plugin.getSettingRegistry().get("hider-items.sound.points", 5);
+        int tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_SMALL);
         double volume = plugin.getSettingRegistry().get("hider-items.sound.volume", 0.75);
         double pitch = plugin.getSettingRegistry().get("hider-items.sound.pitch", 0.8);
 
-        HideAndSeek.getDataController().addPoints(hider.getUniqueId(), tauntPoints);
         hider.sendMessage(Component.text("You have used the taunt ", NamedTextColor.GREEN).append(Component.text("\"Cat\"", NamedTextColor.YELLOW)));
         hider.sendMessage(Component.text("+" + tauntPoints + " points", NamedTextColor.GOLD));
 
@@ -909,13 +913,11 @@ public final class HiderItems {
         candle.setCandles(1);
         block.setBlockData(candle);
 
-        var tauntPoints = plugin.getSettingRegistry().get("hider-items.explosion.points", 10);
+        var tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_SMALL);
         double volume = plugin.getSettingRegistry().get("hider-items.explosion.volume", 0.65);
         double pitch = plugin.getSettingRegistry().get("hider-items.explosion.pitch", 1.5);
         int smokeParticles = plugin.getSettingRegistry().get("hider-items.explosion.smoke-particles", 3);
         int fuseTime = plugin.getSettingRegistry().get("hider-items.explosion.fuse-time", 40);
-
-        HideAndSeek.getDataController().addPoints(hider.getUniqueId(), tauntPoints);
 
         hider.sendMessage(
                 Component.text("You have used the taunt ", NamedTextColor.GREEN)
@@ -1259,14 +1261,13 @@ public final class HiderItems {
         candle.setCandles(4);
         block.setBlockData(candle);
 
-        int tauntPoints = plugin.getSettingRegistry().get("hider-items.big-firecracker.points", 20);
+        int tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_LARGE);
         double volume = plugin.getSettingRegistry().get("hider-items.big-firecracker.volume", 1.2);
         double pitch = plugin.getSettingRegistry().get("hider-items.big-firecracker.pitch", 0.5);
         int fuseTime = plugin.getSettingRegistry().get("hider-items.big-firecracker.fuse-time", 60);
         int miniFuse = plugin.getSettingRegistry().get("hider-items.big-firecracker.mini-fuse-time", 30);
         int miniCount = plugin.getSettingRegistry().get("hider-items.big-firecracker.mini-count", 3);
 
-        HideAndSeek.getDataController().addPoints(hider.getUniqueId(), tauntPoints);
         hider.sendMessage(Component.text("Big Firecracker placed! +" + tauntPoints + " points", NamedTextColor.GOLD));
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -1361,7 +1362,7 @@ public final class HiderItems {
     private static void launchFirework(Player player, HideAndSeek plugin) {
         Location launchLocation = player.getLocation().clone().add(0, 1.5, 0);
         int targetY = plugin.getSettingRegistry().get("hider-items.firework-rocket.target-y", 128);
-        int points = plugin.getSettingRegistry().get("hider-items.firework-rocket.points", 15);
+        int points = plugin.getPointService().award(player.getUniqueId(), PointAction.HIDER_TAUNT_LARGE);
         double volume = plugin.getSettingRegistry().get("hider-items.firework-rocket.volume", 10.0);
 
         Firework firework = (Firework) launchLocation.getWorld().spawnEntity(launchLocation, EntityType.FIREWORK_ROCKET);
@@ -1376,7 +1377,6 @@ public final class HiderItems {
                 .build());
         firework.setFireworkMeta(meta);
 
-        HideAndSeek.getDataController().addPoints(player.getUniqueId(), points);
         player.sendMessage(Component.text("Firework launched! +" + points + " points", NamedTextColor.GOLD));
 
         new BukkitRunnable() {

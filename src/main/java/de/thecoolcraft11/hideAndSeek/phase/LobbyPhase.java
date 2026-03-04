@@ -1,8 +1,8 @@
 package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
-import de.thecoolcraft11.hideAndSeek.util.MapConfigHelper;
-import de.thecoolcraft11.hideAndSeek.util.MapData;
+import de.thecoolcraft11.hideAndSeek.util.map.MapConfigHelper;
+import de.thecoolcraft11.hideAndSeek.util.map.MapData;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
 import de.thecoolcraft11.minigameframework.game.GamePhase;
 import net.kyori.adventure.text.Component;
@@ -102,20 +102,20 @@ public class LobbyPhase implements GamePhase {
 
             plugin.getLogger().info("Random team distribution enabled");
 
-            
+
             currentMapName = HideAndSeek.getDataController().getCurrentMapName();
             MapData currentMapData = null;
             if (currentMapName != null && !currentMapName.isEmpty()) {
                 currentMapData = ((HideAndSeek) plugin).getMapManager().getMapData(currentMapName);
             }
 
-            
+
             List<Player> allPlayers = new ArrayList<>();
             for (Team team : teams) {
                 allPlayers.addAll(plugin.getTeamManager().getPlayersInTeam(team));
             }
 
-            
+
             int seekerCount = MapConfigHelper.calculateSeekerCount(
                     plugin,
                     allPlayers.size(),

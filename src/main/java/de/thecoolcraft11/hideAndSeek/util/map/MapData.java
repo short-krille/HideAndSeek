@@ -1,5 +1,6 @@
-package de.thecoolcraft11.hideAndSeek.util;
+package de.thecoolcraft11.hideAndSeek.util.map;
 
+import de.thecoolcraft11.hideAndSeek.util.GameModeEnum;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;

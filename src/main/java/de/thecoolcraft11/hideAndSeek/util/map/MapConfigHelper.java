@@ -1,4 +1,4 @@
-package de.thecoolcraft11.hideAndSeek.util;
+package de.thecoolcraft11.hideAndSeek.util.map;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
@@ -97,7 +97,7 @@ public class MapConfigHelper {
         plugin.getLogger().info("Using global seeking time: " + seekingTime);
         return seekingTime;
     }
-    
+
     public static java.util.List<String> filterMapsByPlayerCount(
             MinigameFramework plugin,
             java.util.List<String> availableMaps,
