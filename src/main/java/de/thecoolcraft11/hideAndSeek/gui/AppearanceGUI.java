@@ -2,281 +2,394 @@ package de.thecoolcraft11.hideAndSeek.gui;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.block.BlockAppearanceConfig;
+import de.thecoolcraft11.hideAndSeek.block.BlockListParser;
 import de.thecoolcraft11.hideAndSeek.block.BlockStateFilter;
 import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
 import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Axis;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.*;
-import org.bukkit.block.data.type.Candle;
+import org.bukkit.Sound;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class AppearanceGUI {
     private final HideAndSeek plugin;
     private final BlockSelectorGUI blockSelectorGUI;
 
+
+    private static final Set<String> UNIVERSAL_VALUE_POOL = new HashSet<>();
+    private static boolean poolInitialized = false;
+
     public AppearanceGUI(HideAndSeek plugin, BlockSelectorGUI blockSelectorGUI) {
         this.plugin = plugin;
         this.blockSelectorGUI = blockSelectorGUI;
+        initializeValuePool();
+    }
+
+    private void initializeValuePool() {
+        if (poolInitialized) return;
+        UNIVERSAL_VALUE_POOL.addAll(Arrays.asList("north", "south", "east", "west", "up", "down", "x", "y", "z"));
+        for (Material mat : Material.values()) {
+            if (!mat.isBlock()) continue;
+            try {
+                BlockData data = mat.createBlockData();
+                for (Class<?> iface : data.getClass().getInterfaces()) {
+                    if (!iface.getPackageName().startsWith("org.bukkit.block.data")) continue;
+                    for (Method method : iface.getMethods()) {
+                        if (method.getReturnType().isEnum()) {
+                            for (Object constant : method.getReturnType().getEnumConstants()) {
+                                UNIVERSAL_VALUE_POOL.add(constant.toString().toLowerCase());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        poolInitialized = true;
     }
 
     public void open(Player player) {
+        open(player, 0);
+    }
+
+    public void open(Player player, int targetPage) {
         String currentPhase = plugin.getStateManager().getCurrentPhaseId();
         if (!currentPhase.equals("hiding") && !currentPhase.equals("seeking")) {
             player.sendMessage(Component.text("Appearance editor only available during Hiding or Seeking phases!", NamedTextColor.RED));
             return;
         }
-        if (!HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())) {
-            player.sendMessage(Component.text("Only hiders can use this!", NamedTextColor.RED));
-            return;
-        }
 
         Material chosenBlock = HideAndSeek.getDataController().getChosenBlock(player.getUniqueId());
         if (chosenBlock == null) {
-            player.sendMessage(Component.text("You must choose a block first! Use /mg chooseblock", NamedTextColor.RED));
+            player.sendMessage(Component.text("You must choose a block first!", NamedTextColor.RED));
             return;
         }
 
         BlockAppearanceConfig config = blockSelectorGUI.getPlayerConfig(player.getUniqueId());
-        if (config == null) {
-            String currentMap = HideAndSeek.getDataController().getCurrentMapName();
-            List<String> allowedBlocks = currentMap != null && !currentMap.isEmpty()
-                    ? plugin.getMapManager().getAllowedBlocksForMap(currentMap)
-                    : List.of();
-            config = blockSelectorGUI.resolveConfigForMaterial(allowedBlocks, chosenBlock);
-            if (config != null) {
-                blockSelectorGUI.setPlayerConfig(player.getUniqueId(), config);
-            }
+        if (config == null) config = BlockAppearanceConfig.parse(chosenBlock.name());
+
+        List<InventoryItem> allItems = new ArrayList<>();
+
+        boolean hasVariants = config.isAllowAllVariants() || config.hasVariantGroup();
+        boolean hasStates = config.isAllowAllBlockStates() || !config.getAllowedProperties().isEmpty();
+
+
+        if (hasVariants) {
+            allItems.add(new InventoryItem(createSectionHeaderItem("Variants")));
+            addVariantItems(allItems, player, chosenBlock, config);
+            padToRow(allItems);
         }
-        if (config == null) {
-
-            config = BlockAppearanceConfig.parse(chosenBlock.name());
-        }
 
 
-        int estimatedItems = 0;
-        if (config.isAllowAllVariants() || config.hasVariantGroup()) {
-            if (config.hasVariantGroup() && config.getCustomMaterials() != null) {
-                estimatedItems += config.getCustomMaterials().size();
-            } else {
-
-                estimatedItems += 15;
+        if (hasVariants && hasStates) {
+            ItemStack spacer = createSeparatorItem();
+            for (int i = 0; i < 9; i++) {
+                allItems.add(new InventoryItem(spacer));
             }
         }
 
-        BlockData blockData = chosenBlock.createBlockData();
-        List<String> allProperties = getAllBlockStateProperties(blockData);
-        estimatedItems += allProperties.size();
 
+        if (hasStates) {
+            allItems.add(new InventoryItem(createSectionHeaderItem("Block States")));
+            addBlockStateItems(allItems, player, chosenBlock, config);
+        }
 
-        if (estimatedItems > 35) {
-            openWithPagination(player, chosenBlock, config);
+        paginateAndOpen(player, allItems, targetPage);
+    }
+
+    private void paginateAndOpen(Player player, List<InventoryItem> allItems, int targetPage) {
+        int itemsPerPage = 45;
+        int totalPages = (int) Math.ceil((double) allItems.size() / itemsPerPage);
+        if (totalPages == 0) totalPages = 1;
+
+        if (targetPage >= totalPages) targetPage = totalPages - 1;
+        if (targetPage < 0) targetPage = 0;
+
+        List<FrameworkInventory> inventories = new ArrayList<>();
+
+        for (int i = 0; i < totalPages; i++) {
+            FrameworkInventory inv = plugin.getInventoryFramework().create("Customize Appearance (" + (i + 1) + "/" + totalPages + ")", 6);
+            setupSettings(inv);
+
+            int start = i * itemsPerPage;
+            int end = Math.min(start + itemsPerPage, allItems.size());
+
+            for (int slot = 0; slot < (end - start); slot++) {
+                inv.setItem(slot, allItems.get(start + slot));
+            }
+
+            addFooter(inv);
+            inventories.add(inv);
+        }
+
+        for (int i = 0; i < inventories.size(); i++) {
+            FrameworkInventory current = inventories.get(i);
+            if (i > 0) {
+                int finalI = i;
+                current.setItem(48, new InventoryItem(createNavArrow("◀ Previous")).onClick((p, t) -> {
+                    p.playSound(p.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.0f);
+                    plugin.getInventoryFramework().openInventory(p, inventories.get(finalI - 1));
+                }));
+            }
+            if (i < inventories.size() - 1) {
+                int finalI1 = i;
+                current.setItem(50, new InventoryItem(createNavArrow("Next ▶")).onClick((p, t) -> {
+                    p.playSound(p.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.0f);
+                    plugin.getInventoryFramework().openInventory(p, inventories.get(finalI1 + 1));
+                }));
+            }
+        }
+
+        plugin.getInventoryFramework().openInventory(player, inventories.get(targetPage));
+    }
+
+    private void addVariantItems(List<InventoryItem> allItems, Player player, Material currentBlock, BlockAppearanceConfig config) {
+        List<Material> variants;
+
+        if (config.hasVariantGroup() && config.getCustomMaterials() != null) {
+            variants = new ArrayList<>(config.getCustomMaterials());
         } else {
-            openSinglePage(player, chosenBlock, config);
+            String baseType = config.getBaseBlockType();
+            if (baseType == null || baseType.isEmpty()) baseType = currentBlock.name();
+            if (baseType.contains("_")) baseType = baseType.substring(baseType.lastIndexOf("_") + 1);
+            variants = new ArrayList<>(BlockListParser.parseBlockList("*" + baseType));
+        }
+
+        variants.sort(Comparator.comparing(Enum::name));
+        BlockData currentBlockData = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
+
+        for (Material variant : variants) {
+            boolean isSelected = currentBlockData != null && currentBlockData.getMaterial() == variant;
+
+            int myPage = allItems.size() / 45;
+
+            allItems.add(new InventoryItem(createVariantItem(variant, isSelected)).onClick((p, type) -> {
+                BlockData previousData = HideAndSeek.getDataController().getChosenBlockData(p.getUniqueId());
+                BlockData newData = variant.createBlockData();
+                if (previousData != null) copySharedBlockStates(previousData, newData);
+
+                updatePlayerAppearance(p, variant, newData);
+
+                p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1.5f);
+                open(p, myPage);
+            }));
         }
     }
 
-    private void openSinglePage(Player player, Material chosenBlock, BlockAppearanceConfig config) {
-        FrameworkInventory inventory = plugin.getInventoryFramework().create("Customize Appearance", 6);
-        inventory.setSetting("allow_outside_clicks", false);
-        inventory.setSetting("allow_drag", false);
-        inventory.setSetting("allow_player_inventory_interaction", false);
+    private void addBlockStateItems(List<InventoryItem> allItems, Player player, Material block, BlockAppearanceConfig config) {
+        BlockData data = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
+        if (data == null) data = block.createBlockData();
 
-        int slot = 0;
-        int maxContentSlot = 45;
+        for (String prop : getAllBlockStateProperties(data)) {
+            if (BlockStateFilter.isDisallowed(prop)) continue;
+            if (!config.getAllowedProperties().isEmpty() && !config.getAllowedProperties().contains(prop)) continue;
 
+            final String propertyName = prop;
 
-        if (config.isAllowAllVariants() || config.hasVariantGroup()) {
-            slot = startSection(inventory, slot, "Variants", maxContentSlot);
-            slot = addVariantsSection(inventory, slot, player, chosenBlock, config, maxContentSlot);
-        }
+            int myPage = allItems.size() / 45;
 
-        if (config.isAllowAllBlockStates() || !config.getAllowedStates().isEmpty() || !config.getAllowedProperties().isEmpty()) {
-            slot = startSection(inventory, slot, "Block States", maxContentSlot);
-            addBlockStatesSection(inventory, slot, player, chosenBlock, config, maxContentSlot);
-        }
+            allItems.add(new InventoryItem(createStateItem(propertyName, player, data)).onClick((p, type) -> {
+                cyclePropertyValue(p, propertyName, type == ClickType.RIGHT);
 
-        addFooter(inventory);
-        plugin.getInventoryFramework().openInventory(player, inventory);
-    }
-
-    private void openWithPagination(Player player, Material chosenBlock, BlockAppearanceConfig config) {
-        List<FrameworkInventory> pages = new ArrayList<>();
-        FrameworkInventory currentPage = plugin.getInventoryFramework().create("Customize Appearance", 6);
-        currentPage.setSetting("allow_outside_clicks", false);
-        currentPage.setSetting("allow_drag", false);
-        currentPage.setSetting("allow_player_inventory_interaction", false);
-
-        int slot = 0;
-        int maxContentSlot = 45;
-
-
-        if (config.isAllowAllVariants() || config.hasVariantGroup()) {
-            slot = startSection(currentPage, slot, "Variants", maxContentSlot);
-            slot = addVariantsSection(currentPage, slot, player, chosenBlock, config, maxContentSlot);
-
-
-            if (slot >= maxContentSlot) {
-                pages.add(currentPage);
-                currentPage = plugin.getInventoryFramework().create("Customize Appearance - Variants", 6);
-                currentPage.setSetting("allow_outside_clicks", false);
-                currentPage.setSetting("allow_drag", false);
-                currentPage.setSetting("allow_player_inventory_interaction", false);
-                slot = 0;
-                slot = startSection(currentPage, slot, "Variants (continued)", maxContentSlot);
-                slot = addVariantsSection(currentPage, slot, player, chosenBlock, config, maxContentSlot);
-            }
-        }
-
-
-        if (config.isAllowAllBlockStates() || !config.getAllowedStates().isEmpty() || !config.getAllowedProperties().isEmpty()) {
-            slot = alignToNextRow(slot);
-            if (slot >= maxContentSlot) {
-                pages.add(currentPage);
-                currentPage = plugin.getInventoryFramework().create("Customize Appearance - States", 6);
-                currentPage.setSetting("allow_outside_clicks", false);
-                currentPage.setSetting("allow_drag", false);
-                currentPage.setSetting("allow_player_inventory_interaction", false);
-                slot = 0;
-            }
-            slot = startSection(currentPage, slot, "Block States", maxContentSlot);
-            slot = addBlockStatesSection(currentPage, slot, player, chosenBlock, config, maxContentSlot);
-
-            if (slot >= maxContentSlot) {
-                pages.add(currentPage);
-                currentPage = plugin.getInventoryFramework().create("Customize Appearance - States", 6);
-                currentPage.setSetting("allow_outside_clicks", false);
-                currentPage.setSetting("allow_drag", false);
-                currentPage.setSetting("allow_player_inventory_interaction", false);
-                slot = 0;
-                slot = startSection(currentPage, slot, "Block States (continued)", maxContentSlot);
-                slot = addBlockStatesSection(currentPage, slot, player, chosenBlock, config, maxContentSlot);
-            }
-        }
-
-
-        if (slot > 0) {
-            addFooter(currentPage);
-            pages.add(currentPage);
-        }
-
-
-        if (!pages.isEmpty()) {
-            addPaginationNavigation(pages);
-            plugin.getInventoryFramework().openInventory(player, pages.getFirst());
+                p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.2f);
+                open(p, myPage);
+            }));
         }
     }
 
-    private void addPaginationNavigation(List<FrameworkInventory> pages) {
-        if (pages.size() <= 1) return;
+    private void cyclePropertyValue(Player player, String property, boolean reverse) {
+        BlockData data = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
+        if (data == null) data = HideAndSeek.getDataController().getChosenBlock(player.getUniqueId()).createBlockData();
 
-        for (int i = 0; i < pages.size(); i++) {
-            FrameworkInventory page = pages.get(i);
+        List<String> possible = discoverPropertyValues(data, property);
+        if (possible.isEmpty()) return;
 
+        String currentVal = getPropertyValueFromString(data, property);
+        int index = possible.indexOf(currentVal);
+        int nextIndex = reverse ? (index - 1 + possible.size()) % possible.size() : (index + 1) % possible.size();
 
-            ItemStack separator = createSeparatorItem();
-            for (int j = 45; j < 54; j++) {
-                page.setItem(j, new InventoryItem(separator));
+        try {
+            String updated = buildDataStringWithProperty(data.getAsString(), property, possible.get(nextIndex));
+            updatePlayerAppearance(player, data.getMaterial(), Bukkit.createBlockData(updated));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private List<String> discoverPropertyValues(BlockData data, String property) {
+        List<String> values = new ArrayList<>();
+        String dataString = data.getAsString();
+
+        if (isValidValue(dataString, property, "true")) return Arrays.asList("false", "true");
+
+        if (property.equals("age") || property.equals("level") || property.equals("candles") || property.equals("layers")) {
+            for (int i = 0; i <= 15; i++) {
+                if (isValidValue(dataString, property, String.valueOf(i))) values.add(String.valueOf(i));
             }
+            return values;
+        }
 
-            int currentPageIndex = i;
+        for (String val : UNIVERSAL_VALUE_POOL) {
+            if (isValidValue(dataString, property, val)) values.add(val);
+        }
+        Collections.sort(values);
+        return values;
+    }
 
-
-            if (pages.size() > 1) {
-
-                if (i > 0) {
-                    ItemStack prevItem = new ItemStack(Material.ARROW);
-                    ItemMeta prevMeta = prevItem.getItemMeta();
-                    if (prevMeta != null) {
-                        prevMeta.displayName(Component.text("◀ Previous", NamedTextColor.AQUA, TextDecoration.BOLD));
-                        prevItem.setItemMeta(prevMeta);
-                    }
-                    page.setItem(48, new InventoryItem(prevItem).onClick((p, type) -> {
-                        if (type == ClickType.LEFT) {
-                            plugin.getInventoryFramework().openInventory(p, pages.get(currentPageIndex - 1));
-                        }
-                    }));
-                }
-
-
-                page.setItem(49, new InventoryItem(createConfirmItem()).onClick((p, type) -> {
-                    if (type == ClickType.LEFT) {
-                        confirmAppearance(p);
-                    }
-                }));
-
-
-                if (i < pages.size() - 1) {
-                    ItemStack nextItem = new ItemStack(Material.ARROW);
-                    ItemMeta nextMeta = nextItem.getItemMeta();
-                    if (nextMeta != null) {
-                        nextMeta.displayName(Component.text("Next ▶", NamedTextColor.AQUA, TextDecoration.BOLD));
-                        nextItem.setItemMeta(nextMeta);
-                    }
-                    page.setItem(50, new InventoryItem(nextItem).onClick((p, type) -> {
-                        if (type == ClickType.LEFT) {
-                            plugin.getInventoryFramework().openInventory(p, pages.get(currentPageIndex + 1));
-                        }
-                    }));
-                }
-            } else {
-
-                page.setItem(49, new InventoryItem(createConfirmItem()).onClick((p, type) -> {
-                    if (type == ClickType.LEFT) {
-                        confirmAppearance(p);
-                    }
-                }));
+    private void copySharedBlockStates(BlockData source, BlockData target) {
+        String sourceStr = source.getAsString();
+        if (!sourceStr.contains("[")) return;
+        String props = sourceStr.substring(sourceStr.indexOf("[") + 1, sourceStr.lastIndexOf("]"));
+        for (String pair : props.split(",")) {
+            String[] kv = pair.split("=");
+            try {
+                String targetStr = buildDataStringWithProperty(target.getAsString(), kv[0], kv[1]);
+                target.copyTo(Bukkit.createBlockData(targetStr));
+            } catch (Exception ignored) {
             }
         }
     }
 
-    private int startSection(FrameworkInventory inventory, int slot, String title, int maxContentSlot) {
-        slot = alignToNextRow(slot);
-        if (slot >= maxContentSlot) {
-            return slot;
+    private boolean isValidValue(String dataString, String property, String value) {
+        try {
+            Bukkit.createBlockData(buildDataStringWithProperty(dataString, property, value));
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-        ItemStack header = createSectionHeaderItem(title);
-        inventory.setItem(slot, new InventoryItem(header));
-        return slot + 1;
     }
 
-    private int alignToNextRow(int slot) {
-        if (slot % 9 == 0) {
-            return slot;
-        }
-        return ((slot / 9) + 1) * 9;
-    }
+    private String buildDataStringWithProperty(String dataString, String property, String value) {
+        int start = dataString.indexOf('[');
+        int end = dataString.indexOf(']');
+        String base = (start == -1) ? dataString : dataString.substring(0, start);
+        String props = (start != -1) ? dataString.substring(start + 1, end) : "";
 
-    private void addFooter(FrameworkInventory inventory) {
-        ItemStack separator = createSeparatorItem();
-        for (int i = 45; i < 54; i++) {
-            inventory.setItem(i, new InventoryItem(separator));
-        }
-        inventory.setItem(49, new InventoryItem(createConfirmItem()).onClick((p, type) -> {
-            if (type == ClickType.LEFT) {
-                confirmAppearance(p);
+        Map<String, String> map = new HashMap<>();
+        if (!props.isEmpty()) {
+            for (String p : props.split(",")) {
+                String[] kv = p.split("=");
+                map.put(kv[0], kv[1]);
             }
-        }));
+        }
+        map.put(property, value);
+        StringJoiner sj = new StringJoiner(",");
+        map.forEach((k, v) -> sj.add(k + "=" + v));
+        return base + "[" + sj + "]";
     }
 
-    private ItemStack createSectionHeaderItem(String title) {
-        ItemStack item = new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
+    private List<String> getAllBlockStateProperties(BlockData data) {
+        String s = data.getAsString();
+        if (!s.contains("[")) return new ArrayList<>();
+        String props = s.substring(s.indexOf("[") + 1, s.lastIndexOf("]"));
+        return Arrays.stream(props.split(",")).map(p -> p.split("=")[0]).collect(Collectors.toList());
+    }
+
+    private String getPropertyValueFromString(BlockData data, String property) {
+        String s = data.getAsString();
+        if (!s.contains(property + "=")) return "";
+        String after = s.substring(s.indexOf(property + "=") + property.length() + 1);
+        int end = after.indexOf(',');
+        if (end == -1) end = after.indexOf(']');
+        return end == -1 ? after : after.substring(0, end);
+    }
+
+    private void updatePlayerAppearance(Player p, Material mat, BlockData data) {
+        HideAndSeek.getDataController().setChosenBlock(p.getUniqueId(), mat);
+        HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), data);
+        var display = HideAndSeek.getDataController().getBlockDisplay(p.getUniqueId());
+        if (display != null) display.setBlock(data);
+        de.thecoolcraft11.hideAndSeek.items.HiderItems.updateAppearanceItem(p, plugin);
+    }
+
+    private void padToRow(List<InventoryItem> items) {
+        while (items.size() % 9 != 0) items.add(new InventoryItem(new ItemStack(Material.AIR)));
+    }
+
+    private void addFooter(FrameworkInventory inv) {
+        ItemStack sep = createSeparatorItem();
+        for (int i = 45; i < 54; i++) inv.setItem(i, new InventoryItem(sep));
+        inv.setItem(49, new InventoryItem(createConfirmItem()).onClick((p, t) -> p.closeInventory()));
+    }
+
+
+    private ItemStack createVariantItem(Material material, boolean selected) {
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text(title, NamedTextColor.GOLD, TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
+            meta.displayName(Component.text(formatName(material.name()), selected ? NamedTextColor.GREEN : NamedTextColor.YELLOW, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+
+            if (selected) {
+                meta.setEnchantmentGlintOverride(true);
+                meta.lore(List.of(Component.text("Currently Selected", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack createStateItem(String state, Player player, BlockData base) {
+        BlockData current = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
+        if (current == null) current = base;
+        String val = getPropertyValueFromString(current, state);
+
+
+        ItemStack item = getDynamicStateIcon(state, val);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+            meta.displayName(Component.text(formatName(state), NamedTextColor.AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+
+
+            List<String> possible = discoverPropertyValues(current, state);
+            int index = possible.indexOf(val);
+            String next = possible.isEmpty() ? "N/A" : possible.get((index + 1) % possible.size());
+            String prev = possible.isEmpty() ? "N/A" : possible.get((index - 1 + possible.size()) % possible.size());
+
+            meta.lore(Arrays.asList(
+                    Component.text("Current: " + val, NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false),
+                    Component.text(""),
+                    Component.text("Left-Click: Cycle to " + next, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                    Component.text("Right-Click: Cycle to " + prev, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+            ));
+
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack getDynamicStateIcon(String state, String val) {
+        return switch (state) {
+            case "facing", "rotation" -> new ItemStack(Material.COMPASS);
+            case "axis" -> new ItemStack(Material.STICK);
+            case "waterlogged" -> new ItemStack(Material.WATER_BUCKET);
+            case "lit", "powered" -> new ItemStack("true".equals(val) ? Material.REDSTONE_TORCH : Material.LEVER);
+            case "open" -> new ItemStack(Material.OAK_DOOR);
+            case "half", "type" -> new ItemStack(Material.SMOOTH_STONE_SLAB);
+            case "shape" -> new ItemStack(Material.OAK_STAIRS);
+            case "age", "level", "bites", "honey_level" -> new ItemStack(Material.EXPERIENCE_BOTTLE);
+            case "candles" -> new ItemStack(Material.CANDLE);
+            case "snowy" -> new ItemStack(Material.SNOWBALL);
+            case "hinge" -> new ItemStack(Material.TRIPWIRE_HOOK);
+            default -> new ItemStack(Material.REPEATER);
+        };
+    }
+
+    private ItemStack createSectionHeaderItem(String text) {
+        ItemStack item = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text(text, NamedTextColor.GOLD, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
             item.setItemMeta(meta);
         }
         return item;
@@ -292,729 +405,33 @@ public class AppearanceGUI {
         return item;
     }
 
-    private int addVariantsSection(FrameworkInventory inventory, int startSlot, Player player,
-                                   Material currentBlock, BlockAppearanceConfig config, int maxContentSlot) {
-        int slot = startSlot;
-
-        List<Material> variants;
-
-
-        if (config.hasVariantGroup() && config.getCustomMaterials() != null) {
-            variants = new ArrayList<>(config.getCustomMaterials());
-
-            variants.sort(Comparator.comparing(Enum::name));
-        } else {
-
-            String baseType = config.getBaseBlockType();
-            if (baseType == null || baseType.isEmpty()) {
-                baseType = currentBlock.name();
-            }
-            if (baseType.contains("_")) {
-                baseType = baseType.substring(baseType.lastIndexOf("_") + 1);
-            }
-            final String baseName = baseType;
-
-            variants = Arrays.stream(Material.values())
-                    .filter(m -> m.isItem() && m.isBlock())
-                    .filter(m -> m.name().endsWith("_" + baseName) || m.name().equals(baseName))
-                    .sorted(Comparator.comparing(Enum::name))
-                    .toList();
-        }
-
-        BlockData currentBlockData = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
-
-        for (Material variant : variants) {
-            if (slot >= maxContentSlot) break;
-
-            boolean isSelected = currentBlockData != null && currentBlockData.getMaterial() == variant;
-            ItemStack item = createVariantItem(variant, isSelected);
-            inventory.setItem(slot, new InventoryItem(item).onClick((p, type) -> {
-                if (type == ClickType.LEFT) {
-                    BlockData previousData = HideAndSeek.getDataController().getChosenBlockData(p.getUniqueId());
-                    BlockData newData = variant.createBlockData();
-                    if (previousData != null) {
-                        copySharedBlockStates(previousData, newData);
-                    }
-                    HideAndSeek.getDataController().setChosenBlock(p.getUniqueId(), variant);
-                    HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), newData);
-                    var display = HideAndSeek.getDataController().getBlockDisplay(p.getUniqueId());
-                    if (display != null && display.isValid()) {
-                        display.setBlock(newData);
-                        display.setRotation(p.getLocation().getYaw(), 0f);
-                    }
-                    de.thecoolcraft11.hideAndSeek.items.HiderItems.updateAppearanceItem(p, plugin);
-                    p.sendMessage(Component.text("Variant updated to ", NamedTextColor.GREEN)
-                            .append(Component.text(formatName(variant.name()), NamedTextColor.GOLD)));
-                }
-            }));
-            slot++;
-        }
-
-        slot = alignToNextRow(slot);
-        return slot;
-    }
-
-    private int addBlockStatesSection(FrameworkInventory inventory, int startSlot, Player player, Material block,
-                                      BlockAppearanceConfig config, int maxContentSlot) {
-        int slot = startSlot;
-
-
-        BlockData blockData = block.createBlockData();
-        List<String> allProperties = getAllBlockStateProperties(blockData);
-
-
-        List<String> allowedRotationProperties = new ArrayList<>();
-        List<String> allowedOtherProperties = new ArrayList<>();
-
-        List<String> rotationProperties = Arrays.asList("facing", "axis", "rotation");
-
-        for (String prop : allProperties) {
-
-            if (BlockStateFilter.isDisallowed(prop)) {
-                continue;
-            }
-
-
-            if (!config.getAllowedProperties().isEmpty() && !config.getAllowedProperties().contains(prop)) {
-                continue;
-            }
-
-
-            if (rotationProperties.contains(prop)) {
-                allowedRotationProperties.add(prop);
-            } else {
-                allowedOtherProperties.add(prop);
-            }
-        }
-
-
-        if (!allowedRotationProperties.isEmpty()) {
-            slot = addBlockStateSubsection(inventory, slot, player, block, allowedRotationProperties, maxContentSlot);
-        }
-
-
-        if (!allowedOtherProperties.isEmpty()) {
-            slot = addBlockStateSubsection(inventory, slot, player, block, allowedOtherProperties, maxContentSlot);
-        }
-
-        slot = alignToNextRow(slot);
-        return slot;
-    }
-
-    private List<String> getAllBlockStateProperties(BlockData blockData) {
-        List<String> properties = new ArrayList<>();
-
-
-        String dataString = blockData.getAsString();
-        int start = dataString.indexOf('[');
-        int end = dataString.indexOf(']');
-
-        if (start >= 0 && end > start) {
-            String statesString = dataString.substring(start + 1, end);
-            String[] statePairs = statesString.split(",");
-
-            for (String pair : statePairs) {
-                if (pair.contains("=")) {
-                    String propertyName = pair.split("=")[0].trim();
-                    if (!properties.contains(propertyName)) {
-                        properties.add(propertyName);
-                    }
-                }
-            }
-        }
-
-
-        List<String> rotationProperties = Arrays.asList("facing", "axis", "rotation");
-        List<String> sortedProperties = new ArrayList<>();
-
-
-        for (String rotProp : rotationProperties) {
-            if (properties.contains(rotProp)) {
-                sortedProperties.add(rotProp);
-            }
-        }
-
-
-        for (String prop : properties) {
-            if (!sortedProperties.contains(prop)) {
-                sortedProperties.add(prop);
-            }
-        }
-
-        return sortedProperties;
-    }
-
-    private int addBlockStateSubsection(FrameworkInventory inventory, int slot, Player player, Material block,
-                                        List<String> propertyNames, int maxContentSlot) {
-        BlockData blockData = block.createBlockData();
-        List<String> validProperties = propertyNames.stream()
-                .toList();
-
-        if (validProperties.isEmpty()) {
-            return slot;
-        }
-
-
-        for (String property : validProperties) {
-            if (slot >= maxContentSlot) break;
-            int propertySlot = slot;
-            setStateItem(inventory, propertySlot, property, player, blockData);
-            slot++;
-        }
-
-        return slot;
-    }
-
-    private void setStateItem(FrameworkInventory inventory, int slot, String property, Player player, BlockData baseData) {
-        ItemStack stateItem = createStateItem(property, player, baseData);
-        inventory.setItem(slot, new InventoryItem(stateItem).onClick((p, type) -> {
-            if (type == ClickType.LEFT || type == ClickType.RIGHT) {
-                cyclePropertyValue(p, property, type == ClickType.RIGHT);
-
-                BlockData current = HideAndSeek.getDataController().getChosenBlockData(p.getUniqueId());
-                if (current == null) {
-                    current = baseData;
-                }
-                ItemStack updatedItem = createStateItem(property, p, current);
-                inventory.setItem(slot, new InventoryItem(updatedItem).onClick((p2, type2) -> {
-                    if (type2 == ClickType.LEFT || type2 == ClickType.RIGHT) {
-                        cyclePropertyValue(p2, property, type2 == ClickType.RIGHT);
-                        setStateItem(inventory, slot, property, p2, baseData);
-                    }
-                }));
-
-                String value = getCurrentStateValue(current, property);
-                p.sendMessage(Component.text(formatName(property) + " → " + value, NamedTextColor.GRAY));
-            }
-        }));
-    }
-
-
-    private void cyclePropertyValue(Player player, String property, boolean reverse) {
-        BlockData current = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
-        if (current == null) {
-            Material chosenBlock = HideAndSeek.getDataController().getChosenBlock(player.getUniqueId());
-            if (chosenBlock == null) {
-                return;
-            }
-            current = chosenBlock.createBlockData();
-        }
-
-
-        BlockData updated = getNextBlockData(current, property, reverse);
-        if (updated == null) {
-            return;
-        }
-
-        HideAndSeek.getDataController().setChosenBlockData(player.getUniqueId(), updated);
-
-        var display = HideAndSeek.getDataController().getBlockDisplay(player.getUniqueId());
-        if (display != null && display.isValid()) {
-            display.setBlock(updated);
-            display.setRotation(player.getLocation().getYaw(), 0f);
-        }
-        de.thecoolcraft11.hideAndSeek.items.HiderItems.updateAppearanceItem(player, plugin);
-    }
-
-    private BlockData getNextBlockData(BlockData data, String property, boolean reverse) {
-        try {
-
-            String currentValue = getPropertyValueFromString(data, property);
-            List<String> possibleValues = discoverPropertyValues(data, property);
-
-            if (possibleValues.isEmpty()) {
-                plugin.getLogger().warning("No valid values found for property: " + property);
-                return null;
-            }
-
-
-            int currentIndex = possibleValues.indexOf(currentValue);
-            if (currentIndex < 0) currentIndex = 0;
-
-            int nextIndex = reverse ?
-                    (currentIndex - 1 + possibleValues.size()) % possibleValues.size() :
-                    (currentIndex + 1) % possibleValues.size();
-
-            String nextValue = possibleValues.get(nextIndex);
-
-
-            String dataString = data.getAsString();
-            String newDataString = buildDataStringWithProperty(dataString, property, nextValue);
-
-
-            try {
-                return org.bukkit.Bukkit.createBlockData(newDataString);
-            } catch (IllegalArgumentException e) {
-
-                plugin.getLogger().warning("Failed to set property " + property + " to " + nextValue + ": " + e.getMessage());
-                return null;
-            }
-        } catch (Exception e) {
-            plugin.getLogger().warning("Error in getNextBlockData: " + e.getMessage());
-            return null;
-        }
-    }
-
-    private String getPropertyValueFromString(BlockData data, String property) {
-        String dataString = data.getAsString();
-        int start = dataString.indexOf('[');
-        int end = dataString.indexOf(']');
-
-        if (start < 0 || end <= start) {
-            return "";
-        }
-
-        String statesString = dataString.substring(start + 1, end);
-        String[] pairs = statesString.split(",");
-
-        for (String pair : pairs) {
-            String[] kv = pair.split("=");
-            if (kv.length == 2 && kv[0].trim().equals(property)) {
-                return kv[1].trim();
-            }
-        }
-
-        return "";
-    }
-
-    private List<String> discoverPropertyValues(BlockData data, String property) {
-        List<String> values = new ArrayList<>();
-        String currentValue = getPropertyValueFromString(data, property);
-
-
-        if (currentValue.matches("\\d+")) {
-
-            for (int i = 0; i <= 16; i++) {
-                if (trySetPropertyValue(data, property, String.valueOf(i))) {
-                    values.add(String.valueOf(i));
-                }
-            }
-
-            if (!values.isEmpty()) {
-                values.sort(Comparator.comparingInt(Integer::parseInt));
-                return values;
-            }
-        }
-
-
-        if ("true".equals(currentValue) || "false".equals(currentValue)) {
-            if (trySetPropertyValue(data, property, "false")) {
-                values.add("false");
-            }
-            if (trySetPropertyValue(data, property, "true") && !values.contains("true")) {
-                values.add("true");
-            }
-            return values;
-        }
-
-
-        String[] commonEnumValues = {
-                "north", "south", "east", "west", "up", "down",
-                "x", "y", "z",
-                "top", "bottom", "upper", "lower",
-                "left", "right",
-                "single", "double",
-                "straight", "inner_left", "inner_right", "outer_left", "outer_right",
-                "none", "low", "tall"
-        };
-
-        for (String value : commonEnumValues) {
-            if (trySetPropertyValue(data, property, value)) {
-                if (!values.contains(value)) {
-                    values.add(value);
-                }
-            }
-        }
-
-        return values;
-    }
-
-    private boolean trySetPropertyValue(BlockData data, String property, String value) {
-        try {
-            String dataString = data.getAsString();
-            String newDataString = buildDataStringWithProperty(dataString, property, value);
-            org.bukkit.Bukkit.createBlockData(newDataString);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private String buildDataStringWithProperty(String dataString, String property, String value) {
-        int bracketStart = dataString.indexOf('[');
-        int bracketEnd = dataString.indexOf(']');
-
-        if (bracketStart < 0 || bracketEnd <= bracketStart) {
-            return dataString;
-        }
-
-        String prefix = dataString.substring(0, bracketStart + 1);
-        String suffix = dataString.substring(bracketEnd);
-        String statesString = dataString.substring(bracketStart + 1, bracketEnd);
-
-
-        StringBuilder newStates = new StringBuilder();
-        String[] pairs = statesString.split(",");
-        boolean found = false;
-
-        for (int i = 0; i < pairs.length; i++) {
-            String pair = pairs[i];
-            String[] kv = pair.split("=");
-
-            if (kv.length == 2 && kv[0].trim().equals(property)) {
-                newStates.append(property).append("=").append(value);
-                found = true;
-            } else {
-                newStates.append(pair);
-            }
-
-            if (i < pairs.length - 1) {
-                newStates.append(",");
-            }
-        }
-
-        if (!found) {
-            if (!newStates.isEmpty()) {
-                newStates.append(",");
-            }
-            newStates.append(property).append("=").append(value);
-        }
-
-        return prefix + newStates + suffix;
-    }
-
-    private ItemStack createStateItem(String stateName, Player player, BlockData baseData) {
-        BlockData current = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
-        if (current == null) {
-            current = baseData;
-        }
-        String value = getCurrentStateValue(current, stateName);
-
-        ItemStack item = getStateItemMaterial(stateName, current, value);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text(formatName(stateName), NamedTextColor.YELLOW, TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-
-            List<Component> lore = new ArrayList<>();
-            lore.add(Component.text("Current: " + value, NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false));
-            lore.add(Component.text("Left/Right click to cycle", NamedTextColor.DARK_GRAY)
-                    .decoration(TextDecoration.ITALIC, false));
-
-            meta.lore(lore);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    private ItemStack getStateItemMaterial(String property, BlockData blockData, String value) {
-
-        if (isBooleanProperty(property)) {
-            boolean isTrue = "true".equalsIgnoreCase(value);
-            ItemStack item = new ItemStack(isTrue ? Material.REDSTONE : Material.GUNPOWDER);
-            ItemMeta meta = item.getItemMeta();
-            if (meta != null) {
-                item.setItemMeta(meta);
-            }
-            return item;
-        }
-
-
-        if (isIntegerProperty(property)) {
-            try {
-                int intValue = Integer.parseInt(value);
-                return new ItemStack(Material.REDSTONE, Math.min(intValue, 64));
-            } catch (NumberFormatException e) {
-                return new ItemStack(Material.REDSTONE);
-            }
-        }
-
-
-        return switch (property) {
-            case "facing" -> {
-                if (blockData instanceof Directional directional) {
-                    yield getMaterialForFacing(directional.getFacing());
-                }
-                yield new ItemStack(Material.COMPASS);
-            }
-            case "axis" -> {
-                if (blockData instanceof Orientable orientable) {
-                    yield getMaterialForAxis(orientable.getAxis());
-                }
-                yield new ItemStack(Material.STICK);
-            }
-            case "rotation" -> new ItemStack(Material.COMPASS);
-            case "half" -> "top".equalsIgnoreCase(value) ?
-                    new ItemStack(Material.SMOOTH_STONE_SLAB) :
-                    new ItemStack(Material.OAK_WOOD);
-            case "open" -> "true".equalsIgnoreCase(value) ?
-                    new ItemStack(Material.OAK_DOOR) :
-                    new ItemStack(Material.IRON_DOOR);
-            case "hinge" -> "left".equalsIgnoreCase(value) ?
-                    new ItemStack(Material.ANVIL) :
-                    new ItemStack(Material.CHIPPED_ANVIL);
-            case "type" -> "top".equalsIgnoreCase(value) ?
-                    new ItemStack(Material.OAK_SLAB) :
-                    new ItemStack(Material.STONE_SLAB);
-            case "shape" -> new ItemStack(Material.SANDSTONE_STAIRS);
-            case "triggered" -> "true".equalsIgnoreCase(value) ?
-                    new ItemStack(Material.DISPENSER) :
-                    new ItemStack(Material.DROPPER);
-            default -> new ItemStack(Material.BARRIER);
-        };
-    }
-
-    private ItemStack getMaterialForFacing(BlockFace face) {
-        return switch (face) {
-            case NORTH -> new ItemStack(Material.ARROW);
-            case SOUTH -> new ItemStack(Material.CHISELED_SANDSTONE);
-            case EAST -> new ItemStack(Material.REPEATER);
-            case WEST -> new ItemStack(Material.COMPARATOR);
-            case UP -> new ItemStack(Material.IRON_CHAIN);
-            case DOWN -> new ItemStack(Material.IRON_BLOCK);
-            default -> new ItemStack(Material.COMPASS);
-        };
-    }
-
-    private ItemStack getMaterialForAxis(Axis axis) {
-        return switch (axis) {
-            case X -> new ItemStack(Material.OAK_SLAB);
-            case Y -> new ItemStack(Material.IRON_CHAIN);
-            case Z -> new ItemStack(Material.SOUL_LANTERN);
-        };
-    }
-
-    private boolean isBooleanProperty(String property) {
-        return property.equals("lit") || property.equals("waterlogged") ||
-                property.equals("powered") || property.equals("open") ||
-                property.equals("triggered");
-    }
-
-    private boolean isIntegerProperty(String property) {
-        return property.equals("candles") || property.equals("level") ||
-                property.equals("age");
-    }
-
-    private String getCurrentStateValue(BlockData data, String stateName) {
-        String value = getPropertyValueFromString(data, stateName);
-        return value.isEmpty() ? "n/a" : value;
-    }
-
-    private void confirmAppearance(Player player) {
-        BlockData chosenData = HideAndSeek.getDataController().getChosenBlockData(player.getUniqueId());
-        if (chosenData != null) {
-            player.sendMessage(Component.text("Appearance updated to ", NamedTextColor.GREEN)
-                    .append(Component.text(formatName(chosenData.getMaterial().name()) + " " + chosenData.getAsString(), NamedTextColor.GOLD)));
-        }
-        player.closeInventory();
-    }
-
-    private ItemStack createVariantItem(Material material, boolean isSelected) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text(formatName(material.name()),
-                            isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW, TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
     private ItemStack createConfirmItem() {
-        ItemStack item = new ItemStack(Material.GREEN_CONCRETE);
+        ItemStack item = new ItemStack(Material.GREEN_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("Confirm", NamedTextColor.GREEN, TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(
-                    Component.text("Click to confirm your appearance", NamedTextColor.GRAY)
-                            .decoration(TextDecoration.ITALIC, false)
-            ));
+            meta.displayName(Component.text("Confirm", NamedTextColor.GREEN, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack createNavArrow(String name) {
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text(name, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
             item.setItemMeta(meta);
         }
         return item;
     }
 
     private String formatName(String name) {
-        StringBuilder result = new StringBuilder();
-        for (String part : name.toLowerCase().split("_")) {
-            if (!result.isEmpty()) result.append(" ");
-            result.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
-        }
-        return result.toString();
+        return Arrays.stream(name.toLowerCase().split("_")).map(s -> s.substring(0, 1).toUpperCase() + s.substring(1)).collect(Collectors.joining(" "));
     }
 
-    private void copySharedBlockStates(BlockData source, BlockData target) {
-        List<String> properties = getAllBlockStateProperties(target);
-        for (String property : properties) {
-            applyStateFromSource(source, target, property);
-        }
-    }
-
-    private void applyStateFromSource(BlockData source, BlockData target, String property) {
-        try {
-            switch (property) {
-                case "facing" -> {
-                    if (source instanceof Directional src && target instanceof Directional dst) {
-                        try {
-                            dst.setFacing(src.getFacing());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy facing property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "axis" -> {
-                    if (source instanceof Orientable src && target instanceof Orientable dst) {
-                        try {
-                            dst.setAxis(src.getAxis());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy axis property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "rotation" -> {
-                    if (source instanceof Rotatable src && target instanceof Rotatable dst) {
-                        try {
-                            dst.setRotation(src.getRotation());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy rotation property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "lit" -> {
-                    if (source instanceof Lightable src && target instanceof Lightable dst) {
-                        try {
-                            dst.setLit(src.isLit());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy lit property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "waterlogged" -> {
-                    if (source instanceof Waterlogged src && target instanceof Waterlogged dst) {
-                        try {
-                            dst.setWaterlogged(src.isWaterlogged());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy waterlogged property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "candles" -> {
-                    if (source instanceof Candle src && target instanceof Candle dst) {
-                        try {
-                            dst.setCandles(src.getCandles());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy candles property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "powered" -> {
-                    if (source instanceof Powerable src && target instanceof Powerable dst) {
-                        try {
-                            dst.setPowered(src.isPowered());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy powered property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "level" -> {
-                    if (source instanceof Levelled src && target instanceof Levelled dst) {
-                        try {
-                            dst.setLevel(src.getLevel());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy level property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "age" -> {
-                    if (source instanceof Ageable src && target instanceof Ageable dst) {
-                        try {
-                            dst.setAge(src.getAge());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy age property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "half" -> {
-                    if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
-                        try {
-                            dst.setHalf(src.getHalf());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy half property (Door): " + e.getMessage());
-                        }
-                    } else if (source instanceof org.bukkit.block.data.type.TrapDoor src && target instanceof org.bukkit.block.data.type.TrapDoor dst) {
-                        try {
-                            dst.setHalf(src.getHalf());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy half property (TrapDoor): " + e.getMessage());
-                        }
-                    } else if (source instanceof org.bukkit.block.data.type.Stairs src && target instanceof org.bukkit.block.data.type.Stairs dst) {
-                        try {
-                            dst.setHalf(src.getHalf());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy half property (Stairs): " + e.getMessage());
-                        }
-                    }
-                }
-                case "hinge" -> {
-                    if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
-                        try {
-                            dst.setHinge(src.getHinge());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy hinge property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "open" -> {
-                    if (source instanceof org.bukkit.block.data.type.Door src && target instanceof org.bukkit.block.data.type.Door dst) {
-                        try {
-                            dst.setOpen(src.isOpen());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy open property (Door): " + e.getMessage());
-                        }
-                    } else if (source instanceof org.bukkit.block.data.type.TrapDoor src && target instanceof org.bukkit.block.data.type.TrapDoor dst) {
-                        try {
-                            dst.setOpen(src.isOpen());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy open property (TrapDoor): " + e.getMessage());
-                        }
-                    }
-                }
-                case "triggered" -> {
-                    if (source instanceof org.bukkit.block.data.type.Dispenser src && target instanceof org.bukkit.block.data.type.Dispenser dst) {
-                        try {
-                            dst.setTriggered(src.isTriggered());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy triggered property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "type" -> {
-                    if (source instanceof org.bukkit.block.data.type.Slab src && target instanceof org.bukkit.block.data.type.Slab dst) {
-                        try {
-                            dst.setType(src.getType());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy type property: " + e.getMessage());
-                        }
-                    }
-                }
-                case "shape" -> {
-                    if (source instanceof org.bukkit.block.data.type.Stairs src && target instanceof org.bukkit.block.data.type.Stairs dst) {
-                        try {
-                            dst.setShape(src.getShape());
-                        } catch (Exception e) {
-                            plugin.getLogger().fine("Could not copy shape property: " + e.getMessage());
-                        }
-                    }
-                }
-                default -> {
-
-                }
-            }
-        } catch (Exception e) {
-            plugin.getLogger().warning("Unexpected error applying block state from source for property " + property + ": " + e.getMessage());
-        }
+    private void setupSettings(FrameworkInventory inv) {
+        inv.setSetting("allow_outside_clicks", false);
+        inv.setSetting("allow_drag", false);
+        inv.setSetting("allow_player_inventory_interaction", false);
     }
 }

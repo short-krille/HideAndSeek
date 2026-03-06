@@ -23,6 +23,9 @@ public class BlockAppearanceConfig {
 
     private static final Pattern CUSTOM_LIST_PATTERN = Pattern.compile("\\{([^}]+)}");
 
+    private static final Pattern complexNoDefaultPattern = Pattern.compile("([({])([^})]+)([})])(?:\\[([^]]+)])?");
+    private static final Pattern tagOnlyPattern = Pattern.compile("#(\\w+)(?:\\[([^]]+)])?");
+
     private String baseBlockType;
     private String defaultVariant;
     private boolean allowAllVariants;
@@ -78,8 +81,6 @@ public class BlockAppearanceConfig {
             }
         }
 
-
-        Pattern complexNoDefaultPattern = Pattern.compile("([({])([^})]+)([})])(?:\\[([^]]+)])?");
         Matcher complexNoDefaultMatcher = complexNoDefaultPattern.matcher(pattern);
         if (complexNoDefaultMatcher.matches() && !pattern.contains("{") || (pattern.indexOf("{") != pattern.lastIndexOf("{"))) {
 
@@ -140,8 +141,6 @@ public class BlockAppearanceConfig {
             }
         }
 
-
-        Pattern tagOnlyPattern = Pattern.compile("#(\\w+)(?:\\[([^]]+)])?");
         Matcher tagOnlyMatcher = tagOnlyPattern.matcher(pattern);
         if (tagOnlyMatcher.matches() && !pattern.contains("{")) {
             String tagName = tagOnlyMatcher.group(1);

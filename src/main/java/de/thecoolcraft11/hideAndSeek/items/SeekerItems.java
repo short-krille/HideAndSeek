@@ -20,6 +20,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Lightable;
 import org.bukkit.block.data.type.RedstoneWallTorch;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
@@ -42,6 +43,7 @@ import org.joml.Vector3f;
 
 import java.util.*;
 
+@SuppressWarnings("UnstableApiUsage")
 public final class SeekerItems {
     public static final String GRAPPLING_HOOK_ITEM_ID = "has_seeker_grappling_hook";
     public static final String BLOCK_STATS_ITEM_ID = "has_seeker_block_stats";
@@ -1187,7 +1189,10 @@ public final class SeekerItems {
 
             torchType = Material.REDSTONE_TORCH;
             torchData = torchType.createBlockData();
-            torchBlock.setBlockData(torchData);
+            if (torchData instanceof Lightable lightable) {
+                lightable.setLit(false);
+            }
+            torchBlock.setBlockData(torchData, false);
             BlockDisplay display = (BlockDisplay) torchBlock.getLocation().getWorld().spawnEntity(torchBlock.getLocation(), EntityType.BLOCK_DISPLAY);
             display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-type"), PersistentDataType.STRING, "proximity");
             display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-block"), PersistentDataType.STRING, torchBlock.getLocation().toString());
@@ -1208,11 +1213,13 @@ public final class SeekerItems {
 
             torchType = Material.REDSTONE_WALL_TORCH;
             torchData = torchType.createBlockData();
-
+            if (torchData instanceof Lightable lightable) {
+                lightable.setLit(false);
+            }
 
             if (torchData instanceof RedstoneWallTorch wallTorch) {
                 wallTorch.setFacing(clickedFace);
-                torchBlock.setBlockData(wallTorch);
+                torchBlock.setBlockData(wallTorch, false);
 
 
                 BlockDisplay display = (BlockDisplay) torchBlock.getLocation().getWorld().spawnEntity(torchBlock.getLocation(), EntityType.BLOCK_DISPLAY);
@@ -1251,6 +1258,11 @@ public final class SeekerItems {
 
                 if (torchBlock.getType() != Material.REDSTONE_TORCH && torchBlock.getType() != Material.REDSTONE_WALL_TORCH) {
                     cancel();
+
+                    if (torchBlock.getBlockData() instanceof Lightable lightable) {
+                        plugin.getLogger().info("Removing power from " + torchBlock.getLocation());
+                        lightable.setLit(false);
+                    }
 
                     BlockDisplay display = sensorDisplays.remove(torchBlock.getLocation());
                     if (display != null && display.isValid()) {
@@ -1989,6 +2001,5 @@ public final class SeekerItems {
 
         return damage;
     }
-
 }
 

@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.block.BlockListParser;
 import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
@@ -22,14 +23,12 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class SeekingPhase implements GamePhase {
     private BukkitTask checkTask;
     private BukkitTask pointsTask;
+    Set<Material> allowedMaterials = new HashSet<>();
 
     @Override
     public String getId() {
@@ -45,6 +44,8 @@ public class SeekingPhase implements GamePhase {
     public void onStart(MinigameFramework plugin) {
 
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
+
+        generateAllowedBreakBlocks(hideAndSeekPlugin);
 
         TimerManager.cleanupTimers(hideAndSeekPlugin);
 
@@ -255,10 +256,12 @@ public class SeekingPhase implements GamePhase {
     public boolean canBreakBlock(Block block, Player player, MinigameFramework plugin) {
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
         Material blockType = block.getType();
+
         if (HideAndSeek.getDataController().getSeekers().contains(player.getUniqueId())) {
             if (hideAndSeekPlugin.getCustomItemManager().hasItemInMainHand(player, SeekerItems.SEEKERS_SWORD_ID)) {
-                List<String> blockBreaks = hideAndSeekPlugin.getConfig().getStringList("seeker-break-blocks");
-                return blockBreaks.contains(blockType.name());
+
+
+                return allowedMaterials.contains(blockType);
             }
         }
         return GamePhase.super.canBreakBlock(block, player, plugin);
@@ -340,5 +343,13 @@ public class SeekingPhase implements GamePhase {
     @Override
     public boolean allowEntityExperienceDrop() {
         return false;
+    }
+
+    private void generateAllowedBreakBlocks(HideAndSeek plugin) {
+        List<String> rawBlockList = plugin.getConfig().getStringList("seeker-break-blocks");
+
+        for (String entry : rawBlockList) {
+            allowedMaterials.addAll(BlockListParser.parseBlockList(entry));
+        }
     }
 }

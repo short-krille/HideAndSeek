@@ -35,6 +35,7 @@ import org.bukkit.util.Vector;
 
 import java.util.*;
 
+@SuppressWarnings("UnstableApiUsage")
 public final class HiderItems {
     public static final String SOUND_ITEM_ID = "has_hider_sound";
     public static final String EXPLOSION_ITEM_ID = "has_hider_explosion";
@@ -59,9 +60,6 @@ public final class HiderItems {
     private static final Map<UUID, Integer> trackerHits = new HashMap<>();
     private static final Map<UUID, Long> totemActiveUntil = new HashMap<>();
 
-
-    private HiderItems() {
-    }
 
     public static void registerItems(HideAndSeek plugin) {
         registerCooldownItems(plugin);

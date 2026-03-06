@@ -269,6 +269,7 @@ public class SettingRegisterer {
         plugin.getSectionRegistry().register(SectionDefinition.builder("timer").icon(Material.CLOCK).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items").icon(Material.ENDER_EYE).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("loadout").icon(Material.ARMOR_STAND).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points").icon(Material.EMERALD).build());
     }
 
     public static void registerSettings(HideAndSeek plugin) {
