@@ -52,7 +52,7 @@ public final class HideAndSeek extends MinigameFramework {
         mapManager = new MapManager(this);
         blockSelectorGUI = new BlockSelectorGUI(this);
         loadoutManager = new LoadoutManager(this);
-        loadoutGUI = new LoadoutGUI(loadoutManager);
+        loadoutGUI = new LoadoutGUI(loadoutManager, this);
         mapGUI = new MapGUI(this);
         pointService = new PointService(this);
 

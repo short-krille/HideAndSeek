@@ -2,7 +2,6 @@ package de.thecoolcraft11.hideAndSeek.listener.game;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.block.BlockDirectionUtil;
-import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
 import io.papermc.paper.event.block.BlockBreakProgressUpdateEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -36,6 +35,8 @@ import org.joml.Vector3f;
 
 import java.util.Objects;
 import java.util.UUID;
+
+import static de.thecoolcraft11.hideAndSeek.items.seeker.CurseSpellItem.isHiderCursed;
 
 public class BlockModeListener implements Listener {
     private final HideAndSeek plugin;
@@ -522,7 +523,7 @@ public class BlockModeListener implements Listener {
         Long sneakStart = HideAndSeek.getDataController().getSneakStart(playerId);
         long currentTime = System.currentTimeMillis();
 
-        if (SeekerItems.isHiderCursed(playerId)) {
+        if (isHiderCursed(playerId)) {
             HideAndSeek.getDataController().clearSneakStart(playerId);
             player.setLevel(0);
             player.setExp(0.0f);

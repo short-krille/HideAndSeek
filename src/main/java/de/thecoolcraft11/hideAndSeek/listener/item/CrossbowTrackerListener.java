@@ -10,6 +10,8 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 
+import static de.thecoolcraft11.hideAndSeek.items.hider.TrackerCrossbowItem.onTrackerHit;
+
 public class CrossbowTrackerListener implements Listener {
     private final HideAndSeek plugin;
 
@@ -49,7 +51,7 @@ public class CrossbowTrackerListener implements Listener {
             return;
         }
 
-        HiderItems.onTrackerHit(shooter, plugin);
+        onTrackerHit(shooter, plugin);
     }
 
     @EventHandler

@@ -25,6 +25,11 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
 
+import static de.thecoolcraft11.hideAndSeek.items.hider.TotemItem.isTotemActive;
+import static de.thecoolcraft11.hideAndSeek.items.hider.TotemItem.reviveWithTotem;
+import static de.thecoolcraft11.hideAndSeek.items.seeker.CurseSpellItem.applyCurseToHider;
+import static de.thecoolcraft11.hideAndSeek.items.seeker.CurseSpellItem.isCurseActive;
+
 public class PlayerHitListener implements Listener {
     private final HideAndSeek plugin;
 
@@ -96,13 +101,13 @@ public class PlayerHitListener implements Listener {
         }
 
         if (attackerIsSeeker && victimIsHider) {
-            if (SeekerItems.isCurseActive(attacker.getUniqueId())) {
-                SeekerItems.applyCurseToHider(victim, plugin);
+            if (isCurseActive(attacker.getUniqueId())) {
+                applyCurseToHider(victim, plugin);
             }
 
-            if (HiderItems.isTotemActive(victim.getUniqueId()) && event.getFinalDamage() >= victim.getHealth()) {
+            if (isTotemActive(victim.getUniqueId()) && event.getFinalDamage() >= victim.getHealth()) {
                 event.setCancelled(true);
-                HiderItems.reviveWithTotem(victim);
+                reviveWithTotem(victim);
                 return;
             }
 

@@ -4,6 +4,7 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.block.BlockListParser;
 import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
+import de.thecoolcraft11.hideAndSeek.items.seeker.SeekersSwordItem;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
 import de.thecoolcraft11.hideAndSeek.util.map.MapData;
@@ -258,7 +259,7 @@ public class SeekingPhase implements GamePhase {
         Material blockType = block.getType();
 
         if (HideAndSeek.getDataController().getSeekers().contains(player.getUniqueId())) {
-            if (hideAndSeekPlugin.getCustomItemManager().hasItemInMainHand(player, SeekerItems.SEEKERS_SWORD_ID)) {
+            if (hideAndSeekPlugin.getCustomItemManager().hasItemInMainHand(player, SeekersSwordItem.ID)) {
 
 
                 return allowedMaterials.contains(blockType);

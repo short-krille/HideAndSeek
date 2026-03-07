@@ -1,9 +1,16 @@
 package de.thecoolcraft11.hideAndSeek.gui;
 
+import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.HiderItems;
+import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
+import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.loadout.LoadoutManager;
 import de.thecoolcraft11.hideAndSeek.loadout.PlayerLoadout;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
 import de.thecoolcraft11.hideAndSeek.model.LoadoutItemType;
+import io.papermc.paper.datacomponent.DataComponentType;
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -20,12 +27,43 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
+@SuppressWarnings("UnstableApiUsage")
 public class LoadoutGUI implements Listener {
     private final LoadoutManager loadoutManager;
+    private final HideAndSeek plugin;
     private final Map<UUID, Boolean> viewMode = new HashMap<>();
 
-    public LoadoutGUI(LoadoutManager loadoutManager) {
+    private final Set<DataComponentType> ALL_TOOLTIP_COMPONENTS = Set.of(
+            DataComponentTypes.ENCHANTMENTS,
+            DataComponentTypes.STORED_ENCHANTMENTS,
+            DataComponentTypes.ATTRIBUTE_MODIFIERS,
+            DataComponentTypes.UNBREAKABLE,
+            DataComponentTypes.CAN_BREAK,
+            DataComponentTypes.CAN_PLACE_ON,
+            DataComponentTypes.DYED_COLOR,
+            DataComponentTypes.TRIM,
+            DataComponentTypes.JUKEBOX_PLAYABLE,
+
+            DataComponentTypes.BANNER_PATTERNS,
+            DataComponentTypes.BLOCK_DATA,
+            DataComponentTypes.BUNDLE_CONTENTS,
+            DataComponentTypes.CHARGED_PROJECTILES,
+            DataComponentTypes.CONTAINER,
+            DataComponentTypes.CONTAINER_LOOT,
+            DataComponentTypes.FIREWORK_EXPLOSION,
+            DataComponentTypes.FIREWORKS,
+            DataComponentTypes.INSTRUMENT,
+            DataComponentTypes.MAP_ID,
+            DataComponentTypes.PAINTING_VARIANT,
+            DataComponentTypes.POT_DECORATIONS,
+            DataComponentTypes.POTION_CONTENTS,
+            DataComponentTypes.TROPICAL_FISH_PATTERN,
+            DataComponentTypes.WRITTEN_BOOK_CONTENT
+    );
+    
+    public LoadoutGUI(LoadoutManager loadoutManager, HideAndSeek plugin) {
         this.loadoutManager = loadoutManager;
+        this.plugin = plugin;
     }
 
     public void open(Player player) {
@@ -276,41 +314,24 @@ public class LoadoutGUI implements Listener {
 
         meta.lore(lore);
         item.setItemMeta(meta);
+        item.setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hiddenComponents(ALL_TOOLTIP_COMPONENTS).build());
         return item;
     }
 
     private String getItemDescription(LoadoutItemType type) {
-        return switch (type) {
-            case FIRECRACKER -> "Creates a loud sound to scare seekers";
-            case CAT_SOUND -> "Plays a cat sound for misdirection";
-            case RANDOM_BLOCK -> "Randomize your block appearance";
-            case SPEED_BOOST -> "Gain temporary speed boost";
-            case TRACKER_CROSSBOW -> "Track seekers with arrows";
-            case BLOCK_SWAP -> "Swap blocks with other hiders";
-            case BIG_FIRECRACKER -> "Large explosion for distraction";
-            case FIREWORK_ROCKET -> "Launch fireworks as escape";
-            case KNOCKBACK_STICK -> "Knockback tool for combat";
-            case MEDKIT -> "Heal yourself in battle";
-            case TOTEM_OF_UNDYING -> "Revive from death once";
-            case INVISIBILITY_CLOAK -> "Become invisible temporarily";
-            case SLOWNESS_BALL -> "Slow down pursuing seekers";
-            case SMOKE_BOMB -> "Create a smoke cloud for cover";
-            case GRAPPLING_HOOK -> "Launch towards your target";
-            case INK_SPLASH -> "Blind nearby hiders";
-            case LIGHTNING_FREEZE -> "Freeze all hiders briefly";
-            case GLOWING_COMPASS -> "Make nearest hider glow";
-            case CURSE_SPELL -> "Curse hiders when hitting them";
-            case BLOCK_RANDOMIZER -> "Force all hiders to change blocks";
-            case CHAIN_PULL -> "Pull hiders towards you";
-            case PROXIMITY_SENSOR -> "Place sensor to detect hiders";
-            case CAGE_TRAP -> "Trap hiders in an invisible cage";
-        };
+        GameItem item = SeekerItems.getItem(type.getItemId());
+        if (item == null) {
+            item = HiderItems.getItem(type.getItemId());
+        }
+
+        return (item != null) ? item.getDescription() : "No description available";
     }
 
     private ItemStack createSelectedItemDisplay(LoadoutItemType type, int cost) {
         Material material = getMaterialForItem(type);
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
+
 
         NamedTextColor rarityColor = getRarityColor(type.getRarity());
         meta.displayName(Component.text(formatName(type.name()), rarityColor, TextDecoration.BOLD)
@@ -327,35 +348,17 @@ public class LoadoutGUI implements Listener {
 
         meta.lore(lore);
         item.setItemMeta(meta);
+        item.setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hiddenComponents(ALL_TOOLTIP_COMPONENTS).build());
         return item;
     }
 
     private Material getMaterialForItem(LoadoutItemType type) {
-        return switch (type) {
-            case FIRECRACKER -> Material.RED_CANDLE;
-            case CAT_SOUND -> Material.CAT_SPAWN_EGG;
-            case RANDOM_BLOCK -> Material.BLAZE_POWDER;
-            case SPEED_BOOST -> Material.WOODEN_HOE;
-            case TRACKER_CROSSBOW -> Material.CROSSBOW;
-            case BLOCK_SWAP -> Material.ENDER_PEARL;
-            case BIG_FIRECRACKER -> Material.TNT;
-            case FIREWORK_ROCKET -> Material.FIREWORK_ROCKET;
-            case KNOCKBACK_STICK -> Material.STICK;
-            case MEDKIT -> Material.GOLDEN_APPLE;
-            case TOTEM_OF_UNDYING -> Material.TOTEM_OF_UNDYING;
-            case INVISIBILITY_CLOAK -> Material.PHANTOM_MEMBRANE;
-            case SLOWNESS_BALL -> Material.SNOWBALL;
-            case SMOKE_BOMB -> Material.GRAY_DYE;
-            case GRAPPLING_HOOK -> Material.FISHING_ROD;
-            case INK_SPLASH -> Material.INK_SAC;
-            case LIGHTNING_FREEZE -> Material.LIGHTNING_ROD;
-            case GLOWING_COMPASS -> Material.COMPASS;
-            case CURSE_SPELL -> Material.ENCHANTED_BOOK;
-            case BLOCK_RANDOMIZER -> Material.BLAZE_POWDER;
-            case CHAIN_PULL -> Material.LEAD;
-            case PROXIMITY_SENSOR -> Material.REDSTONE_TORCH;
-            case CAGE_TRAP -> Material.IRON_BARS;
-        };
+        GameItem item = SeekerItems.getItem(type.getItemId());
+        if (item == null) {
+            item = HiderItems.getItem(type.getItemId());
+        }
+
+        return (item != null) ? item.createItem(plugin).getType() : Material.BARRIER;
     }
 
     private NamedTextColor getRarityColor(ItemRarity rarity) {
