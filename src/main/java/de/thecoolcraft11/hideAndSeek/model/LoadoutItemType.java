@@ -30,6 +30,7 @@ public enum LoadoutItemType {
     CHAIN_PULL(false, true, ItemRarity.UNCOMMON, ChainPullItem.ID),
     PROXIMITY_SENSOR(false, true, ItemRarity.RARE, ProximitySensorItem.ID),
     CAGE_TRAP(false, true, ItemRarity.RARE, CageTrapItem.ID),
+    GHOST_ESSENCE(true, false, ItemRarity.RARE, GhostEssenceItem.ID),
     ;
 
     private final boolean forHiders;

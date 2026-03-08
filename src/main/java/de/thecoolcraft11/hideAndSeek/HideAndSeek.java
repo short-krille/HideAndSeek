@@ -12,10 +12,7 @@ import de.thecoolcraft11.hideAndSeek.listener.item.CrossbowTrackerListener;
 import de.thecoolcraft11.hideAndSeek.listener.item.LightningListener;
 import de.thecoolcraft11.hideAndSeek.listener.item.SlownessBallListener;
 import de.thecoolcraft11.hideAndSeek.listener.item.SmokeBombListener;
-import de.thecoolcraft11.hideAndSeek.listener.player.HiderEquipmentChangeListener;
-import de.thecoolcraft11.hideAndSeek.listener.player.HiderTotemListener;
-import de.thecoolcraft11.hideAndSeek.listener.player.PlayerHitListener;
-import de.thecoolcraft11.hideAndSeek.listener.player.SeekerKillModeListener;
+import de.thecoolcraft11.hideAndSeek.listener.player.*;
 import de.thecoolcraft11.hideAndSeek.loadout.LoadoutManager;
 import de.thecoolcraft11.hideAndSeek.phase.EndedPhase;
 import de.thecoolcraft11.hideAndSeek.phase.HidingPhase;
@@ -89,6 +86,7 @@ public final class HideAndSeek extends MinigameFramework {
         Bukkit.getPluginManager().registerEvents(new SmokeBombListener(this), this);
         Bukkit.getPluginManager().registerEvents(loadoutGUI, this);
         Bukkit.getPluginManager().registerEvents(mapGUI, this);
+        Bukkit.getPluginManager().registerEvents(new PlayerSpectateListener(), this);
 
 
         registerMapSelectionMenu();
