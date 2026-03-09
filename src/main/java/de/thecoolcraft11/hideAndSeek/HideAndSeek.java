@@ -14,6 +14,8 @@ import de.thecoolcraft11.hideAndSeek.listener.item.SlownessBallListener;
 import de.thecoolcraft11.hideAndSeek.listener.item.SmokeBombListener;
 import de.thecoolcraft11.hideAndSeek.listener.player.*;
 import de.thecoolcraft11.hideAndSeek.loadout.LoadoutManager;
+import de.thecoolcraft11.hideAndSeek.nms.NmsAdapter;
+import de.thecoolcraft11.hideAndSeek.nms.NmsLoader;
 import de.thecoolcraft11.hideAndSeek.phase.EndedPhase;
 import de.thecoolcraft11.hideAndSeek.phase.HidingPhase;
 import de.thecoolcraft11.hideAndSeek.phase.LobbyPhase;
@@ -41,6 +43,7 @@ public final class HideAndSeek extends MinigameFramework {
     private LoadoutGUI loadoutGUI;
     private MapGUI mapGUI;
     private PointService pointService;
+    private NmsAdapter nmsAdapter;
 
     @Override
     protected void onGameEnable() {
@@ -53,6 +56,7 @@ public final class HideAndSeek extends MinigameFramework {
         mapGUI = new MapGUI(this);
         pointService = new PointService(this);
 
+        nmsAdapter = NmsLoader.load(this);
 
         mapManager.loadDisallowedBlockStates();
 
@@ -203,5 +207,9 @@ public final class HideAndSeek extends MinigameFramework {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    public NmsAdapter getNmsAdapter() {
+        return nmsAdapter;
     }
 }

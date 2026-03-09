@@ -2,6 +2,10 @@ package de.thecoolcraft11.hideAndSeek.model;
 
 import de.thecoolcraft11.hideAndSeek.items.hider.*;
 import de.thecoolcraft11.hideAndSeek.items.seeker.*;
+import de.thecoolcraft11.hideAndSeek.nms.NmsAdapter;
+import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
+
+import java.util.Set;
 
 public enum LoadoutItemType {
 
@@ -30,19 +34,21 @@ public enum LoadoutItemType {
     CHAIN_PULL(false, true, ItemRarity.UNCOMMON, ChainPullItem.ID),
     PROXIMITY_SENSOR(false, true, ItemRarity.RARE, ProximitySensorItem.ID),
     CAGE_TRAP(false, true, ItemRarity.RARE, CageTrapItem.ID),
-    GHOST_ESSENCE(true, false, ItemRarity.RARE, GhostEssenceItem.ID),
+    GHOST_ESSENCE(true, false, ItemRarity.RARE, GhostEssenceItem.ID, NmsCapabilities.CLIENT_GAMEMODE_SPOOFING, NmsCapabilities.MOB_PATHFINDING),
     ;
 
     private final boolean forHiders;
     private final boolean forSeekers;
     private final ItemRarity rarity;
     private final String itemId;
+    private final Set<NmsCapabilities> requiredCapabilities;
 
-    LoadoutItemType(boolean forHiders, boolean forSeekers, ItemRarity rarity, String itemId) {
+    LoadoutItemType(boolean forHiders, boolean forSeekers, ItemRarity rarity, String itemId, NmsCapabilities... requiredCapabilities) {
         this.forHiders = forHiders;
         this.forSeekers = forSeekers;
         this.rarity = rarity;
         this.itemId = itemId;
+        this.requiredCapabilities = Set.of(requiredCapabilities);
     }
 
     public boolean isForHiders() {
@@ -61,4 +67,7 @@ public enum LoadoutItemType {
         return itemId;
     }
 
+    public boolean isSupported(NmsAdapter nms) {
+        return nms.capabilities().containsAll(requiredCapabilities);
+    }
 }

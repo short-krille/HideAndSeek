@@ -2,20 +2,14 @@ package de.thecoolcraft11.hideAndSeek.items.hider;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
+import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.GameType;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.craftbukkit.entity.CraftMob;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.*;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -50,11 +44,19 @@ public class GhostEssenceItem implements GameItem {
 
     @Override
     public void register(HideAndSeek plugin) {
-        int cooldown = plugin.getSettingRegistry().get("hider-items.ghost-essence.cooldown", 5);
+        int cooldown = plugin.getSettingRegistry().get("hider-items.ghost-essence.cooldown", 25);
         plugin.getCustomItemManager().registerItem(new CustomItemBuilder(createItem(plugin), getId())
                 .withAction(ItemActionType.RIGHT_CLICK_AIR, ctx -> useGhostEssence(ctx.getPlayer(), plugin))
                 .withAction(ItemActionType.RIGHT_CLICK_BLOCK, ctx -> useGhostEssence(ctx.getPlayer(), plugin))
+                .withDescription(getDescription())
+                .withDropPrevention(true)
+                .withCraftPrevention(true)
                 .withVanillaCooldown(cooldown * 20)
+                .withCustomCooldown(cooldown * 1000L)
+                .withVanillaCooldownDisplay(true)
+                .allowOffHand(false)
+                .allowArmor(false)
+                .cancelDefaultAction(true)
                 .build());
     }
 
@@ -62,20 +64,21 @@ public class GhostEssenceItem implements GameItem {
         if (!HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())) return;
 
         final Location startLoc = player.getLocation().clone();
-        final double startY = startLoc.getY() - 10;
-        final ServerPlayer serverPlayer = ((CraftPlayer) player).getHandle();
 
+        int maxRadius = plugin.getSettingRegistry().get("hider-items.ghost-essence.max-radius", 15);
+        int minLightBlock = plugin.getSettingRegistry().get("hider-items.ghost-essence.min-light-block", 1);
+        int minLightSky = plugin.getSettingRegistry().get("hider-items.ghost-essence.min-light-sky", 1);
+        float flyingSpeed = plugin.getSettingRegistry().get("hider-items.ghost-essence.flying-speed", 0.01f);
+        int maxDurationSeconds = plugin.getSettingRegistry().get("hider-items.ghost-essence.max-duration", 3);
 
-        serverPlayer.setGameMode(GameType.SPECTATOR);
-        serverPlayer.connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, 0.0f));
+        plugin.getNmsAdapter().setServerGameModeSpectator(player);
+        plugin.getNmsAdapter().spoofClientGameMode(player, GameMode.SURVIVAL);
 
-        serverPlayer.getAbilities().flying = true;
-        serverPlayer.getAbilities().mayfly = true;
-        serverPlayer.getAbilities().setFlyingSpeed(0.05f);
         player.setAllowFlight(true);
         player.setFlying(true);
+        player.setFlySpeed(flyingSpeed);
 
-        player.sendMessage(Component.text("You are now a Ghost! Phasing enabled for 10s.", NamedTextColor.AQUA));
+        player.sendMessage(Component.text("You are now a Ghost! Phasing enabled for " + maxDurationSeconds + "s.", NamedTextColor.AQUA));
         player.playSound(player.getLocation(), Sound.ENTITY_GHAST_WARN, 1f, 1.2f);
         Location start = player.getLocation().clone();
 
@@ -93,12 +96,13 @@ public class GhostEssenceItem implements GameItem {
 
             @Override
             public void run() {
-                if (!player.isOnline() || ticks >= 200) {
+                if (!player.isOnline() || ticks >= maxDurationSeconds * 20) {
                     this.cancel();
                     Location endLoc = player.getLocation();
 
 
-                    serverPlayer.setGameMode(GameType.SURVIVAL);
+                    player.setGameMode(GameMode.SURVIVAL);
+                    plugin.getNmsAdapter().spoofClientGameMode(player, GameMode.SURVIVAL);
                     player.setAllowFlight(false);
                     player.setFlying(false);
 
@@ -110,16 +114,16 @@ public class GhostEssenceItem implements GameItem {
                     if (!player.getWorld().getWorldBorder().isInside(endLoc)) {
                         isCheating = true;
                         reason = "You cannot materialize outside the world border!";
-                    } else if (endLoc.distance(startLoc) > 15) {
+                    } else if (endLoc.distance(startLoc) > maxRadius) {
                         isCheating = true;
                         reason = "You wandered too far from your physical body!";
                     } else if (endLoc.getBlock().getType().isSolid() || player.getEyeLocation().getBlock().getType().isSolid()) {
                         isCheating = true;
                         reason = "You materialized inside a wall!";
-                    } else if (endLoc.getBlock().getLightLevel() < 1 && endLoc.getBlock().getLightFromSky() < 1) {
+                    } else if (endLoc.getBlock().getLightLevel() < minLightBlock && endLoc.getBlock().getLightFromSky() < minLightSky) {
                         isCheating = true;
                         reason = "It's too dark and cramped to materialize here!";
-                    } else if (!canPathfindBack((CraftMob) ghost, startLoc, endLoc)) {
+                    } else if (!canPathfindBack(plugin, ghost, startLoc, endLoc)) {
                         isCheating = true;
                         reason = "There is no way to reach this location!";
                     }
@@ -136,21 +140,13 @@ public class GhostEssenceItem implements GameItem {
                     return;
                 }
 
-
-                if (player.getLocation().getY() < startY) {
-                    Location loc = player.getLocation();
-                    loc.setY(startY);
-                    player.teleport(loc);
-                    player.setVelocity(player.getVelocity().setY(0));
-                }
-
-
-                if (player.getLocation().distanceSquared(startLoc) > 225.0) {
+                if (player.getLocation().distanceSquared(startLoc) > (double) (maxRadius * maxRadius)) {
 
                     org.bukkit.util.Vector direction = player.getLocation().toVector().subtract(startLoc.toVector()).normalize();
 
 
-                    Location boundaryLocation = startLoc.clone().add(direction.multiply(14.8));
+                    double boundaryDist = Math.max(0.2, maxRadius - 0.2);
+                    Location boundaryLocation = startLoc.clone().add(direction.multiply(boundaryDist));
 
 
                     boundaryLocation.setYaw(player.getLocation().getYaw());
@@ -170,44 +166,22 @@ public class GhostEssenceItem implements GameItem {
                     player.getWorld().spawnParticle(org.bukkit.Particle.SOUL, player.getLocation().add(0, 1, 0), 3, 0.1, 0.1, 0.1, 0.02);
                 }
 
-                if (ticks < 20 * 9) ghost.teleport(start);
+                if (ticks < maxDurationSeconds * 20 - 20) ghost.teleport(start);
 
                 ticks++;
             }
         }.runTaskTimer(plugin, 1L, 1L);
     }
 
-    private boolean canPathfindBack(CraftMob ghost, Location start, Location end) {
+    private boolean canPathfindBack(HideAndSeek plugin, Mob ghost, Location start, Location end) {
 
         if (!start.getWorld().equals(end.getWorld())) return false;
 
-
-        try {
-
-            ghost.getHandle().getNavigation().recomputePath();
-
-            var pathfinder = ghost.getPathfinder();
-
-            var path = pathfinder.findPath(end);
-
-            if (path == null) {
-
-                path = pathfinder.findPath(end.clone().add(0, 1, 0));
-            }
-
-            boolean success = false;
-            if (path != null && path.getFinalPoint() != null) {
-
-                success = path.getFinalPoint().distanceSquared(end) < 6.0;
-            }
-
-            ghost.remove();
-            return success;
-
-        } catch (Exception e) {
-            ghost.remove();
-            return false;
+        if (!plugin.getNmsAdapter().hasCapability(NmsCapabilities.MOB_PATHFINDING)) {
+            return true;
         }
+
+        return plugin.getNmsAdapter().canPathfind(ghost, start, end);
     }
 
     @Override
@@ -217,6 +191,13 @@ public class GhostEssenceItem implements GameItem {
 
     @Override
     public Set<String> getConfigKeys() {
-        return Set.of("hider-items.ghost-essence.cooldown");
+        return Set.of(
+                "hider-items.ghost-essence.cooldown",
+                "hider-items.ghost-essence.max-radius",
+                "hider-items.ghost-essence.min-light-block",
+                "hider-items.ghost-essence.min-light-sky",
+                "hider-items.ghost-essence.flying-speed",
+                "hider-items.ghost-essence.max-duration"
+        );
     }
 }

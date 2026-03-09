@@ -5,16 +5,11 @@ import de.thecoolcraft11.hideAndSeek.block.BlockDirectionUtil;
 import io.papermc.paper.event.block.BlockBreakProgressUpdateEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.block.data.CraftBlockData;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -38,7 +33,6 @@ import org.bukkit.util.VoxelShape;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -919,40 +913,18 @@ public class BlockModeListener implements Listener {
         interaction.setInteractionWidth((float) ((bb.getWidthX() + bb.getWidthZ()) / 2));
     }
 
-    public static List<BoundingBox> getBoundingBoxesFromBlockData(BlockData blockData, Location loc) {
-
-        BlockState nmsState = ((CraftBlockData) blockData).getState();
-
-
-        BlockPos pos = new BlockPos(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
-
-
-        net.minecraft.world.phys.shapes.VoxelShape shape = nmsState.getShape(
-                ((CraftWorld) loc.getWorld()).getHandle(),
-                pos,
-                net.minecraft.world.phys.shapes.CollisionContext.empty()
-        );
-
-        List<BoundingBox> result = new ArrayList<>();
-
-
-        for (AABB aabb : shape.toAabbs()) {
-            BoundingBox bb = new BoundingBox(
-                    loc.getX() + aabb.minX,
-                    loc.getY() + aabb.minY,
-                    loc.getZ() + aabb.minZ,
-                    loc.getX() + aabb.maxX,
-                    loc.getY() + aabb.maxY,
-                    loc.getZ() + aabb.maxZ
-            );
-            result.add(bb);
+    private List<BoundingBox> getBoundingBoxesFromBlockData(BlockData blockData, Location loc) {
+        List<BoundingBox> adapterBoxes = plugin.getNmsAdapter().getBoundingBoxes(blockData, loc);
+        if (adapterBoxes != null && !adapterBoxes.isEmpty()) {
+            return adapterBoxes;
         }
-
-        return result;
+        
+        VoxelShape shape = blockData.getCollisionShape(loc);
+        return List.copyOf(shape.getBoundingBoxes());
     }
 
 
-    public static BoundingBox getCombinedBoundingBox(BlockData blockData, Location loc) {
+    private BoundingBox getCombinedBoundingBox(BlockData blockData, Location loc) {
         List<BoundingBox> boxes = getBoundingBoxesFromBlockData(blockData, loc);
 
         if (boxes.isEmpty()) {
