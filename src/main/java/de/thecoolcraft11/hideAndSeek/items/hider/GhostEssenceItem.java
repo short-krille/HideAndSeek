@@ -177,9 +177,6 @@ public class GhostEssenceItem implements GameItem {
         }.runTaskTimer(plugin, 1L, 1L);
     }
 
-    /**
-     * Simulates a Mob pathfind to see if the location is reachable by normal means.
-     */
     private boolean canPathfindBack(CraftMob ghost, Location start, Location end) {
 
         if (!start.getWorld().equals(end.getWorld())) return false;
