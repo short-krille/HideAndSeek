@@ -1,10 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.util.setting;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
-import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
-import de.thecoolcraft11.hideAndSeek.model.GameStyleEnum;
-import de.thecoolcraft11.hideAndSeek.model.SeekerKillModeEnum;
-import de.thecoolcraft11.hideAndSeek.model.SpeedBoostType;
+import de.thecoolcraft11.hideAndSeek.model.*;
 import de.thecoolcraft11.minigameframework.config.SectionDefinition;
 import de.thecoolcraft11.minigameframework.config.SettingDefinition;
 import de.thecoolcraft11.minigameframework.config.SettingType;
@@ -183,7 +180,9 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.hider-items.ghost-essence.min-light-block", Integer.class, 1);
         plugin.getConfigRegistry().register("settings.hider-items.ghost-essence.min-light-sky", Integer.class, 1);
         plugin.getConfigRegistry().register("settings.hider-items.ghost-essence.flying-speed", Double.class, 0.01);
-        plugin.getConfigRegistry().register("settings.hider-items.ghost-essence.max-duration", Integer.class, 3);
+        plugin.getConfigRegistry().register("settings.hider-items.ghost-essence.max-duration", Float.class, 1.5f);
+        plugin.getConfigRegistry().register("settings.hider-items.ghost-essence.boost-power", Float.class, 1.5f);
+        plugin.getConfigRegistry().register("settings.hider-items.ghost-essence.particle-mode", String.class, "FLYING");
 
 
         plugin.getConfigRegistry().register("settings.timer.hiding_color1", String.class, "#FF0000");
@@ -862,11 +861,29 @@ public class SettingRegisterer {
                 .customIcon(Material.FEATHER)
                 .build());
 
-        plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.max-duration", SettingType.INTEGER, Integer.class)
-                .defaultValue(getConfigValue(plugin, "hider-items.ghost-essence.max-duration", 3))
+        plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.max-duration", SettingType.INTEGER, Float.class)
+                .defaultValue(getConfigValue(plugin, "hider-items.ghost-essence.max-duration", 1.5f))
                 .range(1, 60)
                 .description("Max ghost duration in seconds")
                 .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.boost-power", SettingType.FLOAT, Float.class)
+                .defaultValue(getConfigValue(plugin, "hider-items.ghost-essence.boost-power", 1.5f))
+                .rangeFloat(0.0f, 5.0f)
+                .description("Initial boost power when activating ghost essence")
+                .customIcon(Material.GHAST_TEAR)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.particle-mode", SettingType.ENUM, GhostEssenceParticleMode.class)
+                .defaultValue(getEnumConfigValue(plugin, "hider-items.ghost-essence.particle-mode", GhostEssenceParticleMode.class, GhostEssenceParticleMode.FLYING))
+                .description("Particle effect mode for ghost essence")
+                .customIcon(Material.SOUL_TORCH)
+                .valueIcons(Map.of(
+                        GhostEssenceParticleMode.FLYING, Material.SOUL_TORCH,
+                        GhostEssenceParticleMode.SNAP, Material.SOUL_LANTERN,
+                        GhostEssenceParticleMode.NONE, Material.BARRIER
+                ))
                 .build());
 
 

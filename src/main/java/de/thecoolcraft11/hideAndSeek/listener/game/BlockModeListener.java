@@ -2,6 +2,7 @@ package de.thecoolcraft11.hideAndSeek.listener.game;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.block.BlockDirectionUtil;
+import de.thecoolcraft11.hideAndSeek.util.XpProgressHelper;
 import io.papermc.paper.event.block.BlockBreakProgressUpdateEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -543,8 +544,7 @@ public class BlockModeListener implements Listener {
 
             HideAndSeek.getDataController().setSneakStart(playerId, currentTime);
 
-            player.setLevel(5);
-            player.setExp(1.0f);
+            XpProgressHelper.applyCountdown(player, 0, SNEAK_DURATION_MS);
             return;
         }
 
@@ -556,16 +556,7 @@ public class BlockModeListener implements Listener {
             player.setExp(0.0f);
             placeBlockAndHide(player);
         } else {
-
-
-            int secondsLeft = (int) ((SNEAK_DURATION_MS - sneakDuration) / 1000);
-            if (secondsLeft < 0) secondsLeft = 0;
-
-
-            float progress = (float) (SNEAK_DURATION_MS - sneakDuration) / SNEAK_DURATION_MS;
-
-            player.setLevel(secondsLeft);
-            player.setExp(progress);
+            XpProgressHelper.applyCountdown(player, sneakDuration, SNEAK_DURATION_MS);
         }
     }
 
@@ -918,7 +909,7 @@ public class BlockModeListener implements Listener {
         if (adapterBoxes != null && !adapterBoxes.isEmpty()) {
             return adapterBoxes;
         }
-        
+
         VoxelShape shape = blockData.getCollisionShape(loc);
         return List.copyOf(shape.getBoundingBoxes());
     }

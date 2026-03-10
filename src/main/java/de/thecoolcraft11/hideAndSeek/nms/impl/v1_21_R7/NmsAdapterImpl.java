@@ -108,10 +108,6 @@ public class NmsAdapterImpl implements NmsAdapter {
 
             var path = pathfinder.findPath(end);
 
-            if (path == null) {
-                path = pathfinder.findPath(end.clone().add(0, -1, 0));
-            }
-
             if (path == null || path.getFinalPoint() == null) {
                 return false;
             }

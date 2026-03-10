@@ -159,11 +159,10 @@ settings:
     ghost-essence:
       cooldown: 25
       max-radius: 15
-      points: 10
       min-light-block: 1
       min-light-sky: 1
       flying-speed: 0.01
-      max-duration: 3
+      max-duration: 1.5
 
   seeker-items:
     grappling-hook:

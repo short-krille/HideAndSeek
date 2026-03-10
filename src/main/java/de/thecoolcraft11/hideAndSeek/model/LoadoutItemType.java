@@ -23,6 +23,7 @@ public enum LoadoutItemType {
     INVISIBILITY_CLOAK(true, false, ItemRarity.EPIC, InvisibilityCloakItem.ID),
     SLOWNESS_BALL(true, false, ItemRarity.UNCOMMON, SlownessBallItem.ID),
     SMOKE_BOMB(true, false, ItemRarity.UNCOMMON, SmokeBombItem.ID),
+    GHOST_ESSENCE(true, false, ItemRarity.RARE, GhostEssenceItem.ID, NmsCapabilities.CLIENT_GAMEMODE_SPOOFING, NmsCapabilities.MOB_PATHFINDING),
 
 
     GRAPPLING_HOOK(false, true, ItemRarity.COMMON, GrapplingHookItem.ID),
@@ -34,7 +35,6 @@ public enum LoadoutItemType {
     CHAIN_PULL(false, true, ItemRarity.UNCOMMON, ChainPullItem.ID),
     PROXIMITY_SENSOR(false, true, ItemRarity.RARE, ProximitySensorItem.ID),
     CAGE_TRAP(false, true, ItemRarity.RARE, CageTrapItem.ID),
-    GHOST_ESSENCE(true, false, ItemRarity.RARE, GhostEssenceItem.ID, NmsCapabilities.CLIENT_GAMEMODE_SPOOFING, NmsCapabilities.MOB_PATHFINDING),
     ;
 
     private final boolean forHiders;
