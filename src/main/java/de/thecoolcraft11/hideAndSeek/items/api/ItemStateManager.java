@@ -24,7 +24,7 @@ public record ItemStateManager(HideAndSeek plugin) {
     public static final Map<UUID, BukkitTask> medkitChannelParticleTasks = new HashMap<>();
     public static final Map<UUID, XpProgressHelper.SavedXp> medkitChannelXp = new HashMap<>();
 
-    
+
     public static final Map<UUID, BukkitTask> invisibilityCloakXpTasks = new HashMap<>();
     public static final Map<UUID, BukkitTask> lightningFreezeXpTasks = new HashMap<>();
     public static final Map<UUID, BukkitTask> lightningFreezeHiderXpTasks = new HashMap<>();
@@ -35,9 +35,6 @@ public record ItemStateManager(HideAndSeek plugin) {
     public static final Map<UUID, BukkitTask> inkSplashSeekerXpTasks = new HashMap<>();
     public static final Map<UUID, BukkitTask> ghostEssenceXpTasks = new HashMap<>();
 
-    /**
-     * Tracks when the sword charge started; XP save/restore is handled by {@code swordChargeXp}.
-     */
     public record SwordChargeState(long startedAtMs) {
     }
 }
