@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class SettingRegisterer {
@@ -273,16 +274,57 @@ public class SettingRegisterer {
         plugin.getSectionRegistry().register(SectionDefinition.builder("game").icon(Material.COMPARATOR).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("blockstats").icon(Material.BOOKSHELF).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items").icon(Material.PLAYER_HEAD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.sound").icon(Material.CAT_SPAWN_EGG).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.explosion").icon(Material.RED_CANDLE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.speed-boost").icon(Material.WOODEN_HOE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.knockback-stick").icon(Material.STICK).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.block-swap").icon(Material.ENDER_PEARL).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.big-firecracker").icon(Material.TNT).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.firework-rocket").icon(Material.FIREWORK_ROCKET).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.medkit").icon(Material.GOLDEN_APPLE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.totem").icon(Material.TOTEM_OF_UNDYING).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.invisibility-cloak").icon(Material.PHANTOM_MEMBRANE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.slowness-ball").icon(Material.SNOWBALL).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.smoke-bomb").icon(Material.GRAY_DYE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.ghost-essence").icon(Material.GHAST_TEAR).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("timer").icon(Material.CLOCK).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items").icon(Material.ENDER_EYE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.grappling-hook").icon(Material.FISHING_ROD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.ink-splash").icon(Material.INK_SAC).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.lightning-freeze").icon(Material.LIGHTNING_ROD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.glowing-compass").icon(Material.COMPASS).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.curse-spell").icon(Material.ENCHANTED_BOOK).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.block-randomizer").icon(Material.BLAZE_POWDER).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.chain-pull").icon(Material.LEAD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.proximity-sensor").icon(Material.REDSTONE_TORCH).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.cage-trap").icon(Material.IRON_BARS).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.sword-of-seeking").icon(Material.IRON_SWORD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("seeker-items.seeker-sword-throw").icon(Material.DIAMOND_SWORD).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("loadout").icon(Material.ARMOR_STAND).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("loadout.token-cost").icon(Material.GOLD_BLOCK).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("points").icon(Material.EMERALD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.tracking").icon(Material.CLOCK).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider").icon(Material.PLAYER_HEAD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider.survival").icon(Material.EMERALD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider.proximity").icon(Material.SCULK_SENSOR).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider.near-miss").icon(Material.TOTEM_OF_UNDYING).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider.taunt").icon(Material.FIREWORK_ROCKET).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider.sharpshooter").icon(Material.CROSSBOW).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider.survivor").icon(Material.SHIELD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.hider.special").icon(Material.BELL).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker").icon(Material.ENDER_EYE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.active-hunter").icon(Material.IRON_SWORD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.utility-success").icon(Material.ENDER_EYE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.interception").icon(Material.IRON_SWORD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.kill").icon(Material.NETHERITE_SWORD).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.assist").icon(Material.CHAINMAIL_CHESTPLATE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.special").icon(Material.WOLF_SPAWN_EGG).build());
     }
 
     public static void registerSettings(HideAndSeek plugin) {
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.gametype", SettingType.ENUM, GameModeEnum.class)
                 .defaultValue(getEnumConfigValue(plugin, "game.gametype", GameModeEnum.class, GameModeEnum.NORMAL))
-                .customIcon(Material.POTION)
+                .customIcon(Material.COMMAND_BLOCK)
                 .description("Gamemode of the game")
                 .valueIcons(Map.of(
                         GameModeEnum.NORMAL, Material.PLAYER_HEAD,
@@ -293,7 +335,7 @@ public class SettingRegisterer {
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.gamestyle", SettingType.ENUM, GameStyleEnum.class)
                 .defaultValue(getEnumConfigValue(plugin, "game.gamestyle", GameStyleEnum.class, GameStyleEnum.SPECTATOR))
-                .customIcon(Material.IRON_SWORD)
+                .customIcon(Material.NETHER_STAR)
                 .description("Gamemode of the game")
                 .valueIcons(Map.of(
                         GameStyleEnum.SPECTATOR, Material.ENDER_EYE,
@@ -313,32 +355,32 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "game.seeking_time", 300))
                 .range(60, 1800)
                 .description("Seeking phase duration in seconds")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.hider_invisibility", SettingType.BOOLEAN, Boolean.class)
                 .defaultValue(getConfigValue(plugin, "game.hider_invisibility", false))
                 .description("Grant hiders invisibility during hiding phase")
-                .customIcon(Material.DARK_OAK_SAPLING)
+                .customIcon(Material.POTION)
                 .valueIconStacks(Map.of(
-                        true, setEnchanted(Material.DARK_OAK_SAPLING, true),
-                        false, setEnchanted(Material.DARK_OAK_SAPLING, false)
+                        true, setEnchanted(Material.POTION, true),
+                        false, setEnchanted(Material.POTION, false)
                 ))
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.small_mode_size", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "game.small_mode_size", 0.5))
                 .description("Size scale for SMALL mode hiders (0.1 = tiny, 1.0 = normal)")
-                .customIcon(Material.IRON_NUGGET)
+                .customIcon(Material.SLIME_BALL)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.random_team_distribution", SettingType.BOOLEAN, Boolean.class)
                 .defaultValue(getConfigValue(plugin, "game.random_team_distribution", true))
                 .description("Enable random distribution of players into hider/seeker teams")
-                .customIcon(Material.REDSTONE)
+                .customIcon(Material.PLAYER_HEAD)
                 .valueIconStacks(Map.of(
-                        true, setEnchanted(Material.REDSTONE, true),
-                        false, setEnchanted(Material.REDSTONE, false)
+                        true, setEnchanted(Material.PLAYER_HEAD, true),
+                        false, setEnchanted(Material.PLAYER_HEAD, false)
                 ))
                 .build());
 
@@ -365,10 +407,10 @@ public class SettingRegisterer {
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.use_map_specific_seeker_count", SettingType.BOOLEAN, Boolean.class)
                 .defaultValue(getConfigValue(plugin, "game.use_map_specific_seeker_count", true))
                 .description("Use seeker configuration from map config if available, otherwise use global settings")
-                .customIcon(Material.DIAMOND_SWORD)
+                .customIcon(Material.IRON_SWORD)
                 .valueIconStacks(Map.of(
-                        true, setEnchanted(Material.DIAMOND_SWORD, true),
-                        false, setEnchanted(Material.DIAMOND_SWORD, false)
+                        true, setEnchanted(Material.IRON_SWORD, true),
+                        false, setEnchanted(Material.IRON_SWORD, false)
                 ))
                 .build());
 
@@ -385,21 +427,21 @@ public class SettingRegisterer {
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.fixed_seeker_team", SettingType.STRING, String.class)
                 .defaultValue(getConfigValue(plugin, "game.fixed_seeker_team", ""))
                 .description("Fixed seeker team (leave empty for random). Set to a team name to always use that team as seekers")
-                .customIcon(Material.ENDER_EYE)
+                .customIcon(Material.WHITE_BANNER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeker_count", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "game.seeker_count", 1))
                 .range(1, 10)
                 .description("Number of seekers (if random distribution is enabled)")
-                .customIcon(Material.ENDER_EYE)
+                .customIcon(Material.IRON_SWORD)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.hider_health", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "game.hider_health", 20))
                 .range(1, 20)
                 .description("Health of hiders (in half-hearts)")
-                .customIcon(Material.REDSTONE_BLOCK)
+                .customIcon(Material.GOLDEN_APPLE)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.block_view_height", SettingType.FLOAT, Float.class)
@@ -433,7 +475,7 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "game.gaze_kill_max_distance", 10.0))
                 .rangeDouble(5.0, 50.0)
                 .description("Maximum distance for gaze kill in blocks")
-                .customIcon(Material.ENDER_EYE)
+                .customIcon(Material.SPYGLASS)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.gaze_kill_fov", SettingType.DOUBLE, Double.class)
@@ -456,14 +498,14 @@ public class SettingRegisterer {
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.auto_cleanup_after_round", SettingType.BOOLEAN, Boolean.class)
                 .defaultValue(getConfigValue(plugin, "game.auto_cleanup_after_round", true))
                 .description("Automatically teleport players to lobby and delete map after round")
-                .customIcon(ItemStack.of(Material.REDSTONE_BLOCK))
+                .customIcon(ItemStack.of(Material.LAVA_BUCKET))
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.small_mode_seeker_size", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "game.small_mode_seeker_size", 1.0))
                 .rangeDouble(0.1, 2.0)
                 .description("Size scale for seekers in SMALL mode (1.0 = normal size)")
-                .customIcon(Material.IRON_NUGGET)
+                .customIcon(Material.MAGMA_CREAM)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("blockstats.show-names", SettingType.BOOLEAN, Boolean.class)
@@ -480,39 +522,39 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "hider-items.random-block.uses", 5))
                 .range(1, 20)
                 .description("Max uses for random block transform item")
-                .customIcon(Material.BLAZE_POWDER)
+                .customIcon(Material.COBBLESTONE)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.crossbow.hits-per-upgrade", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.crossbow.hits-per-upgrade", 3))
                 .range(1, 10)
                 .description("Hits needed to upgrade speed boost")
-                .customIcon(Material.CROSSBOW)
+                .customIcon(Material.ARROW)
                 .build());
 
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("timer.hiding_color1", SettingType.STRING, String.class)
                 .defaultValue(getConfigValue(plugin, "timer.hiding_color1", "#FF0000"))
                 .description("Primary color for hiding timer (hex code)")
-                .customIcon(Material.RED_DYE)
+                .itemProvider(value -> colorIconFromHex(value, "CONCRETE_POWDER", Material.RED_CONCRETE_POWDER))
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("timer.hiding_color2", SettingType.STRING, String.class)
                 .defaultValue(getConfigValue(plugin, "timer.hiding_color2", "#0000FF"))
                 .description("Secondary color for hiding timer (hex code)")
-                .customIcon(Material.BLUE_DYE)
+                .itemProvider(value -> colorIconFromHex(value, "CONCRETE", Material.BLUE_CONCRETE))
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("timer.seeking_color1", SettingType.STRING, String.class)
                 .defaultValue(getConfigValue(plugin, "timer.seeking_color1", "#FFFF00"))
                 .description("Primary color for seeking timer (hex code)")
-                .customIcon(Material.YELLOW_DYE)
+                .itemProvider(value -> colorIconFromHex(value, "WOOL", Material.YELLOW_WOOL))
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("timer.seeking_color2", SettingType.STRING, String.class)
                 .defaultValue(getConfigValue(plugin, "timer.seeking_color2", "#00FFFF"))
                 .description("Secondary color for seeking timer (hex code)")
-                .customIcon(Material.CYAN_DYE)
+                .itemProvider(value -> colorIconFromHex(value, "STAINED_GLASS", Material.CYAN_STAINED_GLASS))
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("timer.animation_type", SettingType.ENUM, AnimationType.class)
@@ -538,28 +580,28 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "hider-items.sound.cooldown", 4))
                 .range(1, 30)
                 .description("Cooldown for cat sound item in seconds")
-                .customIcon(Material.CAT_SPAWN_EGG)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.sound.points", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.sound.points", 5))
                 .range(0, 100)
                 .description("Points awarded for using cat sound")
-                .customIcon(Material.CAT_SPAWN_EGG)
+                .customIcon(Material.EMERALD)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.sound.volume", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.sound.volume", 0.75))
                 .rangeDouble(0.1, 2.0)
                 .description("Volume of cat sound (0.1 = quiet, 2.0 = loud)")
-                .customIcon(Material.CAT_SPAWN_EGG)
+                .customIcon(Material.JUKEBOX)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.sound.pitch", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.sound.pitch", 0.8))
                 .rangeDouble(0.5, 2.0)
                 .description("Pitch of cat sound (0.5 = low, 2.0 = high)")
-                .customIcon(Material.CAT_SPAWN_EGG)
+                .customIcon(Material.NOTE_BLOCK)
                 .build());
 
 
@@ -567,52 +609,52 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "hider-items.explosion.cooldown", 8))
                 .range(0, 30)
                 .description("Cooldown for firecracker item in seconds")
-                .customIcon(Material.RED_CANDLE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.explosion.points", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.explosion.points", 10))
                 .range(0, 100)
                 .description("Points awarded for using firecracker")
-                .customIcon(Material.RED_CANDLE)
+                .customIcon(Material.EMERALD)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.explosion.volume", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.explosion.volume", 0.65))
                 .rangeDouble(0.1, 2.0)
                 .description("Volume of explosion sound")
-                .customIcon(Material.RED_CANDLE)
+                .customIcon(Material.JUKEBOX)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.explosion.pitch", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.explosion.pitch", 1.5))
                 .rangeDouble(0.5, 2.0)
                 .description("Pitch of explosion sound")
-                .customIcon(Material.RED_CANDLE)
+                .customIcon(Material.NOTE_BLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.explosion.smoke-particles", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.explosion.smoke-particles", 3))
                 .range(1, 20)
                 .description("Number of smoke particles per tick")
-                .customIcon(Material.RED_CANDLE)
+                .customIcon(Material.GUNPOWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.explosion.fuse-time", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.explosion.fuse-time", 40))
                 .range(10, 100)
                 .description("Fuse time in ticks before explosion (20 ticks = 1 second)")
-                .customIcon(Material.RED_CANDLE)
+                .customIcon(Material.CLOCK)
                 .build());
 
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.speed-boost.type", SettingType.ENUM, SpeedBoostType.class)
                 .defaultValue(getEnumConfigValue(plugin, "hider-items.speed-boost.type", SpeedBoostType.class, SpeedBoostType.SPEED_EFFECT))
                 .description("Speed boost type: SPEED_EFFECT or VELOCITY_BOOST")
-                .customIcon(Material.WOODEN_HOE)
+                .customIcon(Material.FEATHER)
                 .valueIcons(Map.of(
                         SpeedBoostType.SPEED_EFFECT, Material.POTION,
-                        SpeedBoostType.VELOCITY_BOOST, Material.BLAZE_POWDER
+                        SpeedBoostType.VELOCITY_BOOST, Material.FEATHER
                 ))
                 .build());
 
@@ -620,147 +662,147 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "hider-items.speed-boost.cooldown", 10))
                 .range(0, 60)
                 .description("Cooldown for speed boost in seconds")
-                .customIcon(Material.WOODEN_HOE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.speed-boost.duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.speed-boost.duration", 5))
                 .range(1, 30)
                 .description("Duration of speed effect in seconds (SPEED_EFFECT only)")
-                .customIcon(Material.WOODEN_HOE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.speed-boost.boost-power", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.speed-boost.boost-power", 0.5))
                 .rangeDouble(0.1, 2.0)
                 .description("Power of velocity boost (VELOCITY_BOOST only)")
-                .customIcon(Material.WOODEN_HOE)
+                .customIcon(Material.FEATHER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.knockback-stick.level", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.knockback-stick.level", 2))
                 .range(1, 5)
                 .description("Knockback level for knockback stick")
-                .customIcon(Material.STICK)
+                .customIcon(Material.ANVIL)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.block-swap.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.block-swap.cooldown", 15))
                 .range(0, 60)
                 .description("Cooldown for block swap in seconds")
-                .customIcon(Material.ENDER_PEARL)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.block-swap.range", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.block-swap.range", 50.0))
                 .rangeDouble(5.0, 200.0)
                 .description("Maximum swap range for block swap")
-                .customIcon(Material.ENDER_PEARL)
+                .customIcon(Material.BLAZE_POWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.big-firecracker.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.big-firecracker.cooldown", 12))
                 .range(0, 60)
                 .description("Cooldown for big firecracker in seconds")
-                .customIcon(Material.TNT)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.big-firecracker.fuse-time", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.big-firecracker.fuse-time", 60))
                 .range(10, 200)
                 .description("Fuse time in ticks before big explosion")
-                .customIcon(Material.TNT)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.big-firecracker.mini-fuse-time", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.big-firecracker.mini-fuse-time", 30))
                 .range(5, 100)
                 .description("Fuse time in ticks for mini firecrackers")
-                .customIcon(Material.TNT)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.big-firecracker.mini-count", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.big-firecracker.mini-count", 3))
                 .range(1, 10)
                 .description("Number of mini firecrackers")
-                .customIcon(Material.TNT)
+                .customIcon(Material.FIREWORK_STAR)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.big-firecracker.points", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.big-firecracker.points", 20))
                 .range(0, 200)
                 .description("Points for big firecracker")
-                .customIcon(Material.TNT)
+                .customIcon(Material.EMERALD)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.big-firecracker.volume", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.big-firecracker.volume", 1.2))
                 .rangeDouble(0.1, 2.0)
                 .description("Explosion volume for big firecracker")
-                .customIcon(Material.TNT)
+                .customIcon(Material.JUKEBOX)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.big-firecracker.pitch", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.big-firecracker.pitch", 0.5))
                 .rangeDouble(0.1, 2.0)
                 .description("Explosion pitch for big firecracker")
-                .customIcon(Material.TNT)
+                .customIcon(Material.NOTE_BLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.firework-rocket.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.firework-rocket.cooldown", 10))
                 .range(0, 60)
                 .description("Cooldown for firework rocket in seconds")
-                .customIcon(Material.FIREWORK_ROCKET)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.firework-rocket.target-y", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.firework-rocket.target-y", 128))
                 .range(-64, 320)
                 .description("Target Y for firework explosion")
-                .customIcon(Material.FIREWORK_ROCKET)
+                .customIcon(Material.LADDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.firework-rocket.points", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.firework-rocket.points", 15))
                 .range(0, 200)
                 .description("Points for firework rocket")
-                .customIcon(Material.FIREWORK_ROCKET)
+                .customIcon(Material.EMERALD)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.firework-rocket.volume", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.firework-rocket.volume", 10.0))
                 .rangeDouble(0.1, 15.0)
                 .description("Explosion volume for firework rocket")
-                .customIcon(Material.FIREWORK_ROCKET)
+                .customIcon(Material.JUKEBOX)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.medkit.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.medkit.cooldown", 30))
                 .range(0, 120)
                 .description("Cooldown for medkit in seconds")
-                .customIcon(Material.GOLDEN_APPLE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.medkit.channel-time", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.medkit.channel-time", 5))
                 .range(1, 30)
                 .description("Time to stand still before healing")
-                .customIcon(Material.GOLDEN_APPLE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.medkit.heal-amount", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.medkit.heal-amount", 20.0))
                 .rangeDouble(1.0, 40.0)
                 .description("Heal amount in half-hearts")
-                .customIcon(Material.GOLDEN_APPLE)
+                .customIcon(Material.GLISTERING_MELON_SLICE)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.totem.effect-duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.totem.effect-duration", 30))
                 .range(5, 120)
                 .description("Duration of revive effect in seconds")
-                .customIcon(Material.TOTEM_OF_UNDYING)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.totem.max-uses", SettingType.INTEGER, Integer.class)
@@ -774,42 +816,42 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "hider-items.invisibility-cloak.cooldown", 20))
                 .range(0, 120)
                 .description("Cooldown for invisibility cloak in seconds")
-                .customIcon(Material.PHANTOM_MEMBRANE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.invisibility-cloak.duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.invisibility-cloak.duration", 8))
                 .range(1, 30)
                 .description("Duration of invisibility in seconds")
-                .customIcon(Material.PHANTOM_MEMBRANE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.slowness-ball.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.slowness-ball.cooldown", 10))
                 .range(0, 60)
                 .description("Cooldown for slowness ball in seconds")
-                .customIcon(Material.SNOWBALL)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.slowness-ball.duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.slowness-ball.duration", 6))
                 .range(1, 30)
                 .description("Duration of slowness effect in seconds")
-                .customIcon(Material.SNOWBALL)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.slowness-ball.amplifier", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.slowness-ball.amplifier", 1))
                 .range(0, 10)
                 .description("Slowness effect amplifier (0 = slowness I, 1 = slowness II, etc)")
-                .customIcon(Material.SNOWBALL)
+                .customIcon(Material.FERMENTED_SPIDER_EYE)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.smoke-bomb.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.smoke-bomb.cooldown", 15))
                 .range(0, 60)
                 .description("Cooldown for smoke bomb in seconds")
-                .customIcon(Material.GRAY_DYE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.smoke-bomb.duration", SettingType.INTEGER, Integer.class)
@@ -823,21 +865,21 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "hider-items.smoke-bomb.radius", 4))
                 .range(1, 15)
                 .description("Radius of smoke cloud in blocks")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.BLAZE_POWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.ghost-essence.cooldown", 25))
                 .range(0, 300)
                 .description("Cooldown for ghost essence in seconds")
-                .customIcon(Material.GHAST_TEAR)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.max-radius", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "hider-items.ghost-essence.max-radius", 15))
                 .range(1, 100)
                 .description("Maximum radius (in blocks) a ghost can move from their body")
-                .customIcon(Material.IRON_CHAIN)
+                .customIcon(Material.COMPASS)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.min-light-block", SettingType.INTEGER, Integer.class)
@@ -880,8 +922,8 @@ public class SettingRegisterer {
                 .description("Particle effect mode for ghost essence")
                 .customIcon(Material.SOUL_TORCH)
                 .valueIcons(Map.of(
-                        GhostEssenceParticleMode.FLYING, Material.SOUL_TORCH,
-                        GhostEssenceParticleMode.SNAP, Material.SOUL_LANTERN,
+                        GhostEssenceParticleMode.FLYING, Material.FEATHER,
+                        GhostEssenceParticleMode.SNAP, Material.AMETHYST_SHARD,
                         GhostEssenceParticleMode.NONE, Material.BARRIER
                 ))
                 .build());
@@ -892,63 +934,63 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.grappling-hook.cooldown", 2))
                 .range(0, 30)
                 .description("Cooldown for grappling hook in seconds")
-                .customIcon(Material.FISHING_ROD)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.grappling-hook.speed", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.grappling-hook.speed", 1.5))
                 .rangeDouble(0.3, 3.0)
                 .description("Base speed for grappling hook pull")
-                .customIcon(Material.FISHING_ROD)
+                .customIcon(Material.BLAZE_POWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.ink-splash.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.ink-splash.cooldown", 20))
                 .range(0, 60)
                 .description("Cooldown for ink splash in seconds")
-                .customIcon(Material.INK_SAC)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.ink-splash.radius", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.ink-splash.radius", 25))
                 .range(1, 50)
                 .description("Radius of ink splash")
-                .customIcon(Material.INK_SAC)
+                .customIcon(Material.COMPASS)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.ink-splash.duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.ink-splash.duration", 7))
                 .range(1, 30)
                 .description("Duration of ink blindness in seconds")
-                .customIcon(Material.INK_SAC)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.lightning-freeze.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.lightning-freeze.cooldown", 60))
                 .range(10, 300)
                 .description("Cooldown for lightning freeze in seconds")
-                .customIcon(Material.LIGHTNING_ROD)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.lightning-freeze.duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.lightning-freeze.duration", 5))
                 .range(1, 30)
                 .description("Duration of freeze in seconds")
-                .customIcon(Material.LIGHTNING_ROD)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.glowing-compass.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.glowing-compass.cooldown", 25))
                 .range(0, 60)
                 .description("Cooldown for glowing compass in seconds")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.glowing-compass.duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.glowing-compass.duration", 10))
                 .range(1, 60)
                 .description("Duration of glow in seconds")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.glowing-compass.range", SettingType.DOUBLE, Double.class)
@@ -962,42 +1004,42 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.curse-spell.cooldown", 30))
                 .range(0, 60)
                 .description("Cooldown for curse spell in seconds")
-                .customIcon(Material.ENCHANTED_BOOK)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.curse-spell.active-duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.curse-spell.active-duration", 10))
                 .range(1, 60)
                 .description("Duration curse spell is active on sword")
-                .customIcon(Material.ENCHANTED_BOOK)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.curse-spell.curse-duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.curse-spell.curse-duration", 8))
                 .range(1, 60)
                 .description("Duration of curse on hider")
-                .customIcon(Material.ENCHANTED_BOOK)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.curse-spell.small-shrink-delay", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.curse-spell.small-shrink-delay", 8))
                 .range(1, 60)
                 .description("Delay before shrinking back in SMALL mode")
-                .customIcon(Material.ENCHANTED_BOOK)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.block-randomizer.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.block-randomizer.cooldown", 45))
                 .range(10, 120)
                 .description("Cooldown for block randomizer in seconds")
-                .customIcon(Material.BLAZE_POWDER)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.chain-pull.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.chain-pull.cooldown", 12))
                 .range(0, 60)
                 .description("Cooldown for chain pull in seconds")
-                .customIcon(Material.LEAD)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.chain-pull.range", SettingType.DOUBLE, Double.class)
@@ -1011,28 +1053,28 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.chain-pull.pull-power", 2.0))
                 .rangeDouble(0.5, 5.0)
                 .description("Pull power multiplier")
-                .customIcon(Material.LEAD)
+                .customIcon(Material.IRON_BLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.chain-pull.slowness-duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.chain-pull.slowness-duration", 3))
                 .range(1, 20)
                 .description("Slowness duration in seconds after pull")
-                .customIcon(Material.LEAD)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.proximity-sensor.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.proximity-sensor.cooldown", 20))
                 .range(0, 60)
                 .description("Cooldown for proximity sensor in seconds")
-                .customIcon(Material.REDSTONE_TORCH)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.proximity-sensor.range", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.proximity-sensor.range", 8.0))
                 .rangeDouble(1.0, 50.0)
                 .description("Detection range for proximity sensor")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.SCULK_SENSOR)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.proximity-sensor.duration", SettingType.INTEGER, Integer.class)
@@ -1053,7 +1095,7 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.cooldown", 20))
                 .range(0, 60)
                 .description("Cooldown for cage trap in seconds")
-                .customIcon(Material.IRON_BARS)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.range", SettingType.DOUBLE, Double.class)
@@ -1067,41 +1109,41 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.duration", -1))
                 .range(-1, 600)
                 .description("Duration of cage trap in seconds (-1 = until round ends)")
-                .customIcon(Material.IRON_BARS)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.paralyze-duration", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.paralyze-duration", 5))
                 .range(1, 60)
                 .description("Duration of paralyze effect when trapped in seconds")
-                .customIcon(Material.IRON_BARS)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.cage-trap.setup-time", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.setup-time", 5))
                 .range(0, 60)
                 .description("Time in seconds the cage trap takes to set up before it can trap a player")
-                .customIcon(Material.IRON_BARS)
+                .customIcon(Material.CLOCK)
                 .build());
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.sword-of-seeking.cooldown", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.cage-trap.setup-time", 5))
                 .range(0, 60)
                 .description("Cooldown for thrown seeker sword in seconds  ")
-                .customIcon(Material.IRON_BARS)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.seeker-sword-throw.max-charge-seconds", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.seeker-sword-throw.max-charge-seconds", 5))
                 .range(1, 15)
                 .description("Maximum sword charge time in seconds")
-                .customIcon(Material.EXPERIENCE_BOTTLE)
+                .customIcon(Material.CLOCK)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.seeker-sword-throw.min-speed", SettingType.DOUBLE, Double.class)
                 .defaultValue(getConfigValue(plugin, "seeker-items.seeker-sword-throw.min-speed", 0.8))
                 .rangeDouble(0.2, 5.0)
                 .description("Thrown sword speed with minimum charge")
-                .customIcon(Material.IRON_NUGGET)
+                .customIcon(Material.TRIDENT)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.seeker-sword-throw.max-speed", SettingType.DOUBLE, Double.class)
@@ -1136,7 +1178,7 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "seeker-items.seeker-sword-throw.stuck-seconds", 12))
                 .range(1, 60)
                 .description("How long the sword remains stuck in a block")
-                .customIcon(Material.IRON_SWORD)
+                .customIcon(Material.CLOCK)
                 .build());
 
 
@@ -1172,14 +1214,14 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "loadout.token-cost-common", 1))
                 .range(1, 20)
                 .description("Token cost for Common rarity items")
-                .customIcon(Material.IRON_NUGGET)
+                .customIcon(Material.STONE)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("loadout.token-cost-uncommon", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "loadout.token-cost-uncommon", 2))
                 .range(1, 20)
                 .description("Token cost for Uncommon rarity items")
-                .customIcon(Material.LAPIS_LAZULI)
+                .customIcon(Material.IRON_INGOT)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("loadout.token-cost-rare", SettingType.INTEGER, Integer.class)
@@ -1193,14 +1235,14 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "loadout.token-cost-epic", 6))
                 .range(1, 20)
                 .description("Token cost for Epic rarity items")
-                .customIcon(Material.AMETHYST_BLOCK)
+                .customIcon(Material.AMETHYST_CLUSTER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("loadout.token-cost-legendary", SettingType.INTEGER, Integer.class)
                 .defaultValue(getConfigValue(plugin, "loadout.token-cost-legendary", 10))
                 .range(1, 30)
                 .description("Token cost for Legendary rarity items")
-                .customIcon(Material.NETHERITE_BLOCK)
+                .customIcon(Material.NETHERITE_INGOT)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("points.tracking.interval-seconds", SettingType.INTEGER, Integer.class)
@@ -1242,7 +1284,7 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "points.hider.proximity.range", 8.0))
                 .rangeDouble(1.0, 64.0)
                 .description("Range for hider proximity bonus")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.BLAZE_POWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.near-miss.amount", SettingType.INTEGER, Integer.class)
@@ -1256,7 +1298,7 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "points.hider.near-miss.range", 3.0))
                 .rangeDouble(0.5, 16.0)
                 .description("Distance that counts as near-miss danger")
-                .customIcon(Material.PLAYER_HEAD)
+                .customIcon(Material.BLAZE_POWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("points.hider.near-miss.escape-seconds", SettingType.INTEGER, Integer.class)
@@ -1319,7 +1361,7 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "points.seeker.active-hunter.range", 16.0))
                 .rangeDouble(1.0, 64.0)
                 .description("Range for active hunter points")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.BLAZE_POWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.utility-success.amount", SettingType.INTEGER, Integer.class)
@@ -1354,7 +1396,7 @@ public class SettingRegisterer {
                 .defaultValue(getConfigValue(plugin, "points.seeker.assist.range", 16.0))
                 .rangeDouble(1.0, 64.0)
                 .description("Assist range when another seeker gets the kill")
-                .customIcon(Material.COMPASS)
+                .customIcon(Material.BLAZE_POWDER)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.special.bloodhound", SettingType.INTEGER, Integer.class)
@@ -1370,6 +1412,80 @@ public class SettingRegisterer {
                 .description("Bonus for first kill of the round")
                 .customIcon(Material.REDSTONE)
                 .build());
+    }
+
+    private static final String[] DYE_NAMES = {
+            "WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY",
+            "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"
+    };
+
+    private static final int[] DYE_RGB = {
+            0xF9FFFE, 0xF9801D, 0xC74EBD, 0x3AB3DA, 0xFED83D, 0x80C71F, 0xF38BAA, 0x474F52,
+            0x9D9D97, 0x169C9C, 0x8932B8, 0x3C44AA, 0x835432, 0x5E7C16, 0xB02E26, 0x1D1D21
+    };
+
+    private static ItemStack colorIconFromHex(Object value, String suffix, Material fallback) {
+        return new ItemStack(nearestColorMaterial(value, suffix, fallback));
+    }
+
+    private static Material nearestColorMaterial(Object value, String suffix, Material fallback) {
+        int rgb = parseHexColor(value);
+        if (rgb < 0) {
+            return fallback;
+        }
+
+        int bestIndex = 0;
+        long bestDistance = Long.MAX_VALUE;
+
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+
+        for (int i = 0; i < DYE_RGB.length; i++) {
+            int pr = (DYE_RGB[i] >> 16) & 0xFF;
+            int pg = (DYE_RGB[i] >> 8) & 0xFF;
+            int pb = DYE_RGB[i] & 0xFF;
+
+            long dr = r - pr;
+            long dg = g - pg;
+            long db = b - pb;
+            long distance = dr * dr + dg * dg + db * db;
+
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+
+        String materialName = DYE_NAMES[bestIndex] + "_" + suffix;
+        Material material = Material.matchMaterial(materialName);
+        return material == null ? fallback : material;
+    }
+
+    private static int parseHexColor(Object value) {
+        if (value == null) {
+            return -1;
+        }
+
+        String input = String.valueOf(value).trim();
+        if (input.isEmpty()) {
+            return -1;
+        }
+
+        if (input.startsWith("#")) {
+            input = input.substring(1);
+        }
+
+        input = input.toUpperCase(Locale.ROOT);
+        if (!input.matches("[0-9A-F]{6}")) {
+            return -1;
+        }
+
+        try {
+            return Integer.parseInt(input, 16);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 
     private static ItemStack setEnchanted(Material material, boolean enchanted) {
