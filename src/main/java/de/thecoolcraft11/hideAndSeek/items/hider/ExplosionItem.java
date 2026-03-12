@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.hider;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
@@ -77,6 +78,8 @@ public class ExplosionItem implements GameItem {
     private static void spawnExplosionForAll(ItemInteractionContext context, HideAndSeek plugin) {
         Location location = context.getLocation();
         Player hider = context.getPlayer();
+        boolean confetti = ItemSkinSelectionService.isSelected(hider, ID, "skin_confetti_popper");
+        boolean bubble = ItemSkinSelectionService.isSelected(hider, ID, "skin_bubble_popper");
 
         Block block = location.clone().add(0, 1, 0).getBlock();
         if (!block.getType().isAir()) {
@@ -84,7 +87,7 @@ public class ExplosionItem implements GameItem {
             return;
         }
 
-        block.setType(Material.RED_CANDLE);
+        block.setType(confetti ? Material.YELLOW_CANDLE : bubble ? Material.LIGHT_BLUE_CANDLE : Material.RED_CANDLE);
 
         Candle candle = (Candle) block.getBlockData();
         candle.setLit(true);
@@ -98,8 +101,7 @@ public class ExplosionItem implements GameItem {
         int fuseTime = plugin.getSettingRegistry().get("hider-items.explosion.fuse-time", 40);
 
         hider.sendMessage(
-                Component.text("You have used the taunt ", NamedTextColor.GREEN)
-                        .append(Component.text("\"Firecracker\"", NamedTextColor.YELLOW))
+                Component.text("You used a taunt!", NamedTextColor.GREEN)
         );
         hider.sendMessage(
                 Component.text("+" + tauntPoints + " points", NamedTextColor.GOLD)
@@ -110,7 +112,7 @@ public class ExplosionItem implements GameItem {
                 () -> {
                     Location smokeLoc = location.clone().add(0.5, 1.6, 0.5);
                     location.getWorld().spawnParticle(
-                            Particle.SMOKE,
+                            bubble ? Particle.BUBBLE : confetti ? Particle.FIREWORK : Particle.SMOKE,
                             smokeLoc,
                             smokeParticles,
                             0.05, 0.1, 0.05,
@@ -118,9 +120,9 @@ public class ExplosionItem implements GameItem {
                     );
 
                     location.getWorld().spawnParticle(
-                            Particle.FLAME,
+                            bubble ? Particle.BUBBLE_POP : confetti ? Particle.HAPPY_VILLAGER : Particle.FLAME,
                             smokeLoc.clone().add(0, -0.2, 0),
-                            1,
+                            bubble ? 3 : 1,
                             0.05, 0.05, 0.05,
                             0.05
                     );
@@ -139,24 +141,36 @@ public class ExplosionItem implements GameItem {
                     Location explosionLoc = location.clone().add(0.5, 1.5, 0.5);
                     for (Player target : Bukkit.getOnlinePlayers()) {
                         target.getWorld().spawnParticle(
-                                Particle.EXPLOSION,
+                                bubble ? Particle.SPLASH : confetti ? Particle.FIREWORK : Particle.EXPLOSION,
                                 explosionLoc,
-                                1,
+                                bubble ? 14 : 1,
                                 0, 0, 0, 0
                         );
 
-                        target.getWorld().spawnParticle(
-                                Particle.DUST,
-                                explosionLoc,
-                                15,
-                                0.3, 0.3, 0.3,
-                                new Particle.DustOptions(Color.fromARGB(255, 255, 100, 0), 1.0f)
-                        );
+                        if (bubble) {
+                            target.getWorld().spawnParticle(
+                                    Particle.BUBBLE_POP,
+                                    explosionLoc,
+                                    20,
+                                    0.3, 0.3, 0.3,
+                                    0.03
+                            );
+                        } else {
+                            target.getWorld().spawnParticle(
+                                    Particle.DUST,
+                                    explosionLoc,
+                                    15,
+                                    0.3, 0.3, 0.3,
+                                    new Particle.DustOptions(
+                                            Color.fromARGB(255, 255, confetti ? 220 : 100, confetti ? 120 : 0),
+                                            1.0f)
+                            );
+                        }
                         target.playSound(
                                 location,
-                                Sound.ENTITY_GENERIC_EXPLODE,
+                                bubble ? Sound.ITEM_BOTTLE_FILL : confetti ? Sound.ENTITY_FIREWORK_ROCKET_BLAST : Sound.ENTITY_GENERIC_EXPLODE,
                                 (float) volume,
-                                (float) pitch
+                                bubble ? 1.6f : (float) pitch
                         );
                     }
                 },

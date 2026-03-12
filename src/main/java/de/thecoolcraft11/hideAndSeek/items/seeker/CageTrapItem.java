@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.seeker;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
@@ -81,11 +82,13 @@ public class CageTrapItem implements GameItem {
         int trapDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.duration", -1);
         int setupTime = plugin.getSettingRegistry().get("seeker-items.cage-trap.setup-time", 5);
 
+        final Player trapOwner = context.getPlayer();
+        ItemStack cageBarItem = getCageBarItem(trapOwner);
+
         ItemDisplay[] trapIndicators = new ItemDisplay[3];
         Location indicatorLoc = location.clone().add(0, 0, 0);
         ItemDisplay trapIndicator1 = indicatorLoc.getWorld().spawn(indicatorLoc, ItemDisplay.class, display -> {
-            ItemStack ironBars = new ItemStack(Material.IRON_BARS);
-            display.setItemStack(ironBars);
+            display.setItemStack(cageBarItem.clone());
             display.setVisibleByDefault(false);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             display.setTransformation(new Transformation(
@@ -98,8 +101,7 @@ public class CageTrapItem implements GameItem {
         });
 
         ItemDisplay trapIndicator2 = indicatorLoc.getWorld().spawn(indicatorLoc, ItemDisplay.class, display -> {
-            ItemStack ironBars = new ItemStack(Material.IRON_BARS);
-            display.setItemStack(ironBars);
+            display.setItemStack(cageBarItem.clone());
             display.setVisibleByDefault(false);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             display.setTransformation(new Transformation(
@@ -176,7 +178,7 @@ public class CageTrapItem implements GameItem {
                     double distance = hider.getLocation().distance(location);
                     if (distance < range && !triggered) {
                         triggered = true;
-                        triggerCageTrap(hider, plugin, paralyzeDuration);
+                        triggerCageTrap(hider, trapOwner, plugin, paralyzeDuration);
                         for (ItemDisplay trapIndicator : trapIndicators) {
                             if (trapIndicator != null && trapIndicator.isValid()) {
                                 trapIndicator.remove();
@@ -193,10 +195,13 @@ public class CageTrapItem implements GameItem {
         context.getPlayer().sendMessage(Component.text("Cage trap placed! (Ready in 5s, lasts " + durationMsg + ")", NamedTextColor.GREEN));
     }
 
-    private static void triggerCageTrap(Player hider, HideAndSeek plugin, int paralyzeDuration) {
+    private static void triggerCageTrap(Player hider, Player seeker, HideAndSeek plugin, int paralyzeDuration) {
 
         Location hiderLoc = hider.getLocation().getBlock().getLocation().add(0.5, 0, 0.5);
         hider.teleport(hiderLoc);
+
+        Material wallMaterial = getCageWallMaterial(seeker);
+        Material floorCeilingMaterial = getCageFloorMaterial(seeker);
 
         int cageSize = 3;
         int halfSize = cageSize / 2;
@@ -216,9 +221,9 @@ public class CageTrapItem implements GameItem {
 
 
                         if (isEdge) {
-                            blockMaterial = Material.IRON_BARS;
+                            blockMaterial = wallMaterial;
                         } else {
-                            blockMaterial = Material.BARRIER;
+                            blockMaterial = floorCeilingMaterial;
                         }
 
                         final int fx = x;
@@ -233,6 +238,11 @@ public class CageTrapItem implements GameItem {
                                 bars.setFace(org.bukkit.block.BlockFace.SOUTH, isCageBar(fx, fz + 1, halfSize));
                                 bars.setFace(org.bukkit.block.BlockFace.EAST, isCageBar(fx + 1, fz, halfSize));
                                 bars.setFace(org.bukkit.block.BlockFace.WEST, isCageBar(fx - 1, fz, halfSize));
+                            } else if (blockData instanceof org.bukkit.block.data.type.GlassPane pane) {
+                                pane.setFace(org.bukkit.block.BlockFace.NORTH, isCageBar(fx, fz - 1, halfSize));
+                                pane.setFace(org.bukkit.block.BlockFace.SOUTH, isCageBar(fx, fz + 1, halfSize));
+                                pane.setFace(org.bukkit.block.BlockFace.EAST, isCageBar(fx + 1, fz, halfSize));
+                                pane.setFace(org.bukkit.block.BlockFace.WEST, isCageBar(fx - 1, fz, halfSize));
                             }
 
                             display.setBlock(blockData);
@@ -278,6 +288,33 @@ public class CageTrapItem implements GameItem {
         hider.sendMessage(Component.text("You've been trapped by a cage!", NamedTextColor.DARK_RED));
         hider.playSound(hiderLoc, Sound.BLOCK_IRON_DOOR_CLOSE, 1.0f, 0.8f);
         hider.playSound(hiderLoc, Sound.BLOCK_CHAIN_PLACE, 1.0f, 1.2f);
+    }
+    
+    private static ItemStack getCageBarItem(Player seeker) {
+        if (ItemSkinSelectionService.isSelected(seeker, CageTrapItem.ID, "skin_laser_grid")) {
+            return new ItemStack(Material.MAGENTA_STAINED_GLASS_PANE);
+        } else if (ItemSkinSelectionService.isSelected(seeker, CageTrapItem.ID, "skin_ice_block")) {
+            return new ItemStack(Material.BLUE_ICE);
+        }
+        return new ItemStack(Material.IRON_BARS);
+    }
+
+    private static Material getCageWallMaterial(Player seeker) {
+        if (seeker != null && ItemSkinSelectionService.isSelected(seeker, CageTrapItem.ID, "skin_laser_grid")) {
+            return Material.MAGENTA_STAINED_GLASS_PANE;
+        } else if (seeker != null && ItemSkinSelectionService.isSelected(seeker, CageTrapItem.ID, "skin_ice_block")) {
+            return Material.BLUE_ICE;
+        }
+        return Material.IRON_BARS;
+    }
+
+    private static Material getCageFloorMaterial(Player seeker) {
+        if (seeker != null && ItemSkinSelectionService.isSelected(seeker, CageTrapItem.ID, "skin_ice_block")) {
+
+            return Material.PACKED_ICE;
+        }
+
+        return Material.BARRIER;
     }
 
     private static boolean isCageBar(int x, int z, int halfSize) {

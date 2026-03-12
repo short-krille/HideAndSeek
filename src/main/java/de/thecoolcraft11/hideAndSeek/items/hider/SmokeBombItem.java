@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.hider;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
@@ -80,13 +81,20 @@ public class SmokeBombItem implements GameItem {
 
         int duration = plugin.getSettingRegistry().get("hider-items.smoke-bomb.duration", 8);
         int radius = plugin.getSettingRegistry().get("hider-items.smoke-bomb.radius", 4);
+        boolean ninjaSmoke = ItemSkinSelectionService.isSelected(player, ID, "skin_ninja_smoke");
+        boolean sporeCloud = ItemSkinSelectionService.isSelected(player, ID, "skin_spore_cloud");
 
         org.bukkit.entity.Snowball smokeBomb = player.launchProjectile(org.bukkit.entity.Snowball.class);
-        smokeBomb.setItem(new ItemStack(Material.BLACK_CONCRETE_POWDER));
+        smokeBomb.setItem(new ItemStack(sporeCloud ? Material.BROWN_MUSHROOM : ninjaSmoke ? Material.GUNPOWDER : Material.BLACK_CONCRETE_POWDER));
         smokeBomb.setVelocity(smokeBomb.getVelocity().multiply(1.2));
         smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb"), PersistentDataType.BOOLEAN, true);
         smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb_duration"), PersistentDataType.INTEGER, duration);
         smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb_radius"), PersistentDataType.INTEGER, radius);
+        if (ninjaSmoke) {
+            smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb_skin"), PersistentDataType.STRING, "ninja_smoke");
+        } else if (sporeCloud) {
+            smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb_skin"), PersistentDataType.STRING, "spore_cloud");
+        }
 
         new BukkitRunnable() {
             @Override
@@ -96,7 +104,13 @@ public class SmokeBombItem implements GameItem {
                     return;
                 }
 
-                smokeBomb.getWorld().spawnParticle(Particle.SMOKE, smokeBomb.getLocation(), 2, 0.1, 0.1, 0.1, 0.02);
+                if (sporeCloud) {
+                    smokeBomb.getWorld().spawnParticle(Particle.SPORE_BLOSSOM_AIR, smokeBomb.getLocation(), 2, 0.15, 0.15, 0.15, 0.01);
+                } else if (ninjaSmoke) {
+                    smokeBomb.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, smokeBomb.getLocation(), 2, 0.1, 0.1, 0.1, 0.005);
+                } else {
+                    smokeBomb.getWorld().spawnParticle(Particle.SMOKE, smokeBomb.getLocation(), 2, 0.1, 0.1, 0.1, 0.02);
+                }
             }
         }.runTaskTimer(plugin, 1L, 2L);
 

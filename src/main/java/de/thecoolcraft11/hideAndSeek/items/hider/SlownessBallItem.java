@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.hider;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
@@ -83,13 +84,20 @@ public class SlownessBallItem implements GameItem {
 
         int duration = plugin.getSettingRegistry().get("hider-items.slowness-ball.duration", 6);
         int amplifier = plugin.getSettingRegistry().get("hider-items.slowness-ball.amplifier", 1);
+        boolean stickyHoney = ItemSkinSelectionService.isSelected(player, ID, "skin_sticky_honey");
+        boolean tarBall = ItemSkinSelectionService.isSelected(player, ID, "skin_tar_ball");
 
         org.bukkit.entity.Snowball snowball = player.launchProjectile(org.bukkit.entity.Snowball.class);
-        snowball.setItem(new ItemStack(Material.ICE));
+        snowball.setItem(new ItemStack(stickyHoney ? Material.HONEY_BOTTLE : tarBall ? Material.COAL : Material.ICE));
         snowball.setVelocity(snowball.getVelocity().multiply(1.5));
         snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball"), PersistentDataType.BOOLEAN, true);
         snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball_duration"), PersistentDataType.INTEGER, duration);
         snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball_amplifier"), PersistentDataType.INTEGER, amplifier);
+        if (stickyHoney) {
+            snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball_skin"), PersistentDataType.STRING, "sticky_honey");
+        } else if (tarBall) {
+            snowball.getPersistentDataContainer().set(new NamespacedKey(plugin, "slowness_ball_skin"), PersistentDataType.STRING, "tar_ball");
+        }
 
         new BukkitRunnable() {
             @Override
@@ -99,7 +107,13 @@ public class SlownessBallItem implements GameItem {
                     return;
                 }
 
-                snowball.getWorld().spawnParticle(Particle.SNOWFLAKE, snowball.getLocation(), 3, 0.1, 0.1, 0.1, 0.05);
+                if (stickyHoney) {
+                    snowball.getWorld().spawnParticle(Particle.DRIPPING_HONEY, snowball.getLocation(), 3, 0.1, 0.1, 0.1, 0.01);
+                } else if (tarBall) {
+                    snowball.getWorld().spawnParticle(Particle.ASH, snowball.getLocation(), 3, 0.1, 0.1, 0.1, 0.02);
+                } else {
+                    snowball.getWorld().spawnParticle(Particle.SNOWFLAKE, snowball.getLocation(), 3, 0.1, 0.1, 0.1, 0.05);
+                }
             }
         }.runTaskTimer(plugin, 1L, 2L);
 

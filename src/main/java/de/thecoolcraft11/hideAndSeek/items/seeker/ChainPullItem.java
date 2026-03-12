@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.seeker;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
@@ -108,6 +109,8 @@ public class ChainPullItem implements GameItem {
         final Location finalTargetLocation = findSafeLandingLocation(targetLocation, seeker.getWorld());
 
         int slownessDuration = plugin.getSettingRegistry().get("seeker-items.chain-pull.slowness-duration", 3);
+        boolean energyLasso = ItemSkinSelectionService.isSelected(seeker, ID, "skin_energy_lasso");
+        boolean shadowTendril = ItemSkinSelectionService.isSelected(seeker, ID, "skin_shadow_tendril");
         int pullTicks = 8;
 
         new BukkitRunnable() {
@@ -122,7 +125,7 @@ public class ChainPullItem implements GameItem {
                     }
 
 
-                    drawChainParticles(seeker, finalTarget);
+                    drawChainParticles(seeker, finalTarget, energyLasso, shadowTendril);
 
                     Location current = finalTarget.getLocation();
                     Vector toTarget = finalTargetLocation.toVector().subtract(current.toVector());
@@ -140,6 +143,11 @@ public class ChainPullItem implements GameItem {
                                 false,
                                 false
                         ));
+                        if (energyLasso) {
+                            finalTarget.getWorld().playSound(finalTarget.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.8f, 1.3f);
+                        } else if (shadowTendril) {
+                            finalTarget.getWorld().playSound(finalTarget.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 0.6f, 1.5f);
+                        }
                         seeker.sendMessage(Component.text("Pulled " + finalTarget.getName() + "!", NamedTextColor.GREEN));
                         finalTarget.sendMessage(Component.text("You've been pulled by a chain!", NamedTextColor.DARK_GRAY));
                         cancel();
@@ -157,7 +165,7 @@ public class ChainPullItem implements GameItem {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
-    private static void drawChainParticles(Player seeker, Player hider) {
+    private static void drawChainParticles(Player seeker, Player hider, boolean energyLasso, boolean shadowTendril) {
         Location start = seeker.getEyeLocation().subtract(0, 0.3, 0);
         Location end = hider.getEyeLocation().subtract(0, 0.3, 0);
 
@@ -179,9 +187,22 @@ public class ChainPullItem implements GameItem {
                     start.getZ() + dz * t);
 
 
-            int r = (int) (60 + (255 - 60) * t);
-            int g = (int) (140 + (80 - 140) * t);
-            int b = (int) (255 + (10 - 255) * t);
+            int r;
+            int g;
+            int b;
+            if (energyLasso) {
+                r = (int) (120 + (255 - 120) * t);
+                g = (int) (220 + (240 - 220) * t);
+                b = (int) (255 + (130 - 255) * t);
+            } else if (shadowTendril) {
+                r = (int) (45 + (110 - 45) * t);
+                g = (int) (25 + (45 - 25) * t);
+                b = (int) (90 + (170 - 90) * t);
+            } else {
+                r = (int) (60 + (255 - 60) * t);
+                g = (int) (140 + (80 - 140) * t);
+                b = (int) (255 + (10 - 255) * t);
+            }
             world.spawnParticle(Particle.DUST, point, 1, 0, 0, 0, 0,
                     new Particle.DustOptions(Color.fromRGB(r, g, b), 0.75f));
 
@@ -193,7 +214,7 @@ public class ChainPullItem implements GameItem {
 
 
             if (Math.random() < 0.07) {
-                world.spawnParticle(Particle.CRIT, point, 1, 0.03, 0.03, 0.03, 0.01);
+                world.spawnParticle(shadowTendril ? Particle.SMOKE : Particle.CRIT, point, 1, 0.03, 0.03, 0.03, 0.01);
             }
         }
 

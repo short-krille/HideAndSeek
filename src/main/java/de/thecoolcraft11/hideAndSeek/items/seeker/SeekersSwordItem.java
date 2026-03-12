@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.seeker;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
 import de.thecoolcraft11.hideAndSeek.util.XpProgressHelper;
@@ -194,8 +195,9 @@ public class SeekersSwordItem implements GameItem {
         Location start = seeker.getEyeLocation().add(seeker.getEyeLocation().getDirection().normalize().multiply(0.6)).add(0, -0.2, 0);
         Vector velocity = seeker.getEyeLocation().getDirection().normalize().multiply(speed);
 
+        ItemStack swordDisplayItem = getSwordDisplayItem(seeker, plugin);
         ItemDisplay swordDisplay = start.getWorld().spawn(start, ItemDisplay.class, display -> {
-            display.setItemStack(createItem(plugin));
+            display.setItemStack(swordDisplayItem);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             display.setInterpolationDuration(1);
             display.setTransformation(new Transformation(
@@ -350,6 +352,17 @@ public class SeekersSwordItem implements GameItem {
                 }
             }
         }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    private ItemStack getSwordDisplayItem(Player seeker, HideAndSeek plugin) {
+        String selected = ItemSkinSelectionService.getSelectedVariant(seeker, SeekersSwordItem.ID);
+        if (selected != null) {
+            var variant = plugin.getCustomItemManager().getVariantManager().getVariant(SeekersSwordItem.ID, selected);
+            if (variant != null) {
+                return variant.getItemStack().clone();
+            }
+        }
+        return createItem(plugin);
     }
 
     private static double getThrownSwordDamage(Player seeker) {

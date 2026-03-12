@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.hider;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
@@ -72,18 +73,38 @@ public class SoundItem implements GameItem {
 
     private static void playSoundForAll(Location location, HideAndSeek plugin, Player hider) {
         int tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_SMALL);
-        double volume = plugin.getSettingRegistry().get("hider-items.sound.volume", 0.75);
-        double pitch = plugin.getSettingRegistry().get("hider-items.sound.pitch", 0.8);
+        Sound sound = Sound.ENTITY_CAT_AMBIENT;
+        Particle accentParticle = Particle.HEART;
+        double volume;
+        double pitch;
 
-        hider.sendMessage(Component.text("You have used the taunt ", NamedTextColor.GREEN).append(Component.text("\"Cat\"", NamedTextColor.YELLOW)));
+        if (ItemSkinSelectionService.isSelected(hider, ID, "skin_megaphone")) {
+            sound = Sound.BLOCK_NOTE_BLOCK_COW_BELL;
+            accentParticle = Particle.GLOW;
+
+            volume = 0.45;
+            pitch = 1.1;
+        } else if (ItemSkinSelectionService.isSelected(hider, ID, "skin_rubber_chicken")) {
+            sound = Sound.ENTITY_CHICKEN_AMBIENT;
+            accentParticle = Particle.HAPPY_VILLAGER;
+
+            volume = 1.8;
+            pitch = 1.8;
+        } else {
+
+            volume = Math.max(plugin.getSettingRegistry().get("hider-items.sound.volume", 0.75).doubleValue(), 1.0);
+            pitch = plugin.getSettingRegistry().get("hider-items.sound.pitch", 0.8).doubleValue();
+        }
+
+        hider.sendMessage(Component.text("You used a taunt!", NamedTextColor.GREEN));
         hider.sendMessage(Component.text("+" + tauntPoints + " points", NamedTextColor.GOLD));
 
         Location particleLoc = location.clone().add(0.5, 1.0, 0.5);
         hider.getWorld().spawnParticle(Particle.NOTE, particleLoc, 8, 0.3, 0.3, 0.3, 1.0);
-        hider.getWorld().spawnParticle(Particle.HEART, particleLoc, 4, 0.2, 0.2, 0.2, 0);
+        hider.getWorld().spawnParticle(accentParticle, particleLoc, 6, 0.2, 0.2, 0.2, 0);
 
         for (Player target : Bukkit.getOnlinePlayers()) {
-            target.playSound(location, Sound.ENTITY_CAT_AMBIENT, (float) volume, (float) pitch);
+            target.playSound(location, sound, (float) volume, (float) pitch);
         }
     }
 

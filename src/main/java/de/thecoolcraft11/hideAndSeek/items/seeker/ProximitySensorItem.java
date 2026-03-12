@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.seeker;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
@@ -143,7 +144,7 @@ public class ProximitySensorItem implements GameItem {
             display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-type"), PersistentDataType.STRING, "proximity");
             display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-block"), PersistentDataType.STRING, torchBlock.getLocation().toString());
             display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-facing"), PersistentDataType.STRING, "UP");
-            BlockData data = Material.SCULK_SENSOR.createBlockData();
+            BlockData data = getSensorBlockData(player);
 
             display.setBlock(data);
 
@@ -172,7 +173,7 @@ public class ProximitySensorItem implements GameItem {
                 display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-type"), PersistentDataType.STRING, "proximity");
                 display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-block"), PersistentDataType.STRING, torchBlock.getLocation().toString());
                 display.getPersistentDataContainer().set(new NamespacedKey(plugin, "sensor-facing"), PersistentDataType.STRING, clickedFace.name());
-                BlockData data = Material.SCULK_SENSOR.createBlockData();
+                BlockData data = getSensorBlockData(player);
 
                 display.setBlock(data);
 
@@ -450,6 +451,16 @@ public class ProximitySensorItem implements GameItem {
                     new AxisAngle4f(0, 0f, 0f, 0f)
             );
         };
+    }
+
+    private static BlockData getSensorBlockData(Player player) {
+        if (ItemSkinSelectionService.isSelected(player, ProximitySensorItem.ID, "skin_alarm_bell")) {
+            return Material.BELL.createBlockData();
+        } else if (ItemSkinSelectionService.isSelected(player, ProximitySensorItem.ID, "skin_cctv_camera")) {
+
+            return Material.DAYLIGHT_DETECTOR.createBlockData();
+        }
+        return Material.SCULK_SENSOR.createBlockData();
     }
 
     private static Vector getSensorDirection(BlockFace face) {
