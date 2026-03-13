@@ -82,6 +82,8 @@ public class BigFirecrackerItem implements GameItem {
     private static void spawnBigFirecracker(ItemInteractionContext context, HideAndSeek plugin) {
         Location location = context.getLocation().clone().add(0, 1, 0);
         Player hider = context.getPlayer();
+        String variantId = ItemSkinSelectionService.getSelectedVariant(hider, ID);
+        String variantKey = variantId == null || variantId.isBlank() ? "default" : variantId;
         boolean giantPresent = ItemSkinSelectionService.isSelected(hider, ID, "skin_giant_present");
         boolean boombox = ItemSkinSelectionService.isSelected(hider, ID, "skin_boombox");
 
@@ -98,11 +100,27 @@ public class BigFirecrackerItem implements GameItem {
         block.setBlockData(candle);
 
         int tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_LARGE);
-        double volume = plugin.getSettingRegistry().get("hider-items.big-firecracker.volume", 1.2);
-        double pitch = plugin.getSettingRegistry().get("hider-items.big-firecracker.pitch", 0.5);
+        double baseVolume = plugin.getSettingRegistry().get("hider-items.big-firecracker.volume", 1.2);
+        double basePitch = plugin.getSettingRegistry().get("hider-items.big-firecracker.pitch", 0.5);
+        double miniBaseVolume = plugin.getSettingRegistry().get("hider-items.big-firecracker.mini-volume", 0.8);
+        double miniBasePitch = plugin.getSettingRegistry().get("hider-items.big-firecracker.mini-pitch", 1.2);
+        int baseMainParticles = plugin.getSettingRegistry().get("hider-items.big-firecracker.main-particles", 16);
+        int baseMiniParticles = plugin.getSettingRegistry().get("hider-items.big-firecracker.mini-particles", 8);
+        int sparkParticles = plugin.getSettingRegistry().get("hider-items.big-firecracker.spark-particles", 5);
         int fuseTime = plugin.getSettingRegistry().get("hider-items.big-firecracker.fuse-time", 60);
         int miniFuse = plugin.getSettingRegistry().get("hider-items.big-firecracker.mini-fuse-time", 30);
         int miniCount = plugin.getSettingRegistry().get("hider-items.big-firecracker.mini-count", 3);
+        double volumeMultiplier = plugin.getSettingRegistry().get("hider-items.big-firecracker.variants." + variantKey + ".volume-multiplier", 1.0);
+        double pitchMultiplier = plugin.getSettingRegistry().get("hider-items.big-firecracker.variants." + variantKey + ".pitch-multiplier", 1.0);
+        double mainParticleMultiplier = plugin.getSettingRegistry().get("hider-items.big-firecracker.variants." + variantKey + ".main-particle-multiplier", 1.0);
+        double miniParticleMultiplier = plugin.getSettingRegistry().get("hider-items.big-firecracker.variants." + variantKey + ".mini-particle-multiplier", 1.0);
+
+        float mainVolume = (float) Math.max(0.05, baseVolume * volumeMultiplier);
+        float mainPitch = (float) Math.max(0.1, basePitch * pitchMultiplier);
+        float miniVolume = (float) Math.max(0.05, miniBaseVolume * volumeMultiplier);
+        float miniPitch = (float) Math.max(0.1, miniBasePitch * pitchMultiplier);
+        int mainParticles = Math.max(1, (int) Math.round(baseMainParticles * mainParticleMultiplier));
+        int miniParticles = Math.max(1, (int) Math.round(baseMiniParticles * miniParticleMultiplier));
 
         hider.sendMessage(Component.text("Big Firecracker placed! +" + tauntPoints + " points", NamedTextColor.GOLD));
 
@@ -113,29 +131,39 @@ public class BigFirecrackerItem implements GameItem {
                 target.getWorld().spawnParticle(Particle.EXPLOSION, explosionLoc, 3, 0.3, 0.3, 0.3, 0.05);
 
                 if (giantPresent) {
-                    target.getWorld().spawnParticle(Particle.FIREWORK, explosionLoc, 24, 0.5, 0.5, 0.5, 0.04);
-                    target.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, explosionLoc, 12, 0.5, 0.5, 0.5, 0.02);
-                    target.playSound(location, Sound.ENTITY_FIREWORK_ROCKET_BLAST, (float) volume, 1.3f);
+                    target.getWorld().spawnParticle(Particle.FIREWORK, explosionLoc, mainParticles, 0.5, 0.5, 0.5, 0.04);
+                    target.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, explosionLoc, Math.max(1, mainParticles / 2), 0.5, 0.5, 0.5, 0.02);
+                    target.playSound(location, Sound.ENTITY_FIREWORK_ROCKET_BLAST, mainVolume, mainPitch);
                 } else if (boombox) {
-                    target.getWorld().spawnParticle(Particle.NOTE, explosionLoc, 18, 0.5, 0.5, 0.5, 1.0);
-                    target.getWorld().spawnParticle(Particle.DUST, explosionLoc, 16, 0.4, 0.4, 0.4,
+                    target.getWorld().spawnParticle(Particle.NOTE, explosionLoc, mainParticles, 0.5, 0.5, 0.5, 1.0);
+                    target.getWorld().spawnParticle(Particle.DUST, explosionLoc, mainParticles, 0.4, 0.4, 0.4,
                             new Particle.DustOptions(Color.fromRGB(180, 60, 255), 1.5f));
-                    target.playSound(location, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, (float) volume, 0.7f);
+                    target.playSound(location, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, mainVolume, mainPitch);
                 } else {
-                    target.getWorld().spawnParticle(Particle.FLAME, explosionLoc, 15, 0.4, 0.4, 0.4, 0.08);
-                    target.getWorld().spawnParticle(Particle.DUST, explosionLoc, 20, 0.4, 0.4, 0.4,
+                    target.getWorld().spawnParticle(Particle.FLAME, explosionLoc, mainParticles, 0.4, 0.4, 0.4, 0.08);
+                    target.getWorld().spawnParticle(Particle.DUST, explosionLoc, mainParticles, 0.4, 0.4, 0.4,
                             new Particle.DustOptions(Color.fromARGB(255, 255, 80, 0), 1.5f));
-                    target.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, (float) volume, (float) pitch);
+                    target.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, mainVolume, mainPitch);
                 }
             }
 
             for (int i = 0; i < miniCount; i++) {
-                spawnMiniFirecracker(location, plugin, miniFuse, giantPresent, boombox);
+                spawnMiniFirecracker(location, plugin, miniFuse, giantPresent, boombox, miniVolume, miniPitch, miniParticles, sparkParticles);
             }
         }, fuseTime);
     }
 
-    private static void spawnMiniFirecracker(Location origin, HideAndSeek plugin, int miniFuse, boolean giantPresent, boolean boombox) {
+    private static void spawnMiniFirecracker(
+            Location origin,
+            HideAndSeek plugin,
+            int miniFuse,
+            boolean giantPresent,
+            boolean boombox,
+            float miniVolume,
+            float miniPitch,
+            int miniParticles,
+            int sparkParticles
+    ) {
         Location spawnLoc = origin.clone().add(0.5, 1.0, 0.5);
         ArmorStand stand = origin.getWorld().spawn(spawnLoc, ArmorStand.class, s -> {
             s.setInvisible(true);
@@ -166,7 +194,7 @@ public class BigFirecrackerItem implements GameItem {
                 world.spawnParticle(
                         Particle.ELECTRIC_SPARK,
                         loc.getX(), loc.getY(), loc.getZ(),
-                        5,
+                        Math.max(1, sparkParticles),
                         0.1, 0.1, 0.1,
                         0.02
                 );
@@ -191,13 +219,14 @@ public class BigFirecrackerItem implements GameItem {
                             Location miniLoc = land.clone().add(0.5, 0.5, 0.5);
                             land.getWorld().spawnParticle(Particle.EXPLOSION, miniLoc, 1, 0, 0, 0, 0);
                             if (giantPresent) {
-                                land.getWorld().spawnParticle(Particle.FIREWORK, miniLoc, 8, 0.2, 0.2, 0.2, 0.02);
-                                land.getWorld().playSound(land, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 0.8f, 1.4f);
+                                land.getWorld().spawnParticle(Particle.FIREWORK, miniLoc, miniParticles, 0.2, 0.2, 0.2, 0.02);
+                                land.getWorld().playSound(land, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, miniVolume, miniPitch);
                             } else if (boombox) {
-                                land.getWorld().spawnParticle(Particle.NOTE, miniLoc, 8, 0.2, 0.2, 0.2, 1.0);
-                                land.getWorld().playSound(land, Sound.BLOCK_NOTE_BLOCK_SNARE, 0.8f, 1.1f);
+                                land.getWorld().spawnParticle(Particle.NOTE, miniLoc, miniParticles, 0.2, 0.2, 0.2, 1.0);
+                                land.getWorld().playSound(land, Sound.BLOCK_NOTE_BLOCK_SNARE, miniVolume, miniPitch);
                             } else {
-                                land.getWorld().playSound(land, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 1.2f);
+                                land.getWorld().spawnParticle(Particle.FLAME, miniLoc, miniParticles, 0.2, 0.2, 0.2, 0.03);
+                                land.getWorld().playSound(land, Sound.ENTITY_GENERIC_EXPLODE, miniVolume, miniPitch);
                             }
                         }, miniFuse);
                     }

@@ -78,6 +78,8 @@ public class ExplosionItem implements GameItem {
     private static void spawnExplosionForAll(ItemInteractionContext context, HideAndSeek plugin) {
         Location location = context.getLocation();
         Player hider = context.getPlayer();
+        String variantId = ItemSkinSelectionService.getSelectedVariant(hider, ID);
+        String variantKey = variantId == null || variantId.isBlank() ? "default" : variantId;
         boolean confetti = ItemSkinSelectionService.isSelected(hider, ID, "skin_confetti_popper");
         boolean bubble = ItemSkinSelectionService.isSelected(hider, ID, "skin_bubble_popper");
 
@@ -95,10 +97,22 @@ public class ExplosionItem implements GameItem {
         block.setBlockData(candle);
 
         var tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_SMALL);
-        double volume = plugin.getSettingRegistry().get("hider-items.explosion.volume", 0.65);
-        double pitch = plugin.getSettingRegistry().get("hider-items.explosion.pitch", 1.5);
-        int smokeParticles = plugin.getSettingRegistry().get("hider-items.explosion.smoke-particles", 3);
+        double baseVolume = plugin.getSettingRegistry().get("hider-items.explosion.volume", 0.65);
+        double basePitch = plugin.getSettingRegistry().get("hider-items.explosion.pitch", 1.5);
+        int baseSmokeParticles = plugin.getSettingRegistry().get("hider-items.explosion.smoke-particles", 3);
+        int baseAccentParticles = plugin.getSettingRegistry().get("hider-items.explosion.accent-particles", 2);
+        int baseBurstParticles = plugin.getSettingRegistry().get("hider-items.explosion.burst-particles", 15);
         int fuseTime = plugin.getSettingRegistry().get("hider-items.explosion.fuse-time", 40);
+        double volumeMultiplier = plugin.getSettingRegistry().get("hider-items.explosion.variants." + variantKey + ".volume-multiplier", 1.0);
+        double pitchMultiplier = plugin.getSettingRegistry().get("hider-items.explosion.variants." + variantKey + ".pitch-multiplier", 1.0);
+        double smokeMultiplier = plugin.getSettingRegistry().get("hider-items.explosion.variants." + variantKey + ".smoke-multiplier", 1.0);
+        double burstMultiplier = plugin.getSettingRegistry().get("hider-items.explosion.variants." + variantKey + ".burst-multiplier", 1.0);
+
+        double volume = Math.max(0.05, baseVolume * volumeMultiplier);
+        double pitch = Math.max(0.1, basePitch * pitchMultiplier);
+        int smokeParticles = Math.max(1, (int) Math.round(baseSmokeParticles * smokeMultiplier));
+        int accentParticles = Math.max(1, (int) Math.round(baseAccentParticles * smokeMultiplier));
+        int burstParticles = Math.max(1, (int) Math.round(baseBurstParticles * burstMultiplier));
 
         hider.sendMessage(
                 Component.text("You used a taunt!", NamedTextColor.GREEN)
@@ -122,7 +136,7 @@ public class ExplosionItem implements GameItem {
                     location.getWorld().spawnParticle(
                             bubble ? Particle.BUBBLE_POP : confetti ? Particle.HAPPY_VILLAGER : Particle.FLAME,
                             smokeLoc.clone().add(0, -0.2, 0),
-                            bubble ? 3 : 1,
+                            accentParticles,
                             0.05, 0.05, 0.05,
                             0.05
                     );
@@ -143,7 +157,7 @@ public class ExplosionItem implements GameItem {
                         target.getWorld().spawnParticle(
                                 bubble ? Particle.SPLASH : confetti ? Particle.FIREWORK : Particle.EXPLOSION,
                                 explosionLoc,
-                                bubble ? 14 : 1,
+                                burstParticles,
                                 0, 0, 0, 0
                         );
 
@@ -151,7 +165,7 @@ public class ExplosionItem implements GameItem {
                             target.getWorld().spawnParticle(
                                     Particle.BUBBLE_POP,
                                     explosionLoc,
-                                    20,
+                                    burstParticles,
                                     0.3, 0.3, 0.3,
                                     0.03
                             );
@@ -159,7 +173,7 @@ public class ExplosionItem implements GameItem {
                             target.getWorld().spawnParticle(
                                     Particle.DUST,
                                     explosionLoc,
-                                    15,
+                                    burstParticles,
                                     0.3, 0.3, 0.3,
                                     new Particle.DustOptions(
                                             Color.fromARGB(255, 255, confetti ? 220 : 100, confetti ? 120 : 0),
@@ -170,7 +184,7 @@ public class ExplosionItem implements GameItem {
                                 location,
                                 bubble ? Sound.ITEM_BOTTLE_FILL : confetti ? Sound.ENTITY_FIREWORK_ROCKET_BLAST : Sound.ENTITY_GENERIC_EXPLODE,
                                 (float) volume,
-                                bubble ? 1.6f : (float) pitch
+                                (float) pitch
                         );
                     }
                 },

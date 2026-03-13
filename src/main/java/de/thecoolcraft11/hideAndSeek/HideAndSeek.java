@@ -5,10 +5,7 @@ import de.thecoolcraft11.hideAndSeek.gui.BlockSelectorGUI;
 import de.thecoolcraft11.hideAndSeek.gui.LoadoutGUI;
 import de.thecoolcraft11.hideAndSeek.gui.MapGUI;
 import de.thecoolcraft11.hideAndSeek.gui.SkinGUI;
-import de.thecoolcraft11.hideAndSeek.items.HiderItemSkins;
-import de.thecoolcraft11.hideAndSeek.items.HiderItems;
-import de.thecoolcraft11.hideAndSeek.items.SeekerItemSkins;
-import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
+import de.thecoolcraft11.hideAndSeek.items.*;
 import de.thecoolcraft11.hideAndSeek.listener.game.BlockModeListener;
 import de.thecoolcraft11.hideAndSeek.listener.game.GameStateListener;
 import de.thecoolcraft11.hideAndSeek.listener.item.CrossbowTrackerListener;
@@ -53,6 +50,7 @@ public final class HideAndSeek extends MinigameFramework {
     protected void onGameEnable() {
 
         DataController.getInstance().setup();
+        ItemSkinSelectionService.initialize(this);
         mapManager = new MapManager(this);
         blockSelectorGUI = new BlockSelectorGUI(this);
         loadoutManager = new LoadoutManager(this);
@@ -127,6 +125,7 @@ public final class HideAndSeek extends MinigameFramework {
         if (blockModeListener != null) {
             blockModeListener.cancelSneakTimerTask();
         }
+        ItemSkinSelectionService.shutdown(this);
     }
 
     @Override

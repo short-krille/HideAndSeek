@@ -91,7 +91,16 @@ public class ItemSkinCommand implements MinigameSubcommand {
             return true;
         }
 
+        if (!ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, targetVariant.getId())) {
+            int cost = ItemSkinSelectionService.getCost(plugin, logicalItemId, targetVariant.getId());
+            player.sendMessage(Component.text("This skin is locked (", NamedTextColor.RED)
+                    .append(Component.text(cost + " coins", NamedTextColor.GOLD))
+                    .append(Component.text("). Buy it in /mg skin.", NamedTextColor.RED)));
+            return true;
+        }
+
         ItemSkinSelectionService.setSelectedVariant(player.getUniqueId(), logicalItemId, targetVariant.getId());
+        ItemSkinSelectionService.savePlayer(plugin, player.getUniqueId());
 
         String shownName = targetVariant.getDisplayName().isEmpty() ? targetVariant.getId() : targetVariant.getDisplayName();
         player.sendMessage(Component.text("Selected skin: ", NamedTextColor.GREEN)
@@ -155,9 +164,13 @@ public class ItemSkinCommand implements MinigameSubcommand {
         }
 
         player.sendMessage(Component.text("Available skins for " + logicalItemId + ":", NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("Coins: " + ItemSkinSelectionService.getCoins(player.getUniqueId()), NamedTextColor.GOLD));
         for (ItemVariant variant : variants) {
             String display = variant.getDisplayName().isEmpty() ? variant.getId() : variant.getDisplayName();
-            player.sendMessage(Component.text(" - " + variant.getId() + " (" + display + ")", NamedTextColor.GRAY));
+            boolean unlocked = ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, variant.getId());
+            int cost = ItemSkinSelectionService.getCost(plugin, logicalItemId, variant.getId());
+            String rarity = ItemSkinSelectionService.getRarity(logicalItemId, variant.getId()).name();
+            player.sendMessage(Component.text(" - " + variant.getId() + " (" + display + ") [" + rarity + "] [" + cost + "c] " + (unlocked ? "UNLOCKED" : "LOCKED"), NamedTextColor.GRAY));
         }
         return true;
     }
