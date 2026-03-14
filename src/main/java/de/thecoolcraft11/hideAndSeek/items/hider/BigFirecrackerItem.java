@@ -99,6 +99,11 @@ public class BigFirecrackerItem implements GameItem {
         candle.setCandles(4);
         block.setBlockData(candle);
 
+        if (boombox) {
+            location.getWorld().spawnParticle(Particle.WAX_ON, location.clone().add(0.5, 0.9, 0.5), 14, 0.22, 0.2, 0.22, 0.01);
+            location.getWorld().playSound(location, Sound.BLOCK_BEACON_POWER_SELECT, 0.35f, 1.2f);
+        }
+
         int tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_LARGE);
         double baseVolume = plugin.getSettingRegistry().get("hider-items.big-firecracker.volume", 1.2);
         double basePitch = plugin.getSettingRegistry().get("hider-items.big-firecracker.pitch", 0.5);
@@ -138,7 +143,10 @@ public class BigFirecrackerItem implements GameItem {
                     target.getWorld().spawnParticle(Particle.NOTE, explosionLoc, mainParticles, 0.5, 0.5, 0.5, 1.0);
                     target.getWorld().spawnParticle(Particle.DUST, explosionLoc, mainParticles, 0.4, 0.4, 0.4,
                             new Particle.DustOptions(Color.fromRGB(180, 60, 255), 1.5f));
+                    target.getWorld().spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, explosionLoc, 16, 0.2, 0.25, 0.2, 0.01);
+                    target.getWorld().spawnParticle(Particle.END_ROD, explosionLoc, 8, 0.25, 0.25, 0.25, 0.02);
                     target.playSound(location, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, mainVolume, mainPitch);
+                    target.playSound(location, Sound.ENTITY_BLAZE_SHOOT, Math.max(0.1f, mainVolume * 0.35f), 1.4f);
                 } else {
                     target.getWorld().spawnParticle(Particle.FLAME, explosionLoc, mainParticles, 0.4, 0.4, 0.4, 0.08);
                     target.getWorld().spawnParticle(Particle.DUST, explosionLoc, mainParticles, 0.4, 0.4, 0.4,

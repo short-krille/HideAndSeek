@@ -9,10 +9,7 @@ import de.thecoolcraft11.minigameframework.items.ItemInteractionContext;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -96,6 +93,12 @@ public class SmokeBombItem implements GameItem {
             smokeBomb.getPersistentDataContainer().set(new NamespacedKey(plugin, "smoke_bomb_skin"), PersistentDataType.STRING, "spore_cloud");
         }
 
+        if (sporeCloud) {
+            smokeBomb.getWorld().spawnParticle(Particle.SPORE_BLOSSOM_AIR, smokeBomb.getLocation(), 12, 0.16, 0.16, 0.16, 0.01);
+            smokeBomb.getWorld().spawnParticle(Particle.WITCH, smokeBomb.getLocation(), 8, 0.15, 0.15, 0.15, 0.01);
+            player.playSound(player.getLocation(), Sound.BLOCK_SCULK_CATALYST_BLOOM, 0.4f, 1.1f);
+        }
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -106,6 +109,7 @@ public class SmokeBombItem implements GameItem {
 
                 if (sporeCloud) {
                     smokeBomb.getWorld().spawnParticle(Particle.SPORE_BLOSSOM_AIR, smokeBomb.getLocation(), 2, 0.15, 0.15, 0.15, 0.01);
+                    smokeBomb.getWorld().spawnParticle(Particle.MYCELIUM, smokeBomb.getLocation(), 2, 0.12, 0.12, 0.12, 0.0);
                 } else if (ninjaSmoke) {
                     smokeBomb.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, smokeBomb.getLocation(), 2, 0.1, 0.1, 0.1, 0.005);
                 } else {

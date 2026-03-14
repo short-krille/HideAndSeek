@@ -113,6 +113,11 @@ public class ChainPullItem implements GameItem {
         boolean shadowTendril = ItemSkinSelectionService.isSelected(seeker, ID, "skin_shadow_tendril");
         int pullTicks = 8;
 
+        if (shadowTendril) {
+            seeker.getWorld().spawnParticle(Particle.END_ROD, seeker.getLocation().add(0, 1, 0), 8, 0.2, 0.25, 0.2, 0.02);
+            seeker.playSound(seeker.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.35f, 1.5f);
+        }
+
         new BukkitRunnable() {
             int ticks = 0;
 
@@ -195,9 +200,9 @@ public class ChainPullItem implements GameItem {
                 g = (int) (220 + (240 - 220) * t);
                 b = (int) (255 + (130 - 255) * t);
             } else if (shadowTendril) {
-                r = (int) (45 + (110 - 45) * t);
-                g = (int) (25 + (45 - 25) * t);
-                b = (int) (90 + (170 - 90) * t);
+                r = (int) (20 + (75 - 20) * t);
+                g = (int) (10 + (24 - 10) * t);
+                b = (int) (45 + (135 - 45) * t);
             } else {
                 r = (int) (60 + (255 - 60) * t);
                 g = (int) (140 + (80 - 140) * t);
@@ -214,18 +219,36 @@ public class ChainPullItem implements GameItem {
 
 
             if (Math.random() < 0.07) {
-                world.spawnParticle(shadowTendril ? Particle.SMOKE : Particle.CRIT, point, 1, 0.03, 0.03, 0.03, 0.01);
+                if (shadowTendril) {
+                    world.spawnParticle(Particle.SCULK_SOUL, point, 1, 0.03, 0.03, 0.03, 0.0);
+                    world.spawnParticle(Particle.PORTAL, point, 1, 0.04, 0.04, 0.04, 0.01);
+                } else {
+                    world.spawnParticle(Particle.CRIT, point, 1, 0.03, 0.03, 0.03, 0.01);
+                }
+            }
+            if (shadowTendril && i % 3 == 0) {
+                world.spawnParticle(Particle.END_ROD, point, 1, 0.02, 0.02, 0.02, 0.0);
             }
         }
 
 
-        world.spawnParticle(Particle.DUST, start, 4, 0.08, 0.08, 0.08, 0,
-                new Particle.DustOptions(Color.fromRGB(60, 140, 255), 1.1f));
-        world.spawnParticle(Particle.END_ROD, start, 1, 0.04, 0.04, 0.04, 0.003);
+        if (shadowTendril) {
+            world.spawnParticle(Particle.DUST, start, 4, 0.08, 0.08, 0.08, 0,
+                    new Particle.DustOptions(Color.fromRGB(55, 18, 100), 1.1f));
+            world.spawnParticle(Particle.SCULK_SOUL, start, 2, 0.04, 0.04, 0.04, 0.0);
 
-        world.spawnParticle(Particle.DUST, end, 4, 0.08, 0.08, 0.08, 0,
-                new Particle.DustOptions(Color.fromRGB(255, 80, 10), 1.1f));
-        world.spawnParticle(Particle.END_ROD, end, 1, 0.04, 0.04, 0.04, 0.003);
+            world.spawnParticle(Particle.DUST, end, 4, 0.08, 0.08, 0.08, 0,
+                    new Particle.DustOptions(Color.fromRGB(95, 36, 170), 1.1f));
+            world.spawnParticle(Particle.SCULK_SOUL, end, 2, 0.04, 0.04, 0.04, 0.0);
+        } else {
+            world.spawnParticle(Particle.DUST, start, 4, 0.08, 0.08, 0.08, 0,
+                    new Particle.DustOptions(Color.fromRGB(60, 140, 255), 1.1f));
+            world.spawnParticle(Particle.END_ROD, start, 1, 0.04, 0.04, 0.04, 0.003);
+
+            world.spawnParticle(Particle.DUST, end, 4, 0.08, 0.08, 0.08, 0,
+                    new Particle.DustOptions(Color.fromRGB(255, 80, 10), 1.1f));
+            world.spawnParticle(Particle.END_ROD, end, 1, 0.04, 0.04, 0.04, 0.003);
+        }
     }
 
     private static Location findSafeLandingLocation(Location loc, World world) {

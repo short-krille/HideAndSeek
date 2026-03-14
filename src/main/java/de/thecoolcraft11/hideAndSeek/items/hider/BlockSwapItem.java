@@ -193,6 +193,13 @@ public class BlockSwapItem implements GameItem {
                 finalTarget.getWorld().playSound(finalTarget.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
             }
 
+            if (quantumLink) {
+                player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0, 1, 0), 8, 0.2, 0.25, 0.2, 0.02);
+                finalTarget.getWorld().spawnParticle(Particle.END_ROD, finalTarget.getLocation().add(0, 1, 0), 8, 0.2, 0.25, 0.2, 0.02);
+                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.3f, 1.5f);
+                finalTarget.getWorld().playSound(finalTarget.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.3f, 1.5f);
+            }
+
             HiderItemUtil.updateAppearanceItem(player, plugin);
             HiderItemUtil.updateAppearanceItem(finalTarget, plugin);
 

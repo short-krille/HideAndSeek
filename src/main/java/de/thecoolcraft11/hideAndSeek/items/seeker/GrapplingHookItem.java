@@ -107,6 +107,11 @@ public class GrapplingHookItem implements GameItem {
 
         seeker.setCooldown(Material.FISHING_ROD, 100);
 
+        if (ghost) {
+            seeker.getWorld().spawnParticle(Particle.END_ROD, seeker.getLocation().add(0, 1, 0), 10, 0.25, 0.3, 0.25, 0.02);
+            seeker.playSound(seeker.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.35f, 1.55f);
+        }
+
         Location playerLoc = seeker.getEyeLocation();
         Location hookLoc = hook.getLocation();
         Vector travelVec = hookLoc.toVector().subtract(playerLoc.toVector());
@@ -151,6 +156,11 @@ public class GrapplingHookItem implements GameItem {
             world.playSound(seeker.getLocation(), Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.2f, 1.2f);
         }
 
+        if (ghost) {
+            world.spawnParticle(Particle.END_ROD, seeker.getLocation().add(0, 1, 0), 8, 0.2, 0.2, 0.2, 0.02);
+            world.playSound(seeker.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.35f, 1.6f);
+        }
+
 
         drawGrappleLine(seeker, hookLoc, techno, vine, ghost);
 
@@ -175,6 +185,7 @@ public class GrapplingHookItem implements GameItem {
                     seeker.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, seeker.getLocation(), 3, 0.2, 0.2, 0.2, 0.02);
                 } else if (ghost) {
                     seeker.getWorld().spawnParticle(Particle.SOUL, seeker.getLocation(), 3, 0.2, 0.2, 0.2, 0.02);
+                    seeker.getWorld().spawnParticle(Particle.END_ROD, seeker.getLocation(), 1, 0.03, 0.03, 0.03, 0.0);
                 } else {
                     seeker.getWorld().spawnParticle(Particle.CLOUD, seeker.getLocation(), 3, 0.2, 0.2, 0.2, 0.05);
                 }

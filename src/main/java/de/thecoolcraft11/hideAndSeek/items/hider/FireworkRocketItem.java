@@ -102,6 +102,11 @@ public class FireworkRocketItem implements GameItem {
         firework.setFireworkMeta(meta);
 
         player.sendMessage(Component.text("Firework launched! +" + points + " points", NamedTextColor.GOLD));
+        if (signalFlare) {
+            launchLocation.getWorld().spawnParticle(Particle.FLAME, launchLocation, 16, 0.2, 0.3, 0.2, 0.04);
+            launchLocation.getWorld().spawnParticle(Particle.SMOKE, launchLocation, 12, 0.18, 0.28, 0.18, 0.02);
+            player.playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, 0.5f, 1.25f);
+        }
 
 
         var nms = plugin.getNmsAdapter();
@@ -126,6 +131,7 @@ public class FireworkRocketItem implements GameItem {
                 } else if (signalFlare) {
                     loc.getWorld().spawnParticle(Particle.SMOKE, loc, 4, 0.08, 0.08, 0.08, 0.01);
                     loc.getWorld().spawnParticle(Particle.FLAME, loc, 2, 0.05, 0.05, 0.05, 0.02);
+                    loc.getWorld().spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, loc, 2, 0.06, 0.06, 0.06, 0.003);
                 }
                 firework.setTicksToDetonate(2000);
                 firework.setTicksLived(1);
@@ -166,10 +172,15 @@ public class FireworkRocketItem implements GameItem {
         } else if (signalFlare) {
             loc.getWorld().spawnParticle(Particle.FLAME, loc, 24, 0.4, 0.4, 0.4, 0.03);
             loc.getWorld().spawnParticle(Particle.SMOKE, loc, 18, 0.4, 0.4, 0.4, 0.03);
+            loc.getWorld().spawnParticle(Particle.LAVA, loc, 12, 0.32, 0.32, 0.32, 0.01);
+            loc.getWorld().spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, loc, 14, 0.35, 0.35, 0.35, 0.01);
         }
         for (Player p : loc.getNearbyPlayers(200)) {
             p.playSound(p.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LARGE_BLAST, (float) volume, 0.9f);
             p.playSound(p.getLocation(), signalFlare ? Sound.BLOCK_FIRE_EXTINGUISH : Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, (float) volume, signalFlare ? 1.4f : 0.9f);
+            if (signalFlare) {
+                p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_SHOOT, Math.max(0.1f, (float) (volume * 0.35)), 1.45f);
+            }
         }
     }
 }

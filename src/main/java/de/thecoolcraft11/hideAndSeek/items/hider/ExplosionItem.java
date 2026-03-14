@@ -96,6 +96,13 @@ public class ExplosionItem implements GameItem {
         candle.setCandles(1);
         block.setBlockData(candle);
 
+        if (bubble) {
+            Location startFx = location.clone().add(0.5, 1.1, 0.5);
+            startFx.getWorld().spawnParticle(Particle.WAX_ON, startFx, 12, 0.2, 0.2, 0.2, 0.01);
+            startFx.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, startFx, 10, 0.16, 0.16, 0.16, 0.03);
+            hider.playSound(startFx, Sound.BLOCK_BEACON_POWER_SELECT, 0.4f, 1.35f);
+        }
+
         var tauntPoints = plugin.getPointService().award(hider.getUniqueId(), PointAction.HIDER_TAUNT_SMALL);
         double baseVolume = plugin.getSettingRegistry().get("hider-items.explosion.volume", 0.65);
         double basePitch = plugin.getSettingRegistry().get("hider-items.explosion.pitch", 1.5);
@@ -140,6 +147,9 @@ public class ExplosionItem implements GameItem {
                             0.05, 0.05, 0.05,
                             0.05
                     );
+                    if (bubble) {
+                        location.getWorld().spawnParticle(Particle.END_ROD, smokeLoc, 2, 0.06, 0.08, 0.06, 0.01);
+                    }
                 },
                 0L,
                 4L
@@ -186,6 +196,10 @@ public class ExplosionItem implements GameItem {
                                 (float) volume,
                                 (float) pitch
                         );
+                        if (bubble) {
+                            target.getWorld().spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, explosionLoc, 10, 0.25, 0.25, 0.25, 0.01);
+                            target.playSound(location, Sound.ENTITY_BLAZE_SHOOT, Math.max(0.1f, (float) (volume * 0.35)), 1.45f);
+                        }
                     }
                 },
                 fuseTime

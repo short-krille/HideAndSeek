@@ -195,6 +195,13 @@ public class RandomBlockItem implements GameItem {
             player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.8f, 1.2f);
         }
 
+        boolean mysteryBox = ItemSkinSelectionService.isSelected(player, ID, "skin_mystery_box");
+        if (mysteryBox) {
+            player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0, 1, 0), 8, 0.25, 0.3, 0.25, 0.02);
+            player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 6, 0.2, 0.25, 0.2, 0.02);
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.35f, 1.55f);
+        }
+
         HiderItemUtil.updateAppearanceItem(player, plugin);
 
         player.sendMessage(Component.text("Transformed into ", NamedTextColor.GREEN)

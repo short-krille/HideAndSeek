@@ -79,6 +79,11 @@ public class BlockRandomizerItem implements GameItem {
         boolean glitchCore = ItemSkinSelectionService.isSelected(seeker, ID, "skin_glitch_core");
         boolean chaosMagic = ItemSkinSelectionService.isSelected(seeker, ID, "skin_chaos_magic");
 
+        if (chaosMagic) {
+            seeker.getWorld().spawnParticle(Particle.END_ROD, seeker.getLocation().add(0, 1, 0), 10, 0.25, 0.3, 0.25, 0.02);
+            seeker.playSound(seeker.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.35f, 1.55f);
+        }
+
         int count = 0;
         for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
             Player hider = Bukkit.getPlayer(hiderId);

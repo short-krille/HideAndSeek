@@ -139,6 +139,7 @@ public class SpeedBoostItem implements GameItem {
                 player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 0.8f, 1.3f);
             } else if (sugarRush) {
                 player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_BURP, 0.6f, 1.8f);
+                player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 10, 0.2, 0.25, 0.2, 0.03);
             }
 
             new BukkitRunnable() {
@@ -160,6 +161,7 @@ public class SpeedBoostItem implements GameItem {
                         player.getWorld().spawnParticle(Particle.CLOUD, loc, 2, 0.1, 0.1, 0.1, 0.05);
                     } else if (sugarRush) {
                         player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc, 2, 0.15, 0.15, 0.15, 0.02);
+                        player.getWorld().spawnParticle(Particle.END_ROD, loc, 1, 0.03, 0.03, 0.03, 0.0);
                     } else {
                         player.getWorld().spawnParticle(Particle.CLOUD, loc, 2, 0.1, 0.1, 0.1, 0.05);
                     }
@@ -181,6 +183,7 @@ public class SpeedBoostItem implements GameItem {
                 player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_BREEZE_SHOOT, 0.8f, 1.2f);
             } else if (sugarRush) {
                 player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_GENERIC_DRINK, 0.7f, 1.4f);
+                player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 10, 0.2, 0.25, 0.2, 0.03);
             }
 
             new BukkitRunnable() {
@@ -201,6 +204,7 @@ public class SpeedBoostItem implements GameItem {
                             player.getWorld().spawnParticle(Particle.FLAME, loc.add(0.5, 0.1, 0.5), 2, 0.15, 0.05, 0.15, 0.01);
                         } else if (sugarRush) {
                             player.getWorld().spawnParticle(Particle.CHERRY_LEAVES, loc.add(0.5, 0.1, 0.5), 2, 0.15, 0.05, 0.15, 0.02);
+                            player.getWorld().spawnParticle(Particle.END_ROD, loc, 1, 0.03, 0.03, 0.03, 0.0);
                         } else {
                             player.getWorld().spawnParticle(Particle.CLOUD, loc.add(0.5, 0.1, 0.5), 1, 0.15, 0.05, 0.15, 0.02);
                         }

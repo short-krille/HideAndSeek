@@ -81,6 +81,8 @@ public class CageTrapItem implements GameItem {
         int paralyzeDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.paralyze-duration", 5);
         int trapDuration = plugin.getSettingRegistry().get("seeker-items.cage-trap.duration", -1);
         int setupTime = plugin.getSettingRegistry().get("seeker-items.cage-trap.setup-time", 5);
+        boolean laserGrid = ItemSkinSelectionService.isSelected(context.getPlayer(), ID, "skin_laser_grid");
+        boolean iceBlockSkin = ItemSkinSelectionService.isSelected(context.getPlayer(), ID, "skin_ice_block");
 
         final Player trapOwner = context.getPlayer();
         ItemStack cageBarItem = getCageBarItem(trapOwner);
@@ -141,11 +143,18 @@ public class CageTrapItem implements GameItem {
             }
         }
 
+        if (laserGrid || iceBlockSkin) {
+            location.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, location, 12, 0.22, 0.12, 0.22, 0.02);
+            location.getWorld().spawnParticle(Particle.WAX_ON, location, 10, 0.2, 0.1, 0.2, 0.01);
+            context.getPlayer().playSound(location, Sound.BLOCK_BEACON_POWER_SELECT, 0.4f, 1.25f);
+        }
+
         new BukkitRunnable() {
             final long startTime = System.currentTimeMillis();
             final long durationMs = trapDuration == -1 ? Long.MAX_VALUE : (long) trapDuration * 1000L;
             boolean triggered = false;
             boolean readyToTrigger = false;
+            long lastPulseAt = 0L;
 
             @Override
             public void run() {
@@ -156,7 +165,16 @@ public class CageTrapItem implements GameItem {
                     readyToTrigger = true;
                 }
 
+                if ((laserGrid || iceBlockSkin) && readyToTrigger && System.currentTimeMillis() - lastPulseAt >= 1000L) {
+                    lastPulseAt = System.currentTimeMillis();
+                    location.getWorld().spawnParticle(Particle.END_ROD, location, 4, 0.16, 0.05, 0.16, 0.01);
+                }
+
                 if (trapDuration != -1 && elapsedTime > durationMs) {
+                    if (laserGrid || iceBlockSkin) {
+                        location.getWorld().spawnParticle(Particle.SMOKE, location, 10, 0.2, 0.1, 0.2, 0.02);
+                        location.getWorld().playSound(location, Sound.BLOCK_GLASS_BREAK, 0.3f, 0.9f);
+                    }
                     for (ItemDisplay trapIndicator : trapIndicators) {
                         if (trapIndicator != null && trapIndicator.isValid()) {
                             trapIndicator.remove();
@@ -197,8 +215,16 @@ public class CageTrapItem implements GameItem {
 
     private static void triggerCageTrap(Player hider, Player seeker, HideAndSeek plugin, int paralyzeDuration) {
 
+        boolean iceBlock = ItemSkinSelectionService.isSelected(seeker, ID, "skin_ice_block");
+
         Location hiderLoc = hider.getLocation().getBlock().getLocation().add(0.5, 0, 0.5);
         hider.teleport(hiderLoc);
+
+        if (iceBlock) {
+            hiderLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, hiderLoc.clone().add(0, 1, 0), 14, 0.3, 0.35, 0.3, 0.03);
+            hiderLoc.getWorld().spawnParticle(Particle.WAX_ON, hiderLoc.clone().add(0, 1, 0), 12, 0.28, 0.32, 0.28, 0.01);
+            hiderLoc.getWorld().playSound(hiderLoc, Sound.BLOCK_BEACON_DEACTIVATE, 0.45f, 0.85f);
+        }
 
         Material wallMaterial = getCageWallMaterial(seeker);
         Material floorCeilingMaterial = getCageFloorMaterial(seeker);
@@ -289,7 +315,7 @@ public class CageTrapItem implements GameItem {
         hider.playSound(hiderLoc, Sound.BLOCK_IRON_DOOR_CLOSE, 1.0f, 0.8f);
         hider.playSound(hiderLoc, Sound.BLOCK_CHAIN_PLACE, 1.0f, 1.2f);
     }
-    
+
     private static ItemStack getCageBarItem(Player seeker) {
         if (ItemSkinSelectionService.isSelected(seeker, CageTrapItem.ID, "skin_laser_grid")) {
             return new ItemStack(Material.MAGENTA_STAINED_GLASS_PANE);
