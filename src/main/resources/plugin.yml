@@ -33,4 +33,6 @@ permissions:
   hideandseek.command.map:
     description: Allows selecting and setting maps
     default: op
-
+  hideandseek.command.vote:
+    description: Allows using /mg vote command
+    default: true
