@@ -13,8 +13,8 @@ public class VoteManager {
     private final HideAndSeek plugin;
     private final Random random = new Random();
     private final Object readinessLock = new Object();
-    private final ConcurrentMap<UUID, GameModeEnum> gamemodeVotes = new ConcurrentHashMap<>();
-    private final ConcurrentMap<UUID, String> mapVotes = new ConcurrentHashMap<>();
+    private final Vote<GameModeEnum> gamemodeVote = new Vote<>();
+    private final Vote<String> mapVote = new Vote<>();
     private final ConcurrentMap<UUID, Boolean> readyStates = new ConcurrentHashMap<>();
 
     public VoteManager(HideAndSeek plugin) {
@@ -54,11 +54,11 @@ public class VoteManager {
     }
 
     public Optional<GameModeEnum> getGamemodeVote(UUID playerId) {
-        return Optional.ofNullable(gamemodeVotes.get(playerId));
+        return gamemodeVote.getVote(playerId);
     }
 
     public Optional<String> getMapVote(UUID playerId) {
-        return Optional.ofNullable(mapVotes.get(playerId));
+        return mapVote.getVote(playerId);
     }
 
     public boolean isReady(UUID playerId) {
@@ -104,7 +104,7 @@ public class VoteManager {
         if (playerId == null || mode == null) {
             return;
         }
-        gamemodeVotes.put(playerId, mode);
+        gamemodeVote.castVote(playerId, mode);
         if (isReadinessEnabled()) {
             setReady(playerId, false);
         }
@@ -114,7 +114,7 @@ public class VoteManager {
         if (playerId == null || mapName == null || mapName.isBlank()) {
             return;
         }
-        mapVotes.put(playerId, mapName);
+        mapVote.castVote(playerId, mapName);
         if (isReadinessEnabled()) {
             setReady(playerId, false);
         }
@@ -124,14 +124,14 @@ public class VoteManager {
         if (playerId == null) {
             return;
         }
-        gamemodeVotes.remove(playerId);
-        mapVotes.remove(playerId);
+        gamemodeVote.clearVote(playerId);
+        mapVote.clearVote(playerId);
         readyStates.remove(playerId);
     }
 
     public void resetVotes() {
-        gamemodeVotes.clear();
-        mapVotes.clear();
+        gamemodeVote.reset();
+        mapVote.reset();
         readyStates.clear();
     }
 
@@ -179,8 +179,8 @@ public class VoteManager {
         if (!isVotingEnabled()) {
             return true;
         }
-        boolean hasGamemodeVote = !isGamemodeVotingEnabled() || gamemodeVotes.containsKey(playerId);
-        boolean hasMapVote = !isMapVotingEnabled() || mapVotes.containsKey(playerId);
+        boolean hasGamemodeVote = !isGamemodeVotingEnabled() || gamemodeVote.hasVote(playerId);
+        boolean hasMapVote = !isMapVotingEnabled() || mapVote.hasVote(playerId);
         return hasGamemodeVote && hasMapVote;
     }
 
@@ -208,30 +208,11 @@ public class VoteManager {
     }
 
     public Map<GameModeEnum, Long> countGamemodeVotes(Set<UUID> eligibleVoters) {
-        Map<GameModeEnum, Long> counts = new EnumMap<>(GameModeEnum.class);
-        for (Map.Entry<UUID, GameModeEnum> entry : gamemodeVotes.entrySet()) {
-            if (!eligibleVoters.contains(entry.getKey())) {
-                continue;
-            }
-            counts.merge(entry.getValue(), 1L, Long::sum);
-        }
-        return counts;
+        return gamemodeVote.countVotes(eligibleVoters);
     }
 
     public Map<String, Long> countMapVotes(Set<UUID> eligibleVoters, Collection<String> eligibleMaps) {
-        Map<String, Long> counts = new HashMap<>();
-        Set<String> allowedMaps = new HashSet<>(eligibleMaps);
-
-        for (Map.Entry<UUID, String> entry : mapVotes.entrySet()) {
-            if (!eligibleVoters.contains(entry.getKey())) {
-                continue;
-            }
-            if (!allowedMaps.contains(entry.getValue())) {
-                continue;
-            }
-            counts.merge(entry.getValue(), 1L, Long::sum);
-        }
-        return counts;
+        return mapVote.countVotes(eligibleVoters, eligibleMaps);
     }
 
     public VotingResult resolveVotingResult(Set<UUID> eligibleVoters) {
