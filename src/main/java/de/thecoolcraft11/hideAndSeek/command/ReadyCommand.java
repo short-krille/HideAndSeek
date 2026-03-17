@@ -1,7 +1,4 @@
-package de
-
-
-        .thecoolcraft11.hideAndSeek.command;
+package de.thecoolcraft11.hideAndSeek.command;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.vote.VoteManager;

@@ -2,29 +2,25 @@ package de.thecoolcraft11.hideAndSeek.gui;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.vote.VoteManager;
+import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
+import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-public class ReadyGUI implements Listener {
-    private static final Component TITLE = Component.text("Ready Overview", NamedTextColor.GOLD);
+public class ReadyGUI {
+    private static final String TITLE = "Ready Overview";
     private static final int MAX_DISPLAYED_PLAYERS = 27;
 
     private final HideAndSeek plugin;
@@ -51,7 +47,8 @@ public class ReadyGUI implements Listener {
         int playerPairs = Math.max(1, (shownPlayers + 8) / 9);
         int totalRows = Math.max(2, playerPairs * 2);
 
-        Inventory inventory = Bukkit.createInventory(new ReadyMenuHolder(), totalRows * 9, TITLE);
+        FrameworkInventory inventory = plugin.getInventoryFramework().create(TITLE, totalRows);
+        setupSettings(inventory);
 
         for (int i = 0; i < shownPlayers; i++) {
             Player listedPlayer = players.get(i);
@@ -61,24 +58,22 @@ public class ReadyGUI implements Listener {
             int headSlot = pairRow * 18 + column;
             int statusSlot = headSlot + 9;
 
-            inventory.setItem(headSlot, createPlayerHeadItem(listedPlayer, ready));
-            inventory.setItem(statusSlot, createStatusPane(ready, listedPlayer.getUniqueId()));
+            inventory.setItem(headSlot, new InventoryItem(createPlayerHeadItem(listedPlayer, ready)));
+            inventory.setItem(statusSlot, new InventoryItem(createStatusPane(ready, listedPlayer.getUniqueId())));
         }
 
         if (players.size() > MAX_DISPLAYED_PLAYERS) {
             int infoSlot = totalRows * 9 - 1;
-            inventory.setItem(infoSlot, createOverflowInfo(players.size() - MAX_DISPLAYED_PLAYERS));
+            inventory.setItem(infoSlot, new InventoryItem(createOverflowInfo(players.size() - MAX_DISPLAYED_PLAYERS)));
         }
 
-        viewer.openInventory(inventory);
+        plugin.getInventoryFramework().openInventory(viewer, inventory);
     }
 
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getInventory().getHolder() instanceof ReadyMenuHolder)) {
-            return;
-        }
-        event.setCancelled(true);
+    private void setupSettings(FrameworkInventory inventory) {
+        inventory.setSetting("allow_outside_clicks", false);
+        inventory.setSetting("allow_drag", false);
+        inventory.setSetting("allow_player_inventory_interaction", false);
     }
 
     private ItemStack createPlayerHeadItem(Player player, boolean ready) {
@@ -134,13 +129,6 @@ public class ReadyGUI implements Listener {
         ));
         item.setItemMeta(meta);
         return item;
-    }
-
-    private static final class ReadyMenuHolder implements InventoryHolder {
-        @Override
-        public @NotNull Inventory getInventory() {
-            throw new UnsupportedOperationException("Not used by this inventory holder.");
-        }
     }
 }
 

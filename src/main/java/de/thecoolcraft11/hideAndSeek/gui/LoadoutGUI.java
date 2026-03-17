@@ -8,27 +8,24 @@ import de.thecoolcraft11.hideAndSeek.loadout.LoadoutManager;
 import de.thecoolcraft11.hideAndSeek.loadout.PlayerLoadout;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
 import de.thecoolcraft11.hideAndSeek.model.LoadoutItemType;
+import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
+import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import io.papermc.paper.datacomponent.DataComponentType;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
 @SuppressWarnings("UnstableApiUsage")
-public class LoadoutGUI implements Listener {
+public class LoadoutGUI {
     private final LoadoutManager loadoutManager;
     private final HideAndSeek plugin;
     private final Map<UUID, Boolean> viewMode = new HashMap<>();
@@ -77,8 +74,8 @@ public class LoadoutGUI implements Listener {
     }
 
     private void openView(Player player, boolean hiderView) {
-        Inventory inv = Bukkit.createInventory(null, 54,
-                Component.text(hiderView ? "Hider Loadout" : "Seeker Loadout", NamedTextColor.GOLD));
+        FrameworkInventory inv = plugin.getInventoryFramework().create(hiderView ? "Hider Loadout" : "Seeker Loadout", 6);
+        setupSettings(inv);
 
         PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());
         int maxItems = hiderView ? loadoutManager.getMaxHiderItems() : loadoutManager.getMaxSeekerItems();
@@ -87,7 +84,7 @@ public class LoadoutGUI implements Listener {
         Set<LoadoutItemType> selected = hiderView ? loadout.getHiderItems() : loadout.getSeekerItems();
 
 
-        inv.setItem(4, createInfoItem(selected.size(), maxItems, usedTokens, maxTokens));
+        inv.setItem(4, new InventoryItem(createInfoItem(selected.size(), maxItems, usedTokens, maxTokens)));
 
 
         int slot = 9;
@@ -97,86 +94,56 @@ public class LoadoutGUI implements Listener {
 
             int cost = loadoutManager.getItemCost(item);
             boolean isSelected = selected.contains(item);
-            inv.setItem(slot++, createItemStack(item, cost, isSelected, usedTokens, maxTokens, selected.size(), maxItems));
+            inv.setItem(slot++, new InventoryItem(createItemStack(item, cost, isSelected, usedTokens, maxTokens, selected.size(), maxItems))
+                    .onClick((p, clickType) -> handleCatalogSelection(p, hiderView, item)));
         }
 
 
         int selectedSlot = 45;
         int displayedCount = 0;
-        for (LoadoutItemType item : selected) {
+        for (LoadoutItemType item : new ArrayList<>(selected)) {
             if (displayedCount >= 7) break;
             int cost = loadoutManager.getItemCost(item);
-            inv.setItem(selectedSlot++, createSelectedItemDisplay(item, cost));
+            inv.setItem(selectedSlot++, new InventoryItem(createSelectedItemDisplay(item, cost))
+                    .onClick((p, clickType) -> handleSelectedRemoval(p, hiderView, item)));
             displayedCount++;
         }
 
 
-        inv.setItem(52, createToggleButton(hiderView));
+        inv.setItem(52, new InventoryItem(createToggleButton(hiderView)).onClick((p, clickType) -> {
+            viewMode.put(p.getUniqueId(), !hiderView);
+            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            openView(p, !hiderView);
+        }));
 
-        player.openInventory(inv);
+        plugin.getInventoryFramework().openInventory(player, inv);
     }
 
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+    private void setupSettings(FrameworkInventory inventory) {
+        inventory.setSetting("allow_outside_clicks", false);
+        inventory.setSetting("allow_drag", false);
+        inventory.setSetting("allow_player_inventory_interaction", false);
+    }
 
-        Component title = event.getView().title();
-        String titleStr = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(title);
-
-        if (!titleStr.equals("Hider Loadout") && !titleStr.equals("Seeker Loadout")) return;
-
-        event.setCancelled(true);
-
-        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
-
-        int slot = event.getRawSlot();
-        boolean isHiderView = titleStr.equals("Hider Loadout");
-
-
-        if (slot == 52) {
-            viewMode.put(player.getUniqueId(), !isHiderView);
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            openView(player, !isHiderView);
-            return;
-        }
-
-
-        if (slot >= 45 && slot <= 51) {
-            PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());
-            Set<LoadoutItemType> selected = isHiderView ? loadout.getHiderItems() : loadout.getSeekerItems();
-
-
-            List<LoadoutItemType> selectedList = new ArrayList<>(selected);
-            int itemIndex = slot - 45;
-
-            if (itemIndex < selectedList.size()) {
-                LoadoutItemType itemToRemove = selectedList.get(itemIndex);
-
-                if (isHiderView) {
-                    loadout.removeHiderItem(itemToRemove);
-                } else {
-                    loadout.removeSeekerItem(itemToRemove);
-                }
-
-                int cost = loadoutManager.getItemCost(itemToRemove);
-                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.8f);
-                player.sendMessage(Component.text("Removed ", NamedTextColor.RED)
-                        .append(Component.text(formatName(itemToRemove.name()), getRarityColor(itemToRemove.getRarity())))
-                        .append(Component.text(" (+" + cost + " tokens)", NamedTextColor.GOLD)));
-
-                openView(player, isHiderView);
-            }
-            return;
-        }
-
-
-        if (slot < 9 || slot >= 45) return;
-
+    private void handleSelectedRemoval(Player player, boolean isHiderView, LoadoutItemType itemToRemove) {
         PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());
-        LoadoutItemType clickedItem = getItemTypeFromSlot(slot - 9, isHiderView);
+        if (isHiderView) {
+            loadout.removeHiderItem(itemToRemove);
+        } else {
+            loadout.removeSeekerItem(itemToRemove);
+        }
 
-        if (clickedItem == null) return;
+        int cost = loadoutManager.getItemCost(itemToRemove);
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.8f);
+        player.sendMessage(Component.text("Removed ", NamedTextColor.RED)
+                .append(Component.text(formatName(itemToRemove.name()), getRarityColor(itemToRemove.getRarity())))
+                .append(Component.text(" (+" + cost + " tokens)", NamedTextColor.GOLD)));
 
+        openView(player, isHiderView);
+    }
+
+    private void handleCatalogSelection(Player player, boolean isHiderView, LoadoutItemType clickedItem) {
+        PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());
         int cost = loadoutManager.getItemCost(clickedItem);
 
         if (isHiderView) {
@@ -230,17 +197,6 @@ public class LoadoutGUI implements Listener {
         openView(player, isHiderView);
     }
 
-    private LoadoutItemType getItemTypeFromSlot(int index, boolean isHider) {
-        int currentIndex = 0;
-        for (LoadoutItemType item : Arrays.stream(LoadoutItemType.values()).filter(type -> type.isSupported(plugin.getNmsAdapter())).toList()) {
-            if (isHider && !item.isForHiders()) continue;
-            if (!isHider && !item.isForSeekers()) continue;
-
-            if (currentIndex == index) return item;
-            currentIndex++;
-        }
-        return null;
-    }
 
     private ItemStack createInfoItem(int usedSlots, int maxSlots, int usedTokens, int maxTokens) {
         ItemStack item = new ItemStack(Material.BOOK);
