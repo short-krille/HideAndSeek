@@ -99,11 +99,6 @@ public final class HideAndSeek extends MinigameFramework {
         Bukkit.getPluginManager().registerEvents(new LightningListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SlownessBallListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SmokeBombListener(this), this);
-        Bukkit.getPluginManager().registerEvents(loadoutGUI, this);
-        Bukkit.getPluginManager().registerEvents(mapGUI, this);
-        Bukkit.getPluginManager().registerEvents(skinGUI, this);
-        Bukkit.getPluginManager().registerEvents(voteGUI, this);
-        Bukkit.getPluginManager().registerEvents(readyGUI, this);
         Bukkit.getPluginManager().registerEvents(new SetPhaseReadinessGuardListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerSpectateListener(), this);
 
