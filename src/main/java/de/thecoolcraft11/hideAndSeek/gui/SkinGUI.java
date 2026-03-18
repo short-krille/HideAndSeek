@@ -4,6 +4,7 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
 import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
+import de.thecoolcraft11.minigameframework.inventory.InventoryBuilder;
 import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import de.thecoolcraft11.minigameframework.items.variants.ItemVariant;
 import net.kyori.adventure.text.Component;
@@ -51,8 +52,14 @@ public class SkinGUI {
     }
 
     public void open(Player player) {
-        FrameworkInventory inventory = plugin.getInventoryFramework().create(ITEMS_TITLE, 6);
-        setupSettings(inventory);
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("skin_selector_" + player.getUniqueId())
+                .title(ITEMS_TITLE)
+                .rows(6)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .build();
 
         List<String> logicalItems = getLogicalItems();
         int slot = 0;
@@ -60,15 +67,33 @@ public class SkinGUI {
             if (slot >= 45) {
                 break;
             }
-            inventory.setItem(slot++, new InventoryItem(createLogicalItemButton(player, logicalItemId))
-                    .onClick((p, clickType) -> {
-                        p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.1f);
-                        openVariants(p, logicalItemId);
-                    }));
+            InventoryItem skinItem = new InventoryItem(createLogicalItemButton(player, logicalItemId));
+            skinItem.setClickHandler((p, item, event, s) -> {
+                p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.1f);
+                openVariants(p, logicalItemId);
+                event.setCancelled(true);
+            });
+            skinItem.setAllowTakeout(false);
+            skinItem.setAllowInsert(false);
+            skinItem.setMetadata("logical_item_id", logicalItemId);
+            inventory.setItem(slot++, skinItem);
         }
 
-        inventory.setItem(49, new InventoryItem(createBackHint()).onClick((p, clickType) -> p.closeInventory()));
-        inventory.setItem(50, new InventoryItem(createCoinsHint(player)));
+        InventoryItem backItem = new InventoryItem(createBackHint());
+        backItem.setClickHandler((p, item, event, s) -> {
+            p.closeInventory();
+            event.setCancelled(true);
+        });
+        backItem.setAllowTakeout(false);
+        backItem.setAllowInsert(false);
+        inventory.setItem(49, backItem);
+
+        InventoryItem coinsItem = new InventoryItem(createCoinsHint(player));
+        coinsItem.setClickHandler((p, item, event, s) -> event.setCancelled(true));
+        coinsItem.setAllowTakeout(false);
+        coinsItem.setAllowInsert(false);
+        inventory.setItem(50, coinsItem);
+
         plugin.getInventoryFramework().openInventory(player, inventory);
     }
 
@@ -76,8 +101,14 @@ public class SkinGUI {
         String runtimeItemId = ItemSkinSelectionService.resolveRuntimeItemId(player, logicalItemId);
         List<ItemVariant> variants = plugin.getCustomItemManager().getVariantManager().getVariants(runtimeItemId);
 
-        FrameworkInventory inventory = plugin.getInventoryFramework().create(VARIANTS_TITLE_PREFIX + humanize(logicalItemId), 6);
-        setupSettings(inventory);
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("skin_variants_" + player.getUniqueId() + "_" + logicalItemId)
+                .title(VARIANTS_TITLE_PREFIX + humanize(logicalItemId))
+                .rows(6)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .build();
 
         int slot = 0;
         String selected = ItemSkinSelectionService.getSelectedVariant(player, logicalItemId);
@@ -89,36 +120,53 @@ public class SkinGUI {
                 break;
             }
             String variantId = variant.getId();
-            inventory.setItem(slot++, new InventoryItem(createVariantButton(player, logicalItemId, variant, selected))
-                    .onClick((p, clickType) -> handleVariantClick(p, logicalItemId, variantId, clickType)));
+            InventoryItem variantItem = new InventoryItem(createVariantButton(player, logicalItemId, variant, selected));
+            variantItem.setClickHandler((p, item, event, s) -> {
+                handleVariantClick(p, logicalItemId, variantId, event.getClick());
+                event.setCancelled(true);
+            });
+            variantItem.setAllowTakeout(false);
+            variantItem.setAllowInsert(false);
+            variantItem.setMetadata("variant_id", variantId);
+            variantItem.setMetadata("logical_item_id", logicalItemId);
+            inventory.setItem(slot++, variantItem);
         }
 
-        inventory.setItem(45, new InventoryItem(createUtility(Material.ARROW, "Back", NamedTextColor.YELLOW,
-                List.of(Component.text("Return to skin item list", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))))
-                .onClick((p, clickType) -> {
-                    p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
-                    open(p);
-                }));
-        inventory.setItem(53, new InventoryItem(createUtility(Material.BARRIER, "Clear Selection", NamedTextColor.RED,
-                List.of(Component.text("Remove saved skin for this item", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))))
-                .onClick((p, clickType) -> {
-                    ItemSkinSelectionService.clearSelectedVariant(p.getUniqueId(), logicalItemId);
-                    ItemSkinSelectionService.savePlayer(plugin, p.getUniqueId());
-                    p.sendMessage(Component.text("Cleared saved skin for ", NamedTextColor.YELLOW)
-                            .append(Component.text(humanize(logicalItemId), NamedTextColor.GOLD)));
-                    p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.7f, 1.1f);
-                    openVariants(p, logicalItemId);
-                }));
-        inventory.setItem(49, new InventoryItem(createCoinsHint(player)));
+        InventoryItem backBtn = new InventoryItem(createUtility(Material.ARROW, "Back", NamedTextColor.YELLOW,
+                List.of(Component.text("Return to skin item list", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        backBtn.setClickHandler((p, item, event, s) -> {
+            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
+            open(p);
+            event.setCancelled(true);
+        });
+        backBtn.setAllowTakeout(false);
+        backBtn.setAllowInsert(false);
+        inventory.setItem(45, backBtn);
+
+        InventoryItem clearBtn = new InventoryItem(createUtility(Material.BARRIER, "Clear Selection", NamedTextColor.RED,
+                List.of(Component.text("Remove saved skin for this item", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        clearBtn.setClickHandler((p, item, event, s) -> {
+            ItemSkinSelectionService.clearSelectedVariant(p.getUniqueId(), logicalItemId);
+            ItemSkinSelectionService.savePlayer(plugin, p.getUniqueId());
+            p.sendMessage(Component.text("Cleared saved skin for ", NamedTextColor.YELLOW)
+                    .append(Component.text(humanize(logicalItemId), NamedTextColor.GOLD)));
+            p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.7f, 1.1f);
+            openVariants(p, logicalItemId);
+            event.setCancelled(true);
+        });
+        clearBtn.setAllowTakeout(false);
+        clearBtn.setAllowInsert(false);
+        inventory.setItem(53, clearBtn);
+
+        InventoryItem coinsItem = new InventoryItem(createCoinsHint(player));
+        coinsItem.setClickHandler((p, item, event, s) -> event.setCancelled(true));
+        coinsItem.setAllowTakeout(false);
+        coinsItem.setAllowInsert(false);
+        inventory.setItem(49, coinsItem);
 
         plugin.getInventoryFramework().openInventory(player, inventory);
     }
 
-    private void setupSettings(FrameworkInventory inventory) {
-        inventory.setSetting("allow_outside_clicks", false);
-        inventory.setSetting("allow_drag", false);
-        inventory.setSetting("allow_player_inventory_interaction", false);
-    }
 
     private void handleVariantClick(Player player, String logicalItemId, String variantId, ClickType clickType) {
         boolean unlocked = ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, variantId);

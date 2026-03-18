@@ -4,6 +4,9 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
 import de.thecoolcraft11.hideAndSeek.util.map.MapData;
 import de.thecoolcraft11.hideAndSeek.vote.VoteManager;
+import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
+import de.thecoolcraft11.minigameframework.inventory.InventoryBuilder;
+import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -12,22 +15,15 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class VoteGUI implements Listener {
-    private static final Component TITLE = Component.text("Vote", NamedTextColor.GOLD);
+
+public class VoteGUI {
     private final HideAndSeek plugin;
 
     public VoteGUI(HideAndSeek plugin) {
@@ -60,13 +56,21 @@ public class VoteGUI implements Listener {
             mapRows = Math.min(requestedRows, maxMapRows);
         }
         int totalRows = Math.max(1, Math.min(6, gamemodeRows + separatorRows + mapRows + readinessRows));
-        VoteMenuHolder holder = new VoteMenuHolder();
-        Inventory inventory = Bukkit.createInventory(holder, totalRows * 9, TITLE);
-        holder.inventory = inventory;
+
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("vote_menu_" + player.getUniqueId() + "_" + System.currentTimeMillis())
+                .title("Vote")
+                .rows(totalRows)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .setting("auto_update_animations", true)
+                .build();
+
         Set<UUID> eligibleVoters = voteManager.getOnlineVoterIds();
         int rowOffset = 0;
         if (gamemodeEnabled) {
-            rowOffset = addGamemodeRows(inventory, holder, selectedGamemode, eligibleVoters);
+            rowOffset = addGamemodeRows(inventory, selectedGamemode, eligibleVoters, voteManager);
         }
         if (separatorRows == 1 && rowOffset < totalRows) {
             fillSeparatorRow(inventory, rowOffset);
@@ -75,128 +79,97 @@ public class VoteGUI implements Listener {
         int mapEndRowExclusive = totalRows - readinessRows;
         if (mapEnabled && rowOffset < mapEndRowExclusive) {
             boolean lockMapVotes = gamemodeEnabled && selectedGamemode == null;
-            addMapRows(inventory, holder, rowOffset, mapEndRowExclusive, displayMaps, selectedMap, selectedGamemode, lockMapVotes, eligibleVoters);
+            addMapRows(inventory, rowOffset, mapEndRowExclusive, displayMaps, selectedMap, selectedGamemode, lockMapVotes, eligibleVoters, voteManager);
         }
         if (readinessRows == 1) {
-            fillReadinessRow(inventory, holder, player, totalRows - 1, voteManager);
+            fillReadinessRow(inventory, player, totalRows - 1, voteManager);
         }
-        player.openInventory(inventory);
+        plugin.getInventoryFramework().openInventory(player, inventory);
     }
 
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-        if (!(event.getInventory().getHolder() instanceof VoteMenuHolder holder)) {
-            return;
-        }
-        event.setCancelled(true);
-        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getInventory().getSize()) {
-            return;
-        }
-        if (event.getClick() != ClickType.LEFT) {
-            return;
-        }
-        VoteManager voteManager = plugin.getVoteManager();
-        if (voteManager.isNotLobbyPhase()) {
-            player.sendMessage(Component.text("Voting is only available in the lobby.", NamedTextColor.RED));
-            player.closeInventory();
-            return;
-        }
-        int slot = event.getRawSlot();
-        if (slot == holder.readyToggleSlot && voteManager.isReadinessEnabled()) {
-            boolean ready = voteManager.toggleReady(player.getUniqueId());
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, ready ? 1.2f : 0.9f);
-            player.sendMessage(Component.text("Ready status: ", NamedTextColor.GRAY)
-                    .append(Component.text(ready ? "READY" : "NOT READY", ready ? NamedTextColor.GREEN : NamedTextColor.RED)));
-            if (voteManager.tryAutoStartIfEveryoneReady()) {
-                Bukkit.broadcast(Component.text("All players are ready. Starting the round!", NamedTextColor.GREEN));
-            }
-            open(player);
-            return;
-        }
-        GameModeEnum clickedMode = holder.gamemodeSlots.get(slot);
-        if (clickedMode != null && voteManager.isGamemodeVotingEnabled()) {
-            voteManager.castGamemodeVote(player.getUniqueId(), clickedMode);
-            boolean autoReady = voteManager.markReadyIfVoteComplete(player.getUniqueId());
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
-            player.sendMessage(Component.text("Voted gamemode: ", NamedTextColor.GREEN)
-                    .append(Component.text(clickedMode.name(), NamedTextColor.GOLD)));
-            if (autoReady) {
-                player.sendMessage(Component.text("Vote complete. You are now ready.", NamedTextColor.GREEN));
-            }
-            if (voteManager.tryAutoStartIfEveryoneReady()) {
-                Bukkit.broadcast(Component.text("All players are ready. Starting the round!", NamedTextColor.GREEN));
-            }
-            open(player);
-            return;
-        }
-        String clickedMap = holder.mapSlots.get(slot);
-        if (clickedMap == null || !voteManager.isMapVotingEnabled()) {
-            return;
-        }
-        if (voteManager.isGamemodeVotingEnabled() && voteManager.getGamemodeVote(player.getUniqueId()).isEmpty()) {
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            player.sendMessage(Component.text("Select a gamemode first to vote for maps.", NamedTextColor.RED));
-            return;
-        }
-        voteManager.castMapVote(player.getUniqueId(), clickedMap);
-        boolean autoReady = voteManager.markReadyIfVoteComplete(player.getUniqueId());
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.1f);
-        player.sendMessage(Component.text("Voted map: ", NamedTextColor.GREEN)
-                .append(Component.text(clickedMap, NamedTextColor.GOLD)));
-        if (autoReady) {
-            player.sendMessage(Component.text("Vote complete. You are now ready.", NamedTextColor.GREEN));
-        }
-        if (voteManager.tryAutoStartIfEveryoneReady()) {
-            Bukkit.broadcast(Component.text("All players are ready. Starting the round!", NamedTextColor.GREEN));
-        }
-        open(player);
-    }
-
-    private int addGamemodeRows(Inventory inventory, VoteMenuHolder holder, GameModeEnum selectedGamemode, Set<UUID> eligibleVoters) {
-        Map<GameModeEnum, Long> modeVotes = plugin.getVoteManager().countGamemodeVotes(eligibleVoters);
+    private int addGamemodeRows(FrameworkInventory inventory, GameModeEnum selectedGamemode, Set<UUID> eligibleVoters, VoteManager voteManager) {
+        Map<GameModeEnum, Long> modeVotes = voteManager.countGamemodeVotes(eligibleVoters);
         int slot = 0;
         for (GameModeEnum mode : GameModeEnum.values()) {
-            if (slot >= inventory.getSize()) {
+            if (slot >= inventory.getTotalSlots()) {
                 break;
             }
             boolean selected = mode == selectedGamemode;
             long votes = modeVotes.getOrDefault(mode, 0L);
-            inventory.setItem(slot, createGamemodeItem(mode, selected, votes));
-            holder.gamemodeSlots.put(slot, mode);
+            InventoryItem modeItem = new InventoryItem(createGamemodeItem(mode, selected, votes));
+            final GameModeEnum clickedMode = mode;
+            modeItem.setClickHandler((p, item, event, s) -> {
+                voteManager.castGamemodeVote(p.getUniqueId(), clickedMode);
+                boolean autoReady = voteManager.markReadyIfVoteComplete(p.getUniqueId());
+                p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
+                p.sendMessage(Component.text("Voted gamemode: ", NamedTextColor.GREEN)
+                        .append(Component.text(clickedMode.name(), NamedTextColor.GOLD)));
+                if (autoReady) {
+                    p.sendMessage(Component.text("Vote complete. You are now ready.", NamedTextColor.GREEN));
+                }
+                if (voteManager.tryAutoStartIfEveryoneReady()) {
+                    Bukkit.broadcast(Component.text("All players are ready. Starting the round!", NamedTextColor.GREEN));
+                }
+                open(p);
+                event.setCancelled(true);
+            });
+            modeItem.setAllowTakeout(false);
+            modeItem.setAllowInsert(false);
+            modeItem.setMetadata("vote_type", "gamemode");
+            modeItem.setMetadata("mode", mode.name());
+            inventory.setItem(slot, modeItem);
             slot++;
         }
-        return getRows(GameModeEnum.values().length);
+
+
+        int gamemodeRows = getRows(GameModeEnum.values().length);
+        int gamemodeEndSlot = gamemodeRows * 9;
+        while (slot < gamemodeEndSlot) {
+            InventoryItem fillerItem = new InventoryItem(createSeparatorItem());
+            fillerItem.setClickHandler((p, item, event, s) -> event.setCancelled(true));
+            fillerItem.setAllowTakeout(false);
+            fillerItem.setAllowInsert(false);
+            inventory.setItem(slot, fillerItem);
+            slot++;
+        }
+
+        return gamemodeRows;
     }
 
-    private void fillSeparatorRow(Inventory inventory, int row) {
+    private void fillSeparatorRow(FrameworkInventory inventory, int row) {
         int rowStart = row * 9;
         for (int i = 0; i < 9; i++) {
-            inventory.setItem(rowStart + i, createSeparatorItem());
+            InventoryItem sepItem = new InventoryItem(createSeparatorItem());
+            sepItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+            sepItem.setAllowTakeout(false);
+            sepItem.setAllowInsert(false);
+            inventory.setItem(rowStart + i, sepItem);
         }
     }
 
     private void addMapRows(
-            Inventory inventory,
-            VoteMenuHolder holder,
+            FrameworkInventory inventory,
             int rowOffset,
             int endRowExclusive,
             List<String> displayMaps,
             String selectedMap,
             GameModeEnum selectedGamemode,
             boolean lockMapVotes,
-            Set<UUID> eligibleVoters
+            Set<UUID> eligibleVoters,
+            VoteManager voteManager
     ) {
         Collection<String> eligibleMaps = selectedGamemode == null
                 ? plugin.getMapManager().getMapsForVoting()
                 : plugin.getMapManager().getAvailableMapsForMode(selectedGamemode);
-        Map<String, Long> mapVotes = plugin.getVoteManager().countMapVotes(eligibleVoters, eligibleMaps);
+        Map<String, Long> mapVotes = voteManager.countMapVotes(eligibleVoters, eligibleMaps);
         int startSlot = rowOffset * 9;
         int maxSlots = (endRowExclusive - rowOffset) * 9;
         if (displayMaps.isEmpty()) {
-            inventory.setItem(startSlot, createNoMapsItem());
+            InventoryItem noMapItem = new InventoryItem(createNoMapsItem());
+            noMapItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+            noMapItem.setAllowTakeout(false);
+            noMapItem.setAllowInsert(false);
+            inventory.setItem(startSlot, noMapItem);
             return;
         }
         for (int i = 0; i < displayMaps.size() && i < maxSlots; i++) {
@@ -205,15 +178,46 @@ public class VoteGUI implements Listener {
             boolean selected = mapName.equals(selectedMap);
             long votes = mapVotes.getOrDefault(mapName, 0L);
             MapData mapData = plugin.getMapManager().getMapData(mapName);
-            inventory.setItem(slot, createMapItem(mapName, mapData, selected, votes, lockMapVotes));
-            holder.mapSlots.put(slot, mapName);
+
+            InventoryItem mapItem = new InventoryItem(createMapItem(mapName, mapData, selected, votes, lockMapVotes));
+            final String clickedMap = mapName;
+            mapItem.setClickHandler((p, item, event, s) -> {
+                if (voteManager.isGamemodeVotingEnabled() && voteManager.getGamemodeVote(p.getUniqueId()).isEmpty()) {
+                    p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    p.sendMessage(Component.text("Select a gamemode first to vote for maps.", NamedTextColor.RED));
+                    event.setCancelled(true);
+                    return;
+                }
+                voteManager.castMapVote(p.getUniqueId(), clickedMap);
+                boolean autoReady = voteManager.markReadyIfVoteComplete(p.getUniqueId());
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.1f);
+                p.sendMessage(Component.text("Voted map: ", NamedTextColor.GREEN)
+                        .append(Component.text(clickedMap, NamedTextColor.GOLD)));
+                if (autoReady) {
+                    p.sendMessage(Component.text("Vote complete. You are now ready.", NamedTextColor.GREEN));
+                }
+                if (voteManager.tryAutoStartIfEveryoneReady()) {
+                    Bukkit.broadcast(Component.text("All players are ready. Starting the round!", NamedTextColor.GREEN));
+                }
+                open(p);
+                event.setCancelled(true);
+            });
+            mapItem.setAllowTakeout(false);
+            mapItem.setAllowInsert(false);
+            mapItem.setMetadata("vote_type", "map");
+            mapItem.setMetadata("map_name", mapName);
+            inventory.setItem(slot, mapItem);
         }
     }
 
-    private void fillReadinessRow(Inventory inventory, VoteMenuHolder holder, Player player, int row, VoteManager voteManager) {
+    private void fillReadinessRow(FrameworkInventory inventory, Player player, int row, VoteManager voteManager) {
         int rowStart = row * 9;
         for (int i = 0; i < 9; i++) {
-            inventory.setItem(rowStart + i, createSeparatorItem());
+            InventoryItem sepItem = new InventoryItem(createSeparatorItem());
+            sepItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+            sepItem.setAllowTakeout(false);
+            sepItem.setAllowInsert(false);
+            inventory.setItem(rowStart + i, sepItem);
         }
 
         int headSlot = rowStart + 7;
@@ -221,10 +225,29 @@ public class VoteGUI implements Listener {
         boolean ready = voteManager.isReady(player.getUniqueId());
         boolean voteComplete = voteManager.hasCompletedVote(player.getUniqueId());
 
-        inventory.setItem(headSlot, createSelfHeadItem(player, ready));
-        inventory.setItem(toggleSlot, createReadyToggleItem(ready, voteComplete));
-        holder.readyToggleSlot = toggleSlot;
+        InventoryItem headItem = new InventoryItem(createSelfHeadItem(player, ready));
+        headItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+        headItem.setAllowTakeout(false);
+        headItem.setAllowInsert(false);
+        inventory.setItem(headSlot, headItem);
+
+        InventoryItem toggleItem = new InventoryItem(createReadyToggleItem(ready, voteComplete));
+        toggleItem.setClickHandler((p, item, event, slot) -> {
+            boolean newReady = voteManager.toggleReady(p.getUniqueId());
+            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, newReady ? 1.2f : 0.9f);
+            p.sendMessage(Component.text("Ready status: ", NamedTextColor.GRAY)
+                    .append(Component.text(newReady ? "READY" : "NOT READY", newReady ? NamedTextColor.GREEN : NamedTextColor.RED)));
+            if (voteManager.tryAutoStartIfEveryoneReady()) {
+                Bukkit.broadcast(Component.text("All players are ready. Starting the round!", NamedTextColor.GREEN));
+            }
+            open(p);
+            event.setCancelled(true);
+        });
+        toggleItem.setAllowTakeout(false);
+        toggleItem.setAllowInsert(false);
+        inventory.setItem(toggleSlot, toggleItem);
     }
+
 
     private List<String> getDisplayMaps(boolean gamemodeEnabled, GameModeEnum selectedGamemode, List<String> allMaps) {
         if (!gamemodeEnabled) {
@@ -394,16 +417,5 @@ public class VoteGUI implements Listener {
         applySelectionGlow(item, ready);
         return item;
     }
-
-    private static final class VoteMenuHolder implements InventoryHolder {
-        private final Map<Integer, GameModeEnum> gamemodeSlots = new HashMap<>();
-        private final Map<Integer, String> mapSlots = new HashMap<>();
-        private int readyToggleSlot = -1;
-        private Inventory inventory;
-
-        @Override
-        public @NotNull Inventory getInventory() {
-            return inventory;
-        }
-    }
 }
+

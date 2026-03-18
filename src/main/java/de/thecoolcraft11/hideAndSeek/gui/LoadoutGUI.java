@@ -24,6 +24,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
+
 @SuppressWarnings("UnstableApiUsage")
 public class LoadoutGUI {
     private final LoadoutManager loadoutManager;
@@ -74,8 +75,16 @@ public class LoadoutGUI {
     }
 
     private void openView(Player player, boolean hiderView) {
-        FrameworkInventory inv = plugin.getInventoryFramework().create(hiderView ? "Hider Loadout" : "Seeker Loadout", 6);
-        setupSettings(inv);
+        de.thecoolcraft11.minigameframework.inventory.InventoryBuilder builder =
+                new de.thecoolcraft11.minigameframework.inventory.InventoryBuilder(plugin.getInventoryFramework())
+                        .id("loadout_" + player.getUniqueId() + "_" + (hiderView ? "hider" : "seeker"))
+                        .title(hiderView ? "Hider Loadout" : "Seeker Loadout")
+                        .rows(6)
+                        .allowOutsideClicks(false)
+                        .allowDrag(false)
+                        .allowPlayerInventoryInteraction(false);
+
+        FrameworkInventory inv = builder.build();
 
         PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());
         int maxItems = hiderView ? loadoutManager.getMaxHiderItems() : loadoutManager.getMaxSeekerItems();
@@ -84,7 +93,12 @@ public class LoadoutGUI {
         Set<LoadoutItemType> selected = hiderView ? loadout.getHiderItems() : loadout.getSeekerItems();
 
 
-        inv.setItem(4, new InventoryItem(createInfoItem(selected.size(), maxItems, usedTokens, maxTokens)));
+        InventoryItem infoItem = new InventoryItem(createInfoItem(selected.size(), maxItems, usedTokens, maxTokens));
+        infoItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+        infoItem.setAllowTakeout(false);
+        infoItem.setAllowInsert(false);
+        infoItem.setMetadata("type", "info");
+        inv.setItem(4, infoItem);
 
 
         int slot = 9;
@@ -94,8 +108,17 @@ public class LoadoutGUI {
 
             int cost = loadoutManager.getItemCost(item);
             boolean isSelected = selected.contains(item);
-            inv.setItem(slot++, new InventoryItem(createItemStack(item, cost, isSelected, usedTokens, maxTokens, selected.size(), maxItems))
-                    .onClick((p, clickType) -> handleCatalogSelection(p, hiderView, item)));
+            InventoryItem catalogItem = new InventoryItem(createItemStack(item, cost, isSelected, usedTokens, maxTokens, selected.size(), maxItems));
+            catalogItem.setClickHandler((p, invItem, event, s) -> {
+                handleCatalogSelection(p, hiderView, item);
+                event.setCancelled(true);
+            });
+            catalogItem.setAllowTakeout(false);
+            catalogItem.setAllowInsert(false);
+            catalogItem.setMetadata("item_type", item.name());
+            catalogItem.setMetadata("item_cost", cost);
+            catalogItem.setMetadata("is_selected", isSelected);
+            inv.setItem(slot++, catalogItem);
         }
 
 
@@ -104,26 +127,34 @@ public class LoadoutGUI {
         for (LoadoutItemType item : new ArrayList<>(selected)) {
             if (displayedCount >= 7) break;
             int cost = loadoutManager.getItemCost(item);
-            inv.setItem(selectedSlot++, new InventoryItem(createSelectedItemDisplay(item, cost))
-                    .onClick((p, clickType) -> handleSelectedRemoval(p, hiderView, item)));
+            InventoryItem selectedItem = new InventoryItem(createSelectedItemDisplay(item, cost));
+            selectedItem.setClickHandler((p, invItem, event, s) -> {
+                handleSelectedRemoval(p, hiderView, item);
+                event.setCancelled(true);
+            });
+            selectedItem.setAllowTakeout(false);
+            selectedItem.setAllowInsert(false);
+            selectedItem.setMetadata("selected_item", item.name());
+            selectedItem.setMetadata("removable", true);
+            inv.setItem(selectedSlot++, selectedItem);
             displayedCount++;
         }
 
 
-        inv.setItem(52, new InventoryItem(createToggleButton(hiderView)).onClick((p, clickType) -> {
+        InventoryItem toggleButton = new InventoryItem(createToggleButton(hiderView));
+        toggleButton.setClickHandler((p, item, event, s) -> {
             viewMode.put(p.getUniqueId(), !hiderView);
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
             openView(p, !hiderView);
-        }));
+            event.setCancelled(true);
+        });
+        toggleButton.setAllowTakeout(false);
+        toggleButton.setAllowInsert(false);
+        inv.setItem(52, toggleButton);
 
         plugin.getInventoryFramework().openInventory(player, inv);
     }
 
-    private void setupSettings(FrameworkInventory inventory) {
-        inventory.setSetting("allow_outside_clicks", false);
-        inventory.setSetting("allow_drag", false);
-        inventory.setSetting("allow_player_inventory_interaction", false);
-    }
 
     private void handleSelectedRemoval(Player player, boolean isHiderView, LoadoutItemType itemToRemove) {
         PlayerLoadout loadout = loadoutManager.getLoadout(player.getUniqueId());

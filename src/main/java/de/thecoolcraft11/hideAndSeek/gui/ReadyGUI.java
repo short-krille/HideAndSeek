@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek.gui;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.vote.VoteManager;
 import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
+import de.thecoolcraft11.minigameframework.inventory.InventoryBuilder;
 import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -47,8 +48,14 @@ public class ReadyGUI {
         int playerPairs = Math.max(1, (shownPlayers + 8) / 9);
         int totalRows = Math.max(2, playerPairs * 2);
 
-        FrameworkInventory inventory = plugin.getInventoryFramework().create(TITLE, totalRows);
-        setupSettings(inventory);
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("ready_overview_" + viewer.getUniqueId())
+                .title(TITLE)
+                .rows(totalRows)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .build();
 
         for (int i = 0; i < shownPlayers; i++) {
             Player listedPlayer = players.get(i);
@@ -58,23 +65,35 @@ public class ReadyGUI {
             int headSlot = pairRow * 18 + column;
             int statusSlot = headSlot + 9;
 
-            inventory.setItem(headSlot, new InventoryItem(createPlayerHeadItem(listedPlayer, ready)));
-            inventory.setItem(statusSlot, new InventoryItem(createStatusPane(ready, listedPlayer.getUniqueId())));
+            InventoryItem headItem = new InventoryItem(createPlayerHeadItem(listedPlayer, ready));
+            headItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+            headItem.setAllowTakeout(false);
+            headItem.setAllowInsert(false);
+            headItem.setMetadata("player_uuid", listedPlayer.getUniqueId().toString());
+            headItem.setMetadata("player_ready", ready);
+            inventory.setItem(headSlot, headItem);
+
+            InventoryItem statusItem = new InventoryItem(createStatusPane(ready, listedPlayer.getUniqueId()));
+            statusItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+            statusItem.setAllowTakeout(false);
+            statusItem.setAllowInsert(false);
+            statusItem.setMetadata("status_type", "ready_status");
+            statusItem.setMetadata("is_ready", ready);
+            inventory.setItem(statusSlot, statusItem);
         }
 
         if (players.size() > MAX_DISPLAYED_PLAYERS) {
             int infoSlot = totalRows * 9 - 1;
-            inventory.setItem(infoSlot, new InventoryItem(createOverflowInfo(players.size() - MAX_DISPLAYED_PLAYERS)));
+            InventoryItem infoItem = new InventoryItem(createOverflowInfo(players.size() - MAX_DISPLAYED_PLAYERS));
+            infoItem.setClickHandler((p, item, event, slot) -> event.setCancelled(true));
+            infoItem.setAllowTakeout(false);
+            infoItem.setAllowInsert(false);
+            inventory.setItem(infoSlot, infoItem);
         }
 
         plugin.getInventoryFramework().openInventory(viewer, inventory);
     }
 
-    private void setupSettings(FrameworkInventory inventory) {
-        inventory.setSetting("allow_outside_clicks", false);
-        inventory.setSetting("allow_drag", false);
-        inventory.setSetting("allow_player_inventory_interaction", false);
-    }
 
     private ItemStack createPlayerHeadItem(Player player, boolean ready) {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);

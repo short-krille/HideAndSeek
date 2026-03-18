@@ -4,6 +4,7 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
 import de.thecoolcraft11.hideAndSeek.util.map.MapData;
 import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
+import de.thecoolcraft11.minigameframework.inventory.InventoryBuilder;
 import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -29,21 +30,27 @@ public class MapGUI {
         List<String> availableMaps = plugin.getMapManager().getAvailableMaps();
         int rows = Math.max(3, (availableMaps.size() + 9) / 9);
 
-        FrameworkInventory inventory = plugin.getInventoryFramework().create("Select Map", rows);
-        setupSettings(inventory);
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("map_selector_" + player.getUniqueId())
+                .title("Select Map")
+                .rows(rows)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .build();
 
         String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
 
-
         boolean isRandomSelected = (currentMapName == null || currentMapName.isEmpty());
-        ItemStack randomMapItem = createMapMenuItem(
-                isRandomSelected
-        );
-        inventory.setItem(0, new InventoryItem(randomMapItem).onClick((p, clickType) -> {
-            if (clickType != org.bukkit.event.inventory.ClickType.LEFT) return;
+        ItemStack randomMapItem = createMapMenuItem(isRandomSelected);
+        InventoryItem randomItem = new InventoryItem(randomMapItem);
+        randomItem.setClickHandler((p, item, event, slot) -> {
             selectRandomMap(p);
-        }));
-
+            event.setCancelled(true);
+        });
+        randomItem.setAllowTakeout(false);
+        randomItem.setAllowInsert(false);
+        inventory.setItem(0, randomItem);
 
         int slot = 1;
         for (String mapName : availableMaps) {
@@ -52,20 +59,19 @@ public class MapGUI {
 
             ItemStack mapItem = createMapItemWithData(mapName, mapData, isCurrentMap);
             final String selectedMapName = mapName;
-            inventory.setItem(slot++, new InventoryItem(mapItem).onClick((p, clickType) -> {
-                if (clickType != org.bukkit.event.inventory.ClickType.LEFT) return;
+            InventoryItem mapGuiItem = new InventoryItem(mapItem);
+            mapGuiItem.setClickHandler((p, item, event, s) -> {
                 selectSpecificMap(p, selectedMapName);
-            }));
+                event.setCancelled(true);
+            });
+            mapGuiItem.setAllowTakeout(false);
+            mapGuiItem.setAllowInsert(false);
+            inventory.setItem(slot++, mapGuiItem);
         }
 
         plugin.getInventoryFramework().openInventory(player, inventory);
     }
 
-    private void setupSettings(FrameworkInventory inventory) {
-        inventory.setSetting("allow_outside_clicks", false);
-        inventory.setSetting("allow_drag", false);
-        inventory.setSetting("allow_player_inventory_interaction", false);
-    }
 
     private void selectRandomMap(Player player) {
         HideAndSeek.getDataController().setCurrentMapName(null);
