@@ -110,6 +110,10 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.game.hiding_time", Integer.class, 60);
         plugin.getConfigRegistry().register("settings.game.seeking_time", Integer.class, 300);
         plugin.getConfigRegistry().register("settings.game.hider_invisibility", Boolean.class, false);
+        plugin.getConfigRegistry().register("settings.game.damage_hiders_outside_worldborder", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.game.worldborder_damage_timeout", Integer.class, 10);
+        plugin.getConfigRegistry().register("settings.game.worldborder_damage_amount", Double.class, 2.0);
+        plugin.getConfigRegistry().register("settings.game.worldborder_damage_cooldown", Integer.class, 20);
         plugin.getConfigRegistry().register("settings.game.small_mode_size", Double.class, 0.5);
         plugin.getConfigRegistry().register("settings.game.random_team_distribution", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.use_preferred_modes", Boolean.class, true);
@@ -411,6 +415,37 @@ public class SettingRegisterer {
                         true, setEnchanted(Material.POTION, true),
                         false, setEnchanted(Material.POTION, false)
                 ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.damage_hiders_outside_worldborder", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "game.damage_hiders_outside_worldborder", true))
+                .description("Damage hiders when they go outside the world border")
+                .customIcon(Material.BARRIER)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.BARRIER, true),
+                        false, setEnchanted(Material.BARRIER, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.worldborder_damage_timeout", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "game.worldborder_damage_timeout", 10))
+                .range(1, 60)
+                .description("Seconds a hider must be outside the border before taking damage")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.worldborder_damage_amount", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "game.worldborder_damage_amount", 2.0))
+                .rangeDouble(0.5, 20.0)
+                .description("Damage per tick dealt to hiders outside the border")
+                .customIcon(Material.REDSTONE)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.worldborder_damage_cooldown", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "game.worldborder_damage_cooldown", 20))
+                .range(1, 100)
+                .description("Ticks between damage hits (20 = 1 second)")
+                .customIcon(Material.GOLDEN_APPLE)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("game.small_mode_size", SettingType.DOUBLE, Double.class)

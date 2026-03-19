@@ -213,15 +213,40 @@ public final class SeekerItems {
 
     }
 
-    public static void giveGrapplingHook(Player player, HideAndSeek plugin) {
-        player.getInventory().setItem(1, plugin.getCustomItemManager().getIdentifiedItemStack(GrapplingHookItem.ID, player));
-    }
+    public static void giveItemsWithLoadout(Player player, HideAndSeek plugin) {
+        removeItems(player);
 
-    public static void giveBlockStats(Player player, HideAndSeek plugin) {
-        boolean blockStatsEnabled = plugin.getSettingRegistry().get("blockstats.enabled", true);
-        if (blockStatsEnabled) {
-            player.getInventory().setItem(2, plugin.getCustomItemManager().getIdentifiedItemStack(BlockStatsItem.ID, player));
+
+        ItemStack sword = plugin.getCustomItemManager().getIdentifiedItemStack(SeekersSwordItem.ID, player);
+        player.getInventory().setItem(0, sword);
+
+
+        giveLoadoutItems(player, plugin);
+
+
+        ItemSkinSelectionService.applySelectedVariants(player, plugin);
+
+
+        var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
+        Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;
+        boolean isBlockMode = gameModeObj != null && gameModeObj.toString().equals("BLOCK");
+
+        if (isBlockMode) {
+            boolean blockStatsEnabled = plugin.getSettingRegistry().get("blockstats.enabled", true);
+            if (blockStatsEnabled) {
+
+                ItemStack slot8Item = player.getInventory().getItem(8);
+                if (slot8Item == null || slot8Item.getType().isAir()) {
+                    ItemStack blockStats = plugin.getCustomItemManager().getIdentifiedItemStack(BlockStatsItem.ID, player);
+                    if (blockStats != null) {
+                        player.getInventory().setItem(8, blockStats);
+                        plugin.getLogger().info("Gave BlockStats to " + player.getName() + " in slot 8");
+                    }
+                }
+            }
         }
+
+        player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, 4, false, false, false));
     }
 
     public static Set<String> getAllConfigKeys() {

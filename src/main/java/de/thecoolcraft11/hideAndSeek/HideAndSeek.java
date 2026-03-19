@@ -45,6 +45,8 @@ public final class HideAndSeek extends MinigameFramework {
     private SkinGUI skinGUI;
     private PointService pointService;
     private NmsAdapter nmsAdapter;
+    private PlayerHitListener playerHitListener;
+    private int worldBorderCheckTaskId = -1;
 
     @Override
     protected void onGameEnable() {
@@ -83,7 +85,8 @@ public final class HideAndSeek extends MinigameFramework {
 
         blockModeListener = new BlockModeListener(this);
 
-        Bukkit.getPluginManager().registerEvents(new PlayerHitListener(this), this);
+        playerHitListener = new PlayerHitListener(this);
+        Bukkit.getPluginManager().registerEvents(playerHitListener, this);
         Bukkit.getPluginManager().registerEvents(new GameStateListener(this), this);
         Bukkit.getPluginManager().registerEvents(blockModeListener, this);
         Bukkit.getPluginManager().registerEvents(new HiderEquipmentChangeListener(this), this);
@@ -98,6 +101,13 @@ public final class HideAndSeek extends MinigameFramework {
         Bukkit.getPluginManager().registerEvents(mapGUI, this);
         Bukkit.getPluginManager().registerEvents(skinGUI, this);
         Bukkit.getPluginManager().registerEvents(new PlayerSpectateListener(), this);
+
+
+        worldBorderCheckTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this,
+                () -> playerHitListener.checkWorldBorderDamage(),
+                0L,
+                5L
+        );
 
 
         registerMapSelectionMenu();
@@ -124,6 +134,9 @@ public final class HideAndSeek extends MinigameFramework {
 
         if (blockModeListener != null) {
             blockModeListener.cancelSneakTimerTask();
+        }
+        if (worldBorderCheckTaskId >= 0) {
+            Bukkit.getScheduler().cancelTask(worldBorderCheckTaskId);
         }
         ItemSkinSelectionService.shutdown(this);
     }

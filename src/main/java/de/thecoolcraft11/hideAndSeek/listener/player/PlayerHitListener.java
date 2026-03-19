@@ -22,6 +22,8 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.scoreboard.Team;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -32,6 +34,8 @@ import static de.thecoolcraft11.hideAndSeek.items.seeker.CurseSpellItem.isCurseA
 
 public class PlayerHitListener implements Listener {
     private final HideAndSeek plugin;
+    private final Map<UUID, Long> hidersBorderExitTime = new HashMap<>();
+    private final Map<UUID, Long> lastDamageTime = new HashMap<>();
 
     public PlayerHitListener(HideAndSeek plugin) {
         this.plugin = plugin;
@@ -352,17 +356,7 @@ public class PlayerHitListener implements Listener {
             cleanupBlockModeHider(hider);
 
 
-            SeekerItems.giveItems(hider, plugin);
-            SeekerItems.giveGrapplingHook(hider, plugin);
-
-
-            var gameModeResult = plugin.getSettingService().getSetting("game.gametype");
-            Object gameModeObj = gameModeResult.isSuccess() ? gameModeResult.getValue() : null;
-            boolean isBlockMode = gameModeObj != null && gameModeObj.toString().equals("BLOCK");
-
-            if (isBlockMode) {
-                SeekerItems.giveBlockStats(hider, plugin);
-            }
+            SeekerItems.giveItemsWithLoadout(hider, plugin);
 
 
             hider.addPotionEffect(new org.bukkit.potion.PotionEffect(
@@ -416,4 +410,69 @@ public class PlayerHitListener implements Listener {
         hider.removePotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY);
     }
 
+    public void checkWorldBorderDamage() {
+
+        boolean damageEnabled = plugin.getSettingRegistry().get("game.damage_hiders_outside_worldborder", true);
+        if (!damageEnabled) {
+            return;
+        }
+
+
+        if (!plugin.getStateManager().getCurrentPhaseId().equals("seeking")) {
+
+            hidersBorderExitTime.clear();
+            lastDamageTime.clear();
+            return;
+        }
+
+
+        int damageTimeoutSeconds = plugin.getSettingRegistry().get("game.worldborder_damage_timeout", 10);
+        double damageAmount = plugin.getSettingRegistry().get("game.worldborder_damage_amount", 2.0);
+        int damageCooldownTicks = plugin.getSettingRegistry().get("game.worldborder_damage_cooldown", 20);
+        long currentTime = System.currentTimeMillis();
+
+
+        for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
+            Player hider = Bukkit.getPlayer(hiderId);
+            if (hider == null || !hider.isOnline()) {
+                hidersBorderExitTime.remove(hiderId);
+                lastDamageTime.remove(hiderId);
+                continue;
+            }
+
+            boolean isOutsideBorder = !hider.getWorld().getWorldBorder().isInside(hider.getLocation());
+
+            if (isOutsideBorder) {
+
+                if (!hidersBorderExitTime.containsKey(hiderId)) {
+                    hidersBorderExitTime.put(hiderId, currentTime);
+                    plugin.getLogger().info(hider.getName() + " went outside world border");
+                }
+
+
+                long timeOutsideMs = currentTime - hidersBorderExitTime.get(hiderId);
+                long timeOutsideSeconds = timeOutsideMs / 1000;
+
+                if (timeOutsideSeconds >= damageTimeoutSeconds) {
+
+                    long lastDamageTick = lastDamageTime.getOrDefault(hiderId, 0L);
+                    long ticksSinceLastDamage = (currentTime - lastDamageTick) / 50;
+
+                    if (ticksSinceLastDamage >= damageCooldownTicks) {
+
+                        hider.damage(damageAmount, hider);
+                        lastDamageTime.put(hiderId, currentTime);
+                        plugin.getLogger().info(hider.getName() + " took " + damageAmount + " damage for being outside border (" + timeOutsideSeconds + "s outside)");
+                    }
+                }
+            } else {
+
+                if (hidersBorderExitTime.containsKey(hiderId)) {
+                    plugin.getLogger().info(hider.getName() + " returned inside world border");
+                }
+                hidersBorderExitTime.remove(hiderId);
+                lastDamageTime.remove(hiderId);
+            }
+        }
+    }
 }
