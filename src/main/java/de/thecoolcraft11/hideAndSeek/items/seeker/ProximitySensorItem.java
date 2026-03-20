@@ -226,7 +226,9 @@ public class ProximitySensorItem implements GameItem {
                     }
 
                     if (torchBlock.getBlockData() instanceof Lightable lightable) {
-                        plugin.getLogger().info("Removing power from " + torchBlock.getLocation());
+                        if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                            plugin.getLogger().info("Removing power from " + torchBlock.getLocation());
+                        }
                         lightable.setLit(false);
                     }
 

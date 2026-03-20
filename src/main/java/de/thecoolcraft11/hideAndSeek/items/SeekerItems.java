@@ -60,7 +60,9 @@ public final class SeekerItems {
                     item.getAllIds().forEach(id -> plugin.getCustomItemManager().unregisterItem(id));
 
                     item.register(plugin);
-                    plugin.getLogger().info("Targeted refresh for: " + item.getId());
+                    if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                        plugin.getLogger().info("Targeted refresh for: " + item.getId());
+                    }
                 });
     }
 
@@ -98,7 +100,9 @@ public final class SeekerItems {
 
         if (itemsToGive.isEmpty()) {
 
-            plugin.getLogger().info("No loadout selected for " + player.getName() + ", using defaults");
+            if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                plugin.getLogger().info("No loadout selected for " + player.getName() + ", using defaults");
+            }
 
             itemsToGive = Set.of(
                     LoadoutItemType.GRAPPLING_HOOK
@@ -106,7 +110,9 @@ public final class SeekerItems {
 
         } else {
 
-            plugin.getLogger().info(player.getName() + " has custom loadout with " + itemsToGive.size() + " items");
+            if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                plugin.getLogger().info(player.getName() + " has custom loadout with " + itemsToGive.size() + " items");
+            }
 
         }
 
@@ -147,7 +153,9 @@ public final class SeekerItems {
 
             String itemId = itemType.getItemId();
 
-            plugin.getLogger().info("Giving " + player.getName() + " item: " + itemType.name() + " (ID: " + itemId + ") in slot " + slot);
+            if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                plugin.getLogger().info("Giving " + player.getName() + " item: " + itemType.name() + " (ID: " + itemId + ") in slot " + slot);
+            }
 
             ItemStack item = plugin.getCustomItemManager().getIdentifiedItemStack(itemId, player);
 
@@ -155,7 +163,9 @@ public final class SeekerItems {
 
                 player.getInventory().setItem(slot++, item);
 
-                plugin.getLogger().info(" Item placed successfully");
+                if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                    plugin.getLogger().info(" Item placed successfully");
+                }
 
             } else {
 
@@ -174,14 +184,18 @@ public final class SeekerItems {
 
                 player.getInventory().setItem(8, blockStats);
 
-                plugin.getLogger().info("Gave permanent BlockStats item to " + player.getName() + " in slot 8");
+                if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                    plugin.getLogger().info("Gave permanent BlockStats item to " + player.getName() + " in slot 8");
+                }
 
             }
 
         }
 
 
-        plugin.getLogger().info("Finished giving loadout items to " + player.getName() + " (" + (slot - 1) + " items placed)");
+        if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+            plugin.getLogger().info("Finished giving loadout items to " + player.getName() + " (" + (slot - 1) + " items placed)");
+        }
 
     }
 
@@ -240,7 +254,9 @@ public final class SeekerItems {
                     ItemStack blockStats = plugin.getCustomItemManager().getIdentifiedItemStack(BlockStatsItem.ID, player);
                     if (blockStats != null) {
                         player.getInventory().setItem(8, blockStats);
-                        plugin.getLogger().info("Gave BlockStats to " + player.getName() + " in slot 8");
+                        if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                            plugin.getLogger().info("Gave BlockStats to " + player.getName() + " in slot 8");
+                        }
                     }
                 }
             }

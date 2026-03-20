@@ -66,7 +66,9 @@ public final class HiderItems {
                     item.getAllIds().forEach(id -> plugin.getCustomItemManager().unregisterItem(id));
 
                     item.register(plugin);
-                    plugin.getLogger().info("Targeted refresh for: " + item.getId());
+                    if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                        plugin.getLogger().info("Targeted refresh for: " + item.getId());
+                    }
                 });
     }
 
@@ -104,14 +106,18 @@ public final class HiderItems {
         Set<LoadoutItemType> itemsToGive = loadout.getHiderItems();
 
         if (itemsToGive.isEmpty()) {
-            plugin.getLogger().info("No loadout selected for " + player.getName() + ", using defaults");
+            if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                plugin.getLogger().info("No loadout selected for " + player.getName() + ", using defaults");
+            }
             itemsToGive = Set.of(
                     LoadoutItemType.CAT_SOUND,
                     LoadoutItemType.FIRECRACKER,
                     LoadoutItemType.SPEED_BOOST
             );
         } else {
-            plugin.getLogger().info(player.getName() + " has custom loadout with " + itemsToGive.size() + " items");
+            if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                plugin.getLogger().info(player.getName() + " has custom loadout with " + itemsToGive.size() + " items");
+            }
         }
 
         boolean hasValidItems = false;
@@ -147,11 +153,15 @@ public final class HiderItems {
                 itemId = KnockbackStickItem.ID + "_" + KnockbackStickItem.getKnockbackLevel(player.getUniqueId());
             }
 
-            plugin.getLogger().info("Giving " + player.getName() + " item: " + itemType.name() + " (ID: " + itemId + ") in slot " + slot);
+            if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                plugin.getLogger().info("Giving " + player.getName() + " item: " + itemType.name() + " (ID: " + itemId + ") in slot " + slot);
+            }
             ItemStack item = plugin.getCustomItemManager().getIdentifiedItemStack(itemId, player);
             if (item != null) {
                 player.getInventory().setItem(slot++, item);
-                plugin.getLogger().info("  Item placed successfully");
+                if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                    plugin.getLogger().info("  Item placed successfully");
+                }
 
                 plugin.getCustomItemManager().resetPlayerUses(RandomBlockItem.ID, player.getUniqueId());
                 plugin.getCustomItemManager().resetPlayerUses(TotemItem.ID, player.getUniqueId());
@@ -161,7 +171,9 @@ public final class HiderItems {
         }
 
         ItemSkinSelectionService.applySelectedVariants(player, plugin);
-        plugin.getLogger().info("Finished giving loadout items to " + player.getName() + " (" + (slot) + " items placed)");
+        if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+            plugin.getLogger().info("Finished giving loadout items to " + player.getName() + " (" + (slot) + " items placed)");
+        }
     }
 
     public static void updateAppearanceItem(Player player, HideAndSeek plugin) {
