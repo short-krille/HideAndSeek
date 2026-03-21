@@ -138,6 +138,13 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.game.gaze_kill_show_particles", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.auto_cleanup_after_round", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.small_mode_seeker_size", Double.class, 1.0);
+        plugin.getConfigRegistry().register("settings.anticheat.enabled", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.anticheat.hiding-filter-enabled", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.anticheat.seeking-filter-enabled", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.anticheat.seeking-visibility-range", Double.class, 12.0);
+        plugin.getConfigRegistry().register("settings.anticheat.seeking-los-reveal-enabled", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.anticheat.seeking-los-reveal-range", Double.class, 64.0);
+        plugin.getConfigRegistry().register("settings.anticheat.seeking-los-reveal-fov", Double.class, 24.0);
 
 
         plugin.getConfigRegistry().register("settings.blockstats.show-names", Boolean.class, false);
@@ -375,6 +382,7 @@ public class SettingRegisterer {
         plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.kill").icon(Material.NETHERITE_SWORD).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.assist").icon(Material.CHAINMAIL_CHESTPLATE).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("points.seeker.special").icon(Material.WOLF_SPAWN_EGG).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("anticheat").icon(Material.SHIELD).build());
     }
 
     public static void registerSettings(HideAndSeek plugin) {
@@ -643,6 +651,67 @@ public class SettingRegisterer {
                 .rangeDouble(0.1, 2.0)
                 .description("Size scale for seekers in SMALL mode (1.0 = normal size)")
                 .customIcon(Material.MAGMA_CREAM)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.enabled", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.enabled", true))
+                .description("Master switch for anti-cheat seeker visibility filtering")
+                .customIcon(Material.SHIELD)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.SHIELD, true),
+                        false, setEnchanted(Material.SHIELD, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.hiding-filter-enabled", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.hiding-filter-enabled", true))
+                .description("During HIDING: hide all hider entities from seekers while keeping tab entries")
+                .customIcon(Material.ENDER_EYE)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.ENDER_EYE, true),
+                        false, setEnchanted(Material.ENDER_EYE, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.seeking-filter-enabled", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.seeking-filter-enabled", true))
+                .description("During SEEKING: seekers only see nearby hiders and never hidden BLOCK-mode hiders")
+                .customIcon(Material.SPYGLASS)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.SPYGLASS, true),
+                        false, setEnchanted(Material.SPYGLASS, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.seeking-visibility-range", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.seeking-visibility-range", 24.0))
+                .rangeDouble(1.0, 128.0)
+                .description("Distance in blocks at which seekers can see hiders during SEEKING")
+                .customIcon(Material.COMPASS)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.seeking-los-reveal-enabled", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.seeking-los-reveal-enabled", true))
+                .description("Allow seeker line-of-sight reveal outside base anti-cheat visibility range")
+                .customIcon(Material.SPYGLASS)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.SPYGLASS, true),
+                        false, setEnchanted(Material.SPYGLASS, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.seeking-los-reveal-range", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.seeking-los-reveal-range", 64.0))
+                .rangeDouble(8.0, 256.0)
+                .description("Maximum range for line-of-sight reveal checks")
+                .customIcon(Material.COMPASS)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.seeking-los-reveal-fov", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.seeking-los-reveal-fov", 24.0))
+                .rangeDouble(5.0, 90.0)
+                .description("Seeker view angle in degrees for line-of-sight reveal checks")
+                .customIcon(Material.ENDER_EYE)
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("blockstats.show-names", SettingType.BOOLEAN, Boolean.class)

@@ -203,6 +203,7 @@ public class PlayerHitListener implements Listener {
                         player.setHealth(20.0);
                         player.setAllowFlight(true);
                         player.setFlying(true);
+                        plugin.getAntiCheatVisibilityListener().refreshSoon();
                     }, 1L);
                 } else if (gameStyle == GameStyleEnum.INVASION) {
 
@@ -214,6 +215,7 @@ public class PlayerHitListener implements Listener {
                         player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
                         player.setFoodLevel(20);
                         player.sendMessage(Component.text("You were transformed! You're now a seeker!", NamedTextColor.GREEN));
+                        plugin.getAntiCheatVisibilityListener().refreshSoon();
                     }, 1L);
                 }
             } else if (gameStyle == GameStyleEnum.INFINITE &&
@@ -234,6 +236,7 @@ public class PlayerHitListener implements Listener {
                     HiderItems.giveItems(player, plugin, false);
 
                     player.sendMessage(Component.text("You respawned! Keep hiding!", NamedTextColor.GREEN));
+                    plugin.getAntiCheatVisibilityListener().refreshSoon();
                 }, 1L);
             }
         }
@@ -331,6 +334,7 @@ public class PlayerHitListener implements Listener {
                     Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(500))
             );
             hider.showTitle(title);
+            plugin.getAntiCheatVisibilityListener().refreshSoon();
         }, 1L);
 
         if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
@@ -413,6 +417,7 @@ public class PlayerHitListener implements Listener {
                     Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(500))
             );
             hider.showTitle(title);
+            plugin.getAntiCheatVisibilityListener().refreshSoon();
         }, 1L);
 
         if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {

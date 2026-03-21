@@ -121,6 +121,11 @@ public class BlockModeListener implements Listener {
                     event.getAction() == Action.RIGHT_CLICK_BLOCK) {
                 event.setCancelled(true);
             }
+            return;
+        }
+
+        if (event.getAction() == Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null) {
+            damageHiddenPlayer(player, event.getClickedBlock(), false);
         }
     }
 

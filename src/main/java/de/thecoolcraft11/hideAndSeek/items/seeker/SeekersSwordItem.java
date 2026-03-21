@@ -4,6 +4,7 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
+import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
 import de.thecoolcraft11.hideAndSeek.util.XpProgressHelper;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
 import de.thecoolcraft11.minigameframework.items.ItemActionType;
@@ -18,6 +19,7 @@ import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
@@ -251,17 +253,36 @@ public class SeekersSwordItem implements GameItem {
                 }
                 Vector direction = travel.clone().normalize();
 
-                RayTraceResult entityTrace = world.rayTraceEntities(
-                        previous,
-                        direction,
-                        distance,
-                        hitbox,
-                        entity -> entity instanceof Player target
-                                && !target.getUniqueId().equals(seeker.getUniqueId())
-                                && HideAndSeek.getDataController().getHiders().contains(target.getUniqueId())
-                );
+                Entity hitEntity = null;
+                if (plugin.getNmsAdapter().hasCapability(NmsCapabilities.PROJECTILE_ENTITY_RAYCAST)) {
+                    hitEntity = plugin.getNmsAdapter().raycastEntityHit(
+                            seeker,
+                            previous,
+                            direction,
+                            distance,
+                            hitbox,
+                            entity -> entity instanceof Player target
+                                    && !target.getUniqueId().equals(seeker.getUniqueId())
+                                    && HideAndSeek.getDataController().getHiders().contains(target.getUniqueId())
+                    );
+                }
 
-                if (entityTrace != null && entityTrace.getHitEntity() instanceof Player target) {
+                if (hitEntity == null) {
+                    RayTraceResult entityTrace = world.rayTraceEntities(
+                            previous,
+                            direction,
+                            distance,
+                            hitbox,
+                            entity -> entity instanceof Player target
+                                    && !target.getUniqueId().equals(seeker.getUniqueId())
+                                    && HideAndSeek.getDataController().getHiders().contains(target.getUniqueId())
+                    );
+                    if (entityTrace != null) {
+                        hitEntity = entityTrace.getHitEntity();
+                    }
+                }
+
+                if (hitEntity instanceof Player target) {
                     double damage = getThrownSwordDamage(seeker);
                     target.damage(damage, seeker);
                     target.getWorld().spawnParticle(Particle.CRIT, target.getLocation().add(0, 1, 0), 10, 0.25, 0.4, 0.25, 0.02);

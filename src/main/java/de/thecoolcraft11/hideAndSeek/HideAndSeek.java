@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek;
 import de.thecoolcraft11.hideAndSeek.command.*;
 import de.thecoolcraft11.hideAndSeek.gui.*;
 import de.thecoolcraft11.hideAndSeek.items.*;
+import de.thecoolcraft11.hideAndSeek.listener.game.AntiCheatVisibilityListener;
 import de.thecoolcraft11.hideAndSeek.listener.game.BlockModeListener;
 import de.thecoolcraft11.hideAndSeek.listener.game.GameStateListener;
 import de.thecoolcraft11.hideAndSeek.listener.game.SetPhaseReadinessGuardListener;
@@ -49,6 +50,7 @@ public final class HideAndSeek extends MinigameFramework {
     private VoteManager voteManager;
     private VoteGUI voteGUI;
     private ReadyGUI readyGUI;
+    private AntiCheatVisibilityListener antiCheatVisibilityListener;
 
     @Override
     protected void onGameEnable() {
@@ -90,10 +92,12 @@ public final class HideAndSeek extends MinigameFramework {
 
         blockModeListener = new BlockModeListener(this);
         playerHitListener = new PlayerHitListener(this);
+        antiCheatVisibilityListener = new AntiCheatVisibilityListener(this);
 
         Bukkit.getPluginManager().registerEvents(playerHitListener, this);
         Bukkit.getPluginManager().registerEvents(new GameStateListener(this), this);
         Bukkit.getPluginManager().registerEvents(blockModeListener, this);
+        Bukkit.getPluginManager().registerEvents(antiCheatVisibilityListener, this);
         Bukkit.getPluginManager().registerEvents(new HiderEquipmentChangeListener(this), this);
         Bukkit.getPluginManager().registerEvents(new CrossbowTrackerListener(this), this);
 
@@ -142,6 +146,9 @@ public final class HideAndSeek extends MinigameFramework {
         }
         if (worldBorderCheckTaskId >= 0) {
             Bukkit.getScheduler().cancelTask(worldBorderCheckTaskId);
+        }
+        if (antiCheatVisibilityListener != null) {
+            antiCheatVisibilityListener.shutdown();
         }
         ItemSkinSelectionService.shutdown(this);
     }
@@ -268,5 +275,9 @@ public final class HideAndSeek extends MinigameFramework {
 
     public ReadyGUI getReadyGUI() {
         return readyGUI;
+    }
+
+    public AntiCheatVisibilityListener getAntiCheatVisibilityListener() {
+        return antiCheatVisibilityListener;
     }
 }

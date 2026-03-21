@@ -322,6 +322,8 @@ public class HidingPhase implements GamePhase {
 
         plugin.getTeamManager().getTeam(plugin.getTeamManager().getPlayerTeam(Bukkit.getPlayer(HideAndSeek.getDataController().getHiders().getFirst()))).setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
         plugin.getTeamManager().getTeam(plugin.getTeamManager().getPlayerTeam(Bukkit.getPlayer(HideAndSeek.getDataController().getHiders().getFirst()))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+
+        Bukkit.getScheduler().runTaskLater(hideAndSeekPlugin, () -> hideAndSeekPlugin.getAntiCheatVisibilityListener().refreshSoon(), 2L);
     }
 
     @Override

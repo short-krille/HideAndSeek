@@ -7,9 +7,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public interface NmsAdapter {
 
@@ -35,6 +37,14 @@ public interface NmsAdapter {
     void spoofClientGameMode(Player player, GameMode mode);
 
     void setNoClipForEntity(Entity entity, boolean noClip);
+
+    boolean spawnClientLightning(Player viewer, Location location);
+
+    Entity raycastEntityHit(Player shooter, Location start, Vector direction, double distance, double hitboxInflation, Predicate<Entity> filter);
+
+    boolean setEntityVisibilityForViewer(Player viewer, Player target, boolean visible);
+
+    void clearVisibilityFilters();
 
 
 }

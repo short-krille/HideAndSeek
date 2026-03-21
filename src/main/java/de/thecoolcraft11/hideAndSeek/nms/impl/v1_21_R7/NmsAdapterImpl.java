@@ -2,12 +2,24 @@ package de.thecoolcraft11.hideAndSeek.nms.impl.v1_21_R7;
 
 import de.thecoolcraft11.hideAndSeek.nms.NmsAdapter;
 import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import net.minecraft.server.level.ServerEntity;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
@@ -19,21 +31,31 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 public class NmsAdapterImpl implements NmsAdapter {
 
+    private static final AtomicInteger CLIENT_ONLY_ENTITY_ID = new AtomicInteger(2_000_000_000);
+    private static final String FILTER_PREFIX = "has_anticheat_filter_";
     private static final Set<NmsCapabilities> CAPS =
             EnumSet.of(
                     NmsCapabilities.BLOCK_VOXEL_SHAPE,
                     NmsCapabilities.MOB_PATHFINDING,
                     NmsCapabilities.CLIENT_GAMEMODE_SPOOFING,
-                    NmsCapabilities.NO_CLIP_MOB
+                    NmsCapabilities.NO_CLIP_MOB,
+                    NmsCapabilities.CLIENT_LIGHTNING_PACKET,
+                    NmsCapabilities.PROJECTILE_ENTITY_RAYCAST,
+                    NmsCapabilities.ANTI_CHEAT_PACKET_FILTER
             );
+    private final Map<UUID, Set<Integer>> blockedEntityIdsByViewer = new ConcurrentHashMap<>();
 
     @Override
     public String name() {
@@ -157,5 +179,347 @@ public class NmsAdapterImpl implements NmsAdapter {
         net.minecraft.world.entity.Entity serverEntity = ((CraftEntity) entity).getHandle();
 
         serverEntity.noPhysics = noClip;
+    }
+
+    private static Object tryProjectileUtilHit(Object level, net.minecraft.world.entity.Entity shooterHandle, Vec3 from, Vec3 to,
+                                               AABB box, Predicate<Entity> filter, double hitboxInflation) {
+        Predicate<net.minecraft.world.entity.Entity> nmsFilter = entity -> {
+            Entity bukkit = entity.getBukkitEntity();
+            return filter.test(bukkit);
+        };
+
+        for (Method method : ProjectileUtil.class.getDeclaredMethods()) {
+            if (!method.getName().equals("getEntityHitResult")) {
+                continue;
+            }
+
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            Object[] args = new Object[parameterTypes.length];
+            int vecIndex = 0;
+            boolean valid = true;
+
+            for (int i = 0; i < parameterTypes.length; i++) {
+                Class<?> type = parameterTypes[i];
+
+                if (type.isAssignableFrom(level.getClass())) {
+                    args[i] = level;
+                } else if (type.isAssignableFrom(shooterHandle.getClass()) || type == net.minecraft.world.entity.Entity.class) {
+                    args[i] = shooterHandle;
+                } else if (type == Vec3.class) {
+                    args[i] = vecIndex++ == 0 ? from : to;
+                } else if (type == AABB.class) {
+                    args[i] = box;
+                } else if (Predicate.class.isAssignableFrom(type)) {
+                    args[i] = nmsFilter;
+                } else if (type == float.class || type == Float.class) {
+                    args[i] = (float) hitboxInflation;
+                } else if (type == double.class || type == Double.class) {
+                    args[i] = hitboxInflation;
+                } else {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (!valid || vecIndex < 2) {
+                continue;
+            }
+
+            try {
+                return method.invoke(null, args);
+            } catch (Throwable ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    private static Object buildClientLightningPacket(Location location) {
+        int entityId = CLIENT_ONLY_ENTITY_ID.incrementAndGet();
+        UUID uuid = UUID.randomUUID();
+        Vec3 velocity = Vec3.ZERO;
+        Object entityType = net.minecraft.world.entity.EntityType.LIGHTNING_BOLT;
+
+        for (Constructor<?> constructor : ClientboundAddEntityPacket.class.getConstructors()) {
+            Class<?>[] parameterTypes = constructor.getParameterTypes();
+
+            try {
+                if (parameterTypes.length == 11
+                        && parameterTypes[0] == int.class
+                        && parameterTypes[1] == UUID.class
+                        && parameterTypes[2] == double.class
+                        && parameterTypes[3] == double.class
+                        && parameterTypes[4] == double.class
+                        && parameterTypes[5] == float.class
+                        && parameterTypes[6] == float.class
+                        && parameterTypes[8] == int.class
+                        && parameterTypes[9] == Vec3.class
+                        && parameterTypes[10] == double.class) {
+                    return constructor.newInstance(
+                            entityId,
+                            uuid,
+                            location.getX(),
+                            location.getY(),
+                            location.getZ(),
+                            0f,
+                            0f,
+                            entityType,
+                            0,
+                            velocity,
+                            0d
+                    );
+                }
+
+                if (parameterTypes.length == 10
+                        && parameterTypes[0] == int.class
+                        && parameterTypes[1] == UUID.class
+                        && parameterTypes[2] == double.class
+                        && parameterTypes[3] == double.class
+                        && parameterTypes[4] == double.class
+                        && parameterTypes[5] == float.class
+                        && parameterTypes[6] == float.class
+                        && parameterTypes[8] == int.class
+                        && parameterTypes[9] == Vec3.class) {
+                    return constructor.newInstance(
+                            entityId,
+                            uuid,
+                            location.getX(),
+                            location.getY(),
+                            location.getZ(),
+                            0f,
+                            0f,
+                            entityType,
+                            0,
+                            velocity
+                    );
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean shouldDropPacket(Object msg, Set<Integer> blockedEntityIds) {
+        if (!(msg instanceof Packet<?> packet)) {
+            return false;
+        }
+
+        if (packet instanceof ClientboundAddEntityPacket addEntityPacket) {
+            return blockedEntityIds.contains(addEntityPacket.getId());
+        }
+
+        try {
+            Method subPackets = packet.getClass().getMethod("subPackets");
+            Object nested = subPackets.invoke(packet);
+            if (nested instanceof Iterable<?> iterable) {
+                for (Object child : iterable) {
+                    if (shouldDropPacket(child, blockedEntityIds)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        return false;
+    }
+
+    private static Channel getChannel(ServerPlayer viewerHandle) {
+        try {
+            Field serverConnectionField = viewerHandle.connection.getClass().getSuperclass().getDeclaredField("connection");
+            serverConnectionField.setAccessible(true);
+            Connection connection = (Connection) serverConnectionField.get(viewerHandle.connection);
+
+            Field channelField = Connection.class.getDeclaredField("channel");
+            channelField.setAccessible(true);
+            return (Channel) channelField.get(connection);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static boolean sendPairingData(ServerPlayer viewerHandle, ServerPlayer targetHandle) {
+        try {
+            ServerLevel level = targetHandle.level();
+            Object trackedEntity = getTrackedEntity(level, targetHandle.getId());
+            if (trackedEntity == null) {
+                return false;
+            }
+
+            Field serverEntityField = trackedEntity.getClass().getDeclaredField("serverEntity");
+            serverEntityField.setAccessible(true);
+            ServerEntity serverEntity = (ServerEntity) serverEntityField.get(trackedEntity);
+            if (serverEntity == null) {
+                return false;
+            }
+
+            serverEntity.sendPairingData(viewerHandle, packet -> viewerHandle.connection.send(packet));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static Object getTrackedEntity(ServerLevel level, int entityId) {
+        try {
+            Object chunkMap = level.getChunkSource().chunkMap;
+            Field entityMapField = chunkMap.getClass().getDeclaredField("entityMap");
+            entityMapField.setAccessible(true);
+            Object entityMap = entityMapField.get(chunkMap);
+            Method getMethod = entityMap.getClass().getMethod("get", int.class);
+            return getMethod.invoke(entityMap, entityId);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    @Override
+    public boolean spawnClientLightning(Player viewer, Location location) {
+        if (viewer == null || location == null || location.getWorld() == null) {
+            return false;
+        }
+
+        try {
+            ServerPlayer serverPlayer = ((CraftPlayer) viewer).getHandle();
+            Object packet = buildClientLightningPacket(location);
+            if (packet == null) {
+                return false;
+            }
+            serverPlayer.connection.send((Packet<?>) packet);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public Entity raycastEntityHit(Player shooter, Location start, Vector direction, double distance, double hitboxInflation, Predicate<Entity> filter) {
+        if (shooter == null || start == null || start.getWorld() == null || direction == null || filter == null || distance <= 0) {
+            return null;
+        }
+
+        try {
+            net.minecraft.world.entity.Entity shooterHandle = ((CraftPlayer) shooter).getHandle();
+            Vec3 from = new Vec3(start.getX(), start.getY(), start.getZ());
+            Vec3 to = from.add(direction.getX() * distance, direction.getY() * distance, direction.getZ() * distance);
+            AABB box = shooterHandle.getBoundingBox().expandTowards(to.subtract(from)).inflate(hitboxInflation);
+
+            Object result = tryProjectileUtilHit(
+                    ((CraftWorld) start.getWorld()).getHandle(),
+                    shooterHandle,
+                    from,
+                    to,
+                    box,
+                    filter,
+                    hitboxInflation
+            );
+
+            if (result == null) {
+                return null;
+            }
+
+            Method getEntityMethod = result.getClass().getMethod("getEntity");
+            Object nmsEntity = getEntityMethod.invoke(result);
+            if (nmsEntity instanceof net.minecraft.world.entity.Entity nms) {
+                return nms.getBukkitEntity();
+            }
+        } catch (Throwable ignored) {
+            return null;
+        }
+
+        return null;
+    }
+
+    @Override
+    public boolean setEntityVisibilityForViewer(Player viewer, Player target, boolean visible) {
+        if (viewer == null || target == null || !viewer.isOnline() || !target.isOnline()) {
+            return false;
+        }
+
+        if (viewer.getUniqueId().equals(target.getUniqueId())) {
+            return true;
+        }
+
+        try {
+            ServerPlayer viewerHandle = ((CraftPlayer) viewer).getHandle();
+            int targetEntityId = ((CraftPlayer) target).getHandle().getId();
+
+            ensurePacketFilterInstalled(viewerHandle, viewer.getUniqueId());
+            Set<Integer> blocked = blockedEntityIdsByViewer.computeIfAbsent(viewer.getUniqueId(), ignored -> ConcurrentHashMap.newKeySet());
+
+            if (visible) {
+                boolean changed = blocked.remove(targetEntityId);
+                if (blocked.isEmpty()) {
+                    blockedEntityIdsByViewer.remove(viewer.getUniqueId());
+                }
+
+                if (changed) {
+                    return sendPairingData(viewerHandle, ((CraftPlayer) target).getHandle());
+                }
+                return true;
+            }
+
+            boolean changed = blocked.add(targetEntityId);
+            if (changed) {
+                viewerHandle.connection.send(new ClientboundRemoveEntitiesPacket(targetEntityId));
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public void clearVisibilityFilters() {
+        Set<UUID> viewers = new HashSet<>(blockedEntityIdsByViewer.keySet());
+        blockedEntityIdsByViewer.clear();
+
+        for (UUID viewerId : viewers) {
+            Player viewer = org.bukkit.Bukkit.getPlayer(viewerId);
+            if (viewer == null || !viewer.isOnline()) {
+                continue;
+            }
+
+            try {
+                removePacketFilter(((CraftPlayer) viewer).getHandle(), viewerId);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private void ensurePacketFilterInstalled(ServerPlayer viewerHandle, UUID viewerId) {
+        Channel channel = getChannel(viewerHandle);
+        if (channel == null) {
+            return;
+        }
+
+        String handlerName = FILTER_PREFIX + viewerId;
+        if (channel.pipeline().get(handlerName) != null) {
+            return;
+        }
+
+        channel.pipeline().addBefore("packet_handler", handlerName, new ChannelDuplexHandler() {
+            @Override
+            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                Set<Integer> blocked = blockedEntityIdsByViewer.get(viewerId);
+                if (blocked != null && !blocked.isEmpty() && shouldDropPacket(msg, blocked)) {
+                    return;
+                }
+                super.write(ctx, msg, promise);
+            }
+        });
+    }
+
+    private void removePacketFilter(ServerPlayer viewerHandle, UUID viewerId) {
+        Channel channel = getChannel(viewerHandle);
+        if (channel == null) {
+            return;
+        }
+
+        String handlerName = FILTER_PREFIX + viewerId;
+        if (channel.pipeline().get(handlerName) != null) {
+            channel.pipeline().remove(handlerName);
+        }
     }
 }
