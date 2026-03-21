@@ -1,8 +1,10 @@
 package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.block.BlockListParser;
 import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
+import de.thecoolcraft11.hideAndSeek.items.seeker.SeekersSwordItem;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
 import de.thecoolcraft11.hideAndSeek.util.map.MapConfigHelper;
@@ -15,6 +17,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -29,6 +32,8 @@ import java.util.*;
 public class HidingPhase implements GamePhase {
     private BukkitTask pointsTask;
     private final Map<BukkitTask, Location> blockTasks = new HashMap<>();
+    Set<Material> allowedMaterials = new HashSet<>();
+
 
     @Override
     public String getId() {
@@ -45,6 +50,7 @@ public class HidingPhase implements GamePhase {
 
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
         hideAndSeekPlugin.getPointService().resetRoundState();
+        generateAllowedBreakBlocks(hideAndSeekPlugin);
 
         TimerManager.cleanupTimers(hideAndSeekPlugin);
 
@@ -434,6 +440,21 @@ public class HidingPhase implements GamePhase {
     }
 
     @Override
+    public boolean canBreakBlock(Block block, Player player, MinigameFramework plugin) {
+        HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
+        Material blockType = block.getType();
+
+        if (HideAndSeek.getDataController().getSeekers().contains(player.getUniqueId())) {
+            if (hideAndSeekPlugin.getCustomItemManager().hasItemInMainHand(player, SeekersSwordItem.ID)) {
+
+
+                return allowedMaterials.contains(blockType);
+            }
+        }
+        return GamePhase.super.canBreakBlock(block, player, plugin);
+    }
+
+    @Override
     public boolean allowBlockInteraction() {
         return false;
     }
@@ -457,7 +478,7 @@ public class HidingPhase implements GamePhase {
     public List<Material> getBlockInteractionExceptions() {
         return new ArrayList<>(
                 Arrays.stream(Material.values())
-                        .filter(material -> material.name().endsWith("_DOOR") || material.name().endsWith("_FENCE_GATE") || material.name().endsWith("_TRAPDOOR"))
+                        .filter(material -> material.name().endsWith("_DOOR") || material.name().endsWith("_FENCE_GATE") || material.name().endsWith("_TRAPDOOR") || material.name().endsWith("_BUTTON") || material.name().endsWith("_LEVER"))
                         .toList()
         );
     }
@@ -483,6 +504,15 @@ public class HidingPhase implements GamePhase {
     }
 
     @Override
+    public List<Material> getBlockPhysicsExceptions() {
+        return new ArrayList<>(
+                Arrays.stream(Material.values())
+                        .filter(material -> material.name().endsWith("_DOOR") || material.name().endsWith("_FENCE_GATE") || material.name().endsWith("_TRAPDOOR") || material.name().endsWith("_BUTTON") || material.name().endsWith("_LEVER"))
+                        .toList()
+        );
+    }
+
+    @Override
     public boolean allowBlockDrops() {
         return false;
     }
@@ -500,6 +530,14 @@ public class HidingPhase implements GamePhase {
     @Override
     public boolean allowEntityExperienceDrop() {
         return false;
+    }
+
+    private void generateAllowedBreakBlocks(HideAndSeek plugin) {
+        List<String> rawBlockList = plugin.getConfig().getStringList("seeker-break-blocks");
+
+        for (String entry : rawBlockList) {
+            allowedMaterials.addAll(BlockListParser.parseBlockList(entry));
+        }
     }
 
     @Override

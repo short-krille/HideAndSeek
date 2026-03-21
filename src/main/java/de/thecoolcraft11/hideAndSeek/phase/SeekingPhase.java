@@ -305,7 +305,7 @@ public class SeekingPhase implements GamePhase {
     public List<Material> getBlockInteractionExceptions() {
         return new ArrayList<>(
                 Arrays.stream(Material.values())
-                        .filter(material -> material.name().endsWith("_DOOR") || material.name().endsWith("_FENCE_GATE") || material.name().endsWith("_TRAPDOOR"))
+                        .filter(material -> material.name().endsWith("_DOOR") || material.name().endsWith("_FENCE_GATE") || material.name().endsWith("_TRAPDOOR") || material.name().endsWith("_BUTTON") || material.name().endsWith("_LEVER"))
                         .toList()
         );
     }
@@ -334,7 +334,7 @@ public class SeekingPhase implements GamePhase {
     public List<Material> getBlockPhysicsExceptions() {
         return new ArrayList<>(
                 Arrays.stream(Material.values())
-                        .filter(material -> material.name().endsWith("_DOOR") || material.name().endsWith("_FENCE_GATE") || material.name().endsWith("_TRAPDOOR"))
+                        .filter(material -> material.name().endsWith("_DOOR") || material.name().endsWith("_FENCE_GATE") || material.name().endsWith("_TRAPDOOR") || material.name().endsWith("_BUTTON") || material.name().endsWith("_LEVER"))
                         .toList()
         );
     }

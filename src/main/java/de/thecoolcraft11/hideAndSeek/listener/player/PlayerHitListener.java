@@ -24,10 +24,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.scoreboard.Team;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 import static de.thecoolcraft11.hideAndSeek.items.hider.TotemItem.isTotemActive;
 import static de.thecoolcraft11.hideAndSeek.items.hider.TotemItem.reviveWithTotem;
@@ -38,6 +35,7 @@ public class PlayerHitListener implements Listener {
     private final HideAndSeek plugin;
     private final Map<UUID, Long> hidersBorderExitTime = new HashMap<>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<>();
+    private final Set<UUID> worldBorderDeaths = new java.util.HashSet<>();
 
     public PlayerHitListener(HideAndSeek plugin) {
         this.plugin = plugin;
@@ -49,7 +47,7 @@ public class PlayerHitListener implements Listener {
             return;
         }
 
-        if (event.getCause() == EntityDamageEvent.DamageCause.WORLD_BORDER) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.CUSTOM || event.getCause() == EntityDamageEvent.DamageCause.WORLD_BORDER) {
             return;
         }
 
@@ -150,6 +148,19 @@ public class PlayerHitListener implements Listener {
             event.setKeepInventory(false);
         }
 
+        if (worldBorderDeaths.contains(deceased.getUniqueId()) &&
+                HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
+            worldBorderDeaths.remove(deceased.getUniqueId());
+
+            var gameStyleResult = plugin.getSettingService().getSetting("game.gamestyle");
+            Object gameStyleObj = gameStyleResult.isSuccess() ? gameStyleResult.getValue() : GameStyleEnum.SPECTATOR;
+            GameStyleEnum gameStyle = (gameStyleObj instanceof GameStyleEnum) ?
+                    (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
+
+            handleHiderElimination(deceased, null, gameStyle);
+            return;
+        }
+
         if (event.getDamageSource().getCausingEntity() instanceof Player killer) {
 
 
@@ -231,12 +242,20 @@ public class PlayerHitListener implements Listener {
     private void handleHiderElimination(Player hider, Player seeker, GameStyleEnum gameStyle) {
 
         int seekerPoints = plugin.getPointService().onHiderEliminated(hider, seeker);
-        seeker.sendMessage(Component.text("+" + seekerPoints + " points for finding " + hider.getName() + "!", NamedTextColor.GOLD));
 
-        Component announcement = Component.text(seeker.getName(), NamedTextColor.RED)
-                .append(Component.text(" found ", NamedTextColor.YELLOW))
-                .append(Component.text(hider.getName(), NamedTextColor.GREEN))
-                .append(Component.text("!", NamedTextColor.YELLOW));
+        Component announcement;
+        if (seeker != null) {
+            seeker.sendMessage(Component.text("+" + seekerPoints + " points for finding " + hider.getName() + "!", NamedTextColor.GOLD));
+
+            announcement = Component.text(seeker.getName(), NamedTextColor.RED)
+                    .append(Component.text(" found ", NamedTextColor.YELLOW))
+                    .append(Component.text(hider.getName(), NamedTextColor.GREEN))
+                    .append(Component.text("!", NamedTextColor.YELLOW));
+        } else {
+
+            announcement = Component.text(hider.getName(), NamedTextColor.GREEN)
+                    .append(Component.text(" was eliminated by the world border!", NamedTextColor.YELLOW));
+        }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.sendMessage(announcement);
@@ -447,7 +466,8 @@ public class PlayerHitListener implements Listener {
         long currentTime = System.currentTimeMillis();
 
 
-        for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
+        List<UUID> hidersToCheck = new ArrayList<>(HideAndSeek.getDataController().getHiders());
+        for (UUID hiderId : hidersToCheck) {
             Player hider = Bukkit.getPlayer(hiderId);
             if (hider == null || !hider.isOnline()) {
                 hidersBorderExitTime.remove(hiderId);
@@ -476,8 +496,12 @@ public class PlayerHitListener implements Listener {
                     long ticksSinceLastDamage = (currentTime - lastDamageTick) / 50;
 
                     if (ticksSinceLastDamage >= damageCooldownTicks) {
+                        double currentHealth = hider.getHealth();
+                        if (currentHealth - damageAmount <= 0) {
+                            worldBorderDeaths.add(hiderId);
+                        }
 
-                        hider.damage(damageAmount, DamageSource.builder(DamageType.OUT_OF_WORLD).build());
+                        hider.damage(damageAmount, DamageSource.builder(DamageType.OUTSIDE_BORDER).build());
                         lastDamageTime.put(hiderId, currentTime);
                         if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
                             plugin.getLogger().info(hider.getName() + " took " + damageAmount + " damage for being outside border (" + timeOutsideSeconds + "s outside)");
