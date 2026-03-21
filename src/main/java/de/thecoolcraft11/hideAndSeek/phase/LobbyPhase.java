@@ -2,6 +2,7 @@ package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
+import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import de.thecoolcraft11.hideAndSeek.util.map.MapConfigHelper;
 import de.thecoolcraft11.hideAndSeek.util.map.MapData;
 import de.thecoolcraft11.hideAndSeek.vote.VotingResult;
@@ -11,8 +12,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
@@ -20,7 +19,6 @@ import org.bukkit.scoreboard.Team;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 public class LobbyPhase implements GamePhase {
@@ -44,14 +42,7 @@ public class LobbyPhase implements GamePhase {
 
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setGameMode(GameMode.SURVIVAL);
-            player.setHealth(20.0);
-            player.setFoodLevel(20);
-            player.getInventory().clear();
-            player.setGlowing(false);
-
-            Objects.requireNonNull(player.getAttribute(Attribute.SCALE)).setBaseValue(1.0);
-
+            PlayerStateResetUtil.resetPlayerCompletely(player, true);
             player.removePotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY);
         }
 

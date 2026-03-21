@@ -2,6 +2,7 @@ package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
+import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
 import de.thecoolcraft11.minigameframework.game.GamePhase;
@@ -145,11 +146,7 @@ public class EndedPhase implements GamePhase {
 
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setGameMode(GameMode.SURVIVAL);
-            player.setHealth(20.0);
-            player.setFoodLevel(20);
-            player.getInventory().clear();
-            player.setWalkSpeed(0.2f);
+            PlayerStateResetUtil.resetPlayerCompletely(player, true);
 
             var maxHealth = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
             if (maxHealth != null) {

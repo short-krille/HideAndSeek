@@ -4,13 +4,12 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
 import de.thecoolcraft11.hideAndSeek.model.GameStyleEnum;
+import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
@@ -199,10 +198,7 @@ public class PlayerHitListener implements Listener {
                     event.setRespawnLocation(deathLocation);
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        player.setGameMode(GameMode.SPECTATOR);
-                        player.setHealth(20.0);
-                        player.setAllowFlight(true);
-                        player.setFlying(true);
+                        PlayerStateResetUtil.resetPlayerForSpectator(player, false);
                         plugin.getAntiCheatVisibilityListener().refreshSoon();
                     }, 1L);
                 } else if (gameStyle == GameStyleEnum.INVASION) {
@@ -211,9 +207,7 @@ public class PlayerHitListener implements Listener {
                     event.setRespawnLocation(deathLocation);
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        player.setGameMode(GameMode.SURVIVAL);
-                        player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
-                        player.setFoodLevel(20);
+                        PlayerStateResetUtil.resetPlayerCompletely(player, false);
                         player.sendMessage(Component.text("You were transformed! You're now a seeker!", NamedTextColor.GREEN));
                         plugin.getAntiCheatVisibilityListener().refreshSoon();
                     }, 1L);
@@ -228,9 +222,7 @@ public class PlayerHitListener implements Listener {
                 }
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    player.setGameMode(GameMode.SURVIVAL);
-                    player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
-                    player.setFoodLevel(20);
+                    PlayerStateResetUtil.resetPlayerCompletely(player, false);
 
 
                     HiderItems.giveItems(player, plugin, false);
@@ -322,8 +314,7 @@ public class PlayerHitListener implements Listener {
         plugin.getTeamManager().addRole(hider, "seeker");
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            hider.setGameMode(GameMode.SPECTATOR);
-            hider.setHealth(20.0);
+            PlayerStateResetUtil.resetPlayerForSpectator(hider, false);
 
 
             cleanupBlockModeHider(hider);
@@ -380,10 +371,7 @@ public class PlayerHitListener implements Listener {
         plugin.getTeamManager().addRole(hider, "seeker");
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            hider.setGameMode(GameMode.SURVIVAL);
-            hider.setHealth(20.0);
-            hider.setFoodLevel(20);
-            hider.getInventory().clear();
+            PlayerStateResetUtil.resetPlayerCompletely(hider, true);
             hider.getInventory().setHelmet(null);
 
 
@@ -402,14 +390,6 @@ public class PlayerHitListener implements Listener {
                     false
             ));
 
-            try {
-                Objects.requireNonNull(hider.getAttribute(Attribute.SCALE)).setBaseValue(1.0);
-                if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
-                    plugin.getLogger().info("Reset size for converted seeker: " + hider.getName());
-                }
-            } catch (Exception e) {
-                plugin.getLogger().warning("Failed to reset size for " + hider.getName());
-            }
 
             Title title = Title.title(
                     Component.text("YOU'RE NOW A SEEKER!", NamedTextColor.RED),

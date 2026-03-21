@@ -2,18 +2,16 @@ package de.thecoolcraft11.hideAndSeek.listener.game;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
+import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.GameMode;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-
-import java.util.Objects;
 
 import static de.thecoolcraft11.hideAndSeek.items.hider.MedkitItem.cleanupMedkitCharge;
 import static de.thecoolcraft11.hideAndSeek.items.seeker.SeekersSwordItem.cleanupSwordCharge;
@@ -38,10 +36,7 @@ public class GameStateListener implements Listener {
             player.sendMessage(Component.text("A game is in progress. You're spectating.", NamedTextColor.YELLOW));
         } else {
 
-            player.setGameMode(GameMode.SURVIVAL);
-            Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
-            player.setHealth(20.0);
-            player.setFoodLevel(20);
+            PlayerStateResetUtil.resetPlayerCompletely(player, false);
             plugin.getVoteManager().setReady(player.getUniqueId(), false);
         }
     }
