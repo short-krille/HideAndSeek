@@ -18,7 +18,8 @@ public enum PointAction {
     SEEKER_ASSIST("points.seeker.assist.amount", 100),
 
     SEEKER_SPECIAL_BLOODHOUND("points.seeker.special.bloodhound", 200),
-    SEEKER_FIRST_BLOOD("points.seeker.first-blood.amount", 100);
+    SEEKER_FIRST_BLOOD("points.seeker.first-blood.amount", 100),
+    SEEKER_ENVIRONMENTAL_ELIMINATION("points.seeker.environmental-elimination.amount", 50);
 
     private final String settingPath;
     private final int defaultPoints;

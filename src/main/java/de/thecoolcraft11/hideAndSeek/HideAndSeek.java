@@ -48,6 +48,7 @@ public final class HideAndSeek extends MinigameFramework {
     private VoteGUI voteGUI;
     private ReadyGUI readyGUI;
     private AntiCheatVisibilityListener antiCheatVisibilityListener;
+    private HiderCampingListener hiderCampingListener;
 
     @Override
     protected void onGameEnable() {
@@ -90,11 +91,14 @@ public final class HideAndSeek extends MinigameFramework {
         blockModeListener = new BlockModeListener(this);
         playerHitListener = new PlayerHitListener(this);
         antiCheatVisibilityListener = new AntiCheatVisibilityListener(this);
+        hiderCampingListener = new HiderCampingListener(this, playerHitListener);
 
         Bukkit.getPluginManager().registerEvents(playerHitListener, this);
+        Bukkit.getPluginManager().registerEvents(new EnvironmentalDeathMessageListener(playerHitListener), this);
         Bukkit.getPluginManager().registerEvents(new GameStateListener(this), this);
         Bukkit.getPluginManager().registerEvents(blockModeListener, this);
         Bukkit.getPluginManager().registerEvents(antiCheatVisibilityListener, this);
+        Bukkit.getPluginManager().registerEvents(hiderCampingListener, this);
         Bukkit.getPluginManager().registerEvents(new HiderEquipmentChangeListener(this), this);
         Bukkit.getPluginManager().registerEvents(new CrossbowTrackerListener(this), this);
 
@@ -147,6 +151,9 @@ public final class HideAndSeek extends MinigameFramework {
         }
         if (antiCheatVisibilityListener != null) {
             antiCheatVisibilityListener.shutdown();
+        }
+        if (hiderCampingListener != null) {
+            hiderCampingListener.shutdown();
         }
         ItemSkinSelectionService.shutdown(this);
     }
@@ -277,5 +284,9 @@ public final class HideAndSeek extends MinigameFramework {
 
     public AntiCheatVisibilityListener getAntiCheatVisibilityListener() {
         return antiCheatVisibilityListener;
+    }
+
+    public PlayerHitListener getPlayerHitListener() {
+        return playerHitListener;
     }
 }

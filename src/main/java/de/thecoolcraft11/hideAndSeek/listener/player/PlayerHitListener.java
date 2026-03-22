@@ -5,6 +5,7 @@ import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
 import de.thecoolcraft11.hideAndSeek.model.GameStyleEnum;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
+import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
@@ -31,13 +32,77 @@ import static de.thecoolcraft11.hideAndSeek.items.seeker.CurseSpellItem.applyCur
 import static de.thecoolcraft11.hideAndSeek.items.seeker.CurseSpellItem.isCurseActive;
 
 public class PlayerHitListener implements Listener {
+    private final Map<UUID, EnvironmentalDeathCause> environmentalDeaths = new HashMap<>();
+
     private final HideAndSeek plugin;
     private final Map<UUID, Long> hidersBorderExitTime = new HashMap<>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<>();
-    private final Set<UUID> worldBorderDeaths = new java.util.HashSet<>();
+
+    public void markEnvironmentalDeath(UUID playerId, EnvironmentalDeathCause cause) {
+        if (playerId == null || cause == null) {
+            return;
+        }
+        environmentalDeaths.put(playerId, cause);
+    }
 
     public PlayerHitListener(HideAndSeek plugin) {
         this.plugin = plugin;
+    }
+
+    public EnvironmentalDeathCause peekEnvironmentalDeathCause(UUID playerId) {
+        return environmentalDeaths.get(playerId);
+    }
+
+    private EnvironmentalDeathCause consumeEnvironmentalDeathCause(UUID playerId) {
+        return environmentalDeaths.remove(playerId);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player deceased = event.getEntity();
+
+
+        if (!plugin.getStateManager().getCurrentPhaseId().equals("seeking")) {
+            return;
+        }
+
+
+        if (HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
+            event.getDrops().clear();
+            event.setKeepInventory(false);
+        }
+
+        EnvironmentalDeathCause environmentalCause = consumeEnvironmentalDeathCause(deceased.getUniqueId());
+        if (environmentalCause != null && HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
+
+            for (java.util.UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
+                plugin.getPointService().award(seekerId, PointAction.SEEKER_ENVIRONMENTAL_ELIMINATION);
+            }
+
+            var gameStyleResult = plugin.getSettingService().getSetting("game.gamestyle");
+            Object gameStyleObj = gameStyleResult.isSuccess() ? gameStyleResult.getValue() : GameStyleEnum.SPECTATOR;
+            GameStyleEnum gameStyle = (gameStyleObj instanceof GameStyleEnum) ?
+                    (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
+
+            handleHiderElimination(deceased, null, gameStyle);
+            return;
+        }
+
+        if (event.getDamageSource().getCausingEntity() instanceof Player killer) {
+
+
+            if (HideAndSeek.getDataController().getSeekers().contains(killer.getUniqueId()) &&
+                    HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
+
+
+                var gameStyleResult = plugin.getSettingService().getSetting("game.gamestyle");
+                Object gameStyleObj = gameStyleResult.isSuccess() ? gameStyleResult.getValue() : GameStyleEnum.SPECTATOR;
+                GameStyleEnum gameStyle = (gameStyleObj instanceof GameStyleEnum) ?
+                        (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
+
+                handleHiderElimination(deceased, killer, gameStyle);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -131,48 +196,80 @@ public class PlayerHitListener implements Listener {
         event.setCancelled(true);
     }
 
+    public void checkWorldBorderDamage() {
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        Player deceased = event.getEntity();
+        boolean damageEnabled = plugin.getSettingRegistry().get("game.damage_hiders_outside_worldborder", true);
+        if (!damageEnabled) {
+            return;
+        }
 
 
         if (!plugin.getStateManager().getCurrentPhaseId().equals("seeking")) {
+
+            hidersBorderExitTime.clear();
+            lastDamageTime.clear();
+            environmentalDeaths.clear();
             return;
         }
 
 
-        if (HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
-            event.getDrops().clear();
-            event.setKeepInventory(false);
-        }
-
-        if (worldBorderDeaths.contains(deceased.getUniqueId()) &&
-                HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
-            worldBorderDeaths.remove(deceased.getUniqueId());
-
-            var gameStyleResult = plugin.getSettingService().getSetting("game.gamestyle");
-            Object gameStyleObj = gameStyleResult.isSuccess() ? gameStyleResult.getValue() : GameStyleEnum.SPECTATOR;
-            GameStyleEnum gameStyle = (gameStyleObj instanceof GameStyleEnum) ?
-                    (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
-
-            handleHiderElimination(deceased, null, gameStyle);
-            return;
-        }
-
-        if (event.getDamageSource().getCausingEntity() instanceof Player killer) {
+        int damageTimeoutSeconds = plugin.getSettingRegistry().get("game.worldborder_damage_timeout", 10);
+        double damageAmount = plugin.getSettingRegistry().get("game.worldborder_damage_amount", 2.0);
+        int damageCooldownTicks = plugin.getSettingRegistry().get("game.worldborder_damage_cooldown", 20);
+        long currentTime = System.currentTimeMillis();
 
 
-            if (HideAndSeek.getDataController().getSeekers().contains(killer.getUniqueId()) &&
-                    HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
+        List<UUID> hidersToCheck = new ArrayList<>(HideAndSeek.getDataController().getHiders());
+        for (UUID hiderId : hidersToCheck) {
+            Player hider = Bukkit.getPlayer(hiderId);
+            if (hider == null || !hider.isOnline()) {
+                hidersBorderExitTime.remove(hiderId);
+                lastDamageTime.remove(hiderId);
+                continue;
+            }
+
+            boolean isOutsideBorder = !hider.getWorld().getWorldBorder().isInside(hider.getLocation());
+
+            if (isOutsideBorder) {
+
+                if (!hidersBorderExitTime.containsKey(hiderId)) {
+                    hidersBorderExitTime.put(hiderId, currentTime);
+                    if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                        plugin.getLogger().info(hider.getName() + " went outside world border");
+                    }
+                }
 
 
-                var gameStyleResult = plugin.getSettingService().getSetting("game.gamestyle");
-                Object gameStyleObj = gameStyleResult.isSuccess() ? gameStyleResult.getValue() : GameStyleEnum.SPECTATOR;
-                GameStyleEnum gameStyle = (gameStyleObj instanceof GameStyleEnum) ?
-                        (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
+                long timeOutsideMs = currentTime - hidersBorderExitTime.get(hiderId);
+                long timeOutsideSeconds = timeOutsideMs / 1000;
 
-                handleHiderElimination(deceased, killer, gameStyle);
+                if (timeOutsideSeconds >= damageTimeoutSeconds) {
+
+                    long lastDamageTick = lastDamageTime.getOrDefault(hiderId, 0L);
+                    long ticksSinceLastDamage = (currentTime - lastDamageTick) / 50;
+
+                    if (ticksSinceLastDamage >= damageCooldownTicks) {
+                        double currentHealth = hider.getHealth();
+                        if (currentHealth - damageAmount <= 0) {
+                            markEnvironmentalDeath(hiderId, EnvironmentalDeathCause.WORLD_BORDER);
+                        }
+
+                        hider.damage(damageAmount, DamageSource.builder(DamageType.OUTSIDE_BORDER).build());
+                        lastDamageTime.put(hiderId, currentTime);
+                        if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                            plugin.getLogger().info(hider.getName() + " took " + damageAmount + " damage for being outside border (" + timeOutsideSeconds + "s outside)");
+                        }
+                    }
+                }
+            } else {
+
+                if (hidersBorderExitTime.containsKey(hiderId)) {
+                    if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                        plugin.getLogger().info(hider.getName() + " returned inside world border");
+                    }
+                }
+                hidersBorderExitTime.remove(hiderId);
+                lastDamageTime.remove(hiderId);
             }
         }
     }
@@ -429,80 +526,8 @@ public class PlayerHitListener implements Listener {
         hider.removePotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY);
     }
 
-    public void checkWorldBorderDamage() {
-
-        boolean damageEnabled = plugin.getSettingRegistry().get("game.damage_hiders_outside_worldborder", true);
-        if (!damageEnabled) {
-            return;
-        }
-
-
-        if (!plugin.getStateManager().getCurrentPhaseId().equals("seeking")) {
-
-            hidersBorderExitTime.clear();
-            lastDamageTime.clear();
-            return;
-        }
-
-
-        int damageTimeoutSeconds = plugin.getSettingRegistry().get("game.worldborder_damage_timeout", 10);
-        double damageAmount = plugin.getSettingRegistry().get("game.worldborder_damage_amount", 2.0);
-        int damageCooldownTicks = plugin.getSettingRegistry().get("game.worldborder_damage_cooldown", 20);
-        long currentTime = System.currentTimeMillis();
-
-
-        List<UUID> hidersToCheck = new ArrayList<>(HideAndSeek.getDataController().getHiders());
-        for (UUID hiderId : hidersToCheck) {
-            Player hider = Bukkit.getPlayer(hiderId);
-            if (hider == null || !hider.isOnline()) {
-                hidersBorderExitTime.remove(hiderId);
-                lastDamageTime.remove(hiderId);
-                continue;
-            }
-
-            boolean isOutsideBorder = !hider.getWorld().getWorldBorder().isInside(hider.getLocation());
-
-            if (isOutsideBorder) {
-
-                if (!hidersBorderExitTime.containsKey(hiderId)) {
-                    hidersBorderExitTime.put(hiderId, currentTime);
-                    if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
-                        plugin.getLogger().info(hider.getName() + " went outside world border");
-                    }
-                }
-
-
-                long timeOutsideMs = currentTime - hidersBorderExitTime.get(hiderId);
-                long timeOutsideSeconds = timeOutsideMs / 1000;
-
-                if (timeOutsideSeconds >= damageTimeoutSeconds) {
-
-                    long lastDamageTick = lastDamageTime.getOrDefault(hiderId, 0L);
-                    long ticksSinceLastDamage = (currentTime - lastDamageTick) / 50;
-
-                    if (ticksSinceLastDamage >= damageCooldownTicks) {
-                        double currentHealth = hider.getHealth();
-                        if (currentHealth - damageAmount <= 0) {
-                            worldBorderDeaths.add(hiderId);
-                        }
-
-                        hider.damage(damageAmount, DamageSource.builder(DamageType.OUTSIDE_BORDER).build());
-                        lastDamageTime.put(hiderId, currentTime);
-                        if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
-                            plugin.getLogger().info(hider.getName() + " took " + damageAmount + " damage for being outside border (" + timeOutsideSeconds + "s outside)");
-                        }
-                    }
-                }
-            } else {
-
-                if (hidersBorderExitTime.containsKey(hiderId)) {
-                    if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
-                        plugin.getLogger().info(hider.getName() + " returned inside world border");
-                    }
-                }
-                hidersBorderExitTime.remove(hiderId);
-                lastDamageTime.remove(hiderId);
-            }
-        }
+    public enum EnvironmentalDeathCause {
+        WORLD_BORDER,
+        CAMPING
     }
 }

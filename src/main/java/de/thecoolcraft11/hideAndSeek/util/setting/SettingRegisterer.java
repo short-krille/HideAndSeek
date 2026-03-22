@@ -138,6 +138,7 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.game.gaze_kill_show_particles", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.auto_cleanup_after_round", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.game.small_mode_seeker_size", Double.class, 1.0);
+
         plugin.getConfigRegistry().register("settings.anticheat.enabled", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.anticheat.hiding-filter-enabled", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.anticheat.seeking-filter-enabled", Boolean.class, true);
@@ -145,6 +146,13 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.anticheat.seeking-los-reveal-enabled", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.anticheat.seeking-los-reveal-range", Double.class, 64.0);
         plugin.getConfigRegistry().register("settings.anticheat.seeking-los-reveal-fov", Double.class, 24.0);
+        plugin.getConfigRegistry().register("settings.anticheat.hider-camping.enabled", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.anticheat.hider-camping.max-duration", Integer.class, 90);
+        plugin.getConfigRegistry().register("settings.anticheat.hider-camping.warn-time", Integer.class, 15);
+        plugin.getConfigRegistry().register("settings.anticheat.hider-camping.spot-radius", Double.class, 2.5);
+        plugin.getConfigRegistry().register("settings.anticheat.hider-camping.damage-amount", Double.class, 1.0);
+        plugin.getConfigRegistry().register("settings.anticheat.hider-camping.damage-cooldown-ticks", Integer.class, 20);
+        plugin.getConfigRegistry().register("settings.anticheat.hider-camping.seeker-reward-points", Integer.class, 50);
 
 
         plugin.getConfigRegistry().register("settings.blockstats.show-names", Boolean.class, false);
@@ -322,6 +330,7 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.points.seeker.assist.range", Double.class, 16.0);
         plugin.getConfigRegistry().register("settings.points.seeker.special.bloodhound", Integer.class, 200);
         plugin.getConfigRegistry().register("settings.points.seeker.first-blood.amount", Integer.class, 100);
+        plugin.getConfigRegistry().register("settings.points.seeker.environmental-elimination.amount", Integer.class, 50);
 
         plugin.getConfigRegistry().register("settings.timer.hiding_color1", String.class, "#FF0000");
         plugin.getConfigRegistry().register("settings.timer.hiding_color2", String.class, "#0000FF");
@@ -713,6 +722,52 @@ public class SettingRegisterer {
                 .description("Seeker view angle in degrees for line-of-sight reveal checks")
                 .customIcon(Material.ENDER_EYE)
                 .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.hider-camping.enabled", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.hider-camping.enabled", true))
+                .description("Whether to prevent hiders from camping in the same spot")
+                .customIcon(Material.CAMPFIRE)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.CAMPFIRE, true),
+                        false, setEnchanted(Material.CAMPFIRE, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.hider-camping.max-duration", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.hider-camping.max-duration", 90))
+                .range(5, 600)
+                .description("How long a hider can stay in the same spot before being punished for camping")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.hider-camping.warn-time", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.hider-camping.warn-time", 15))
+                .range(0, 300)
+                .description("Time in seconds before camping punishment when a warning is issued to the hider")
+                .customIcon(Material.CLOCK)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.hider-camping.spot-radius", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.hider-camping.spot-radius", 2.5))
+                .rangeDouble(0.25, 8.0)
+                .description("Horizontal radius (blocks) treated as the same camping spot")
+                .customIcon(Material.TARGET)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.hider-camping.damage-amount", SettingType.DOUBLE, Double.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.hider-camping.damage-amount", 1.0))
+                .rangeDouble(0.5, 10.0)
+                .description("Damage dealt each punishment tick while the hider keeps camping")
+                .customIcon(Material.IRON_SWORD)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.hider-camping.damage-cooldown-ticks", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "anticheat.hider-camping.damage-cooldown-ticks", 20))
+                .range(1, 200)
+                .description("Ticks between repeated camping punishment damage")
+                .customIcon(Material.REPEATER)
+                .build());
+
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("blockstats.show-names", SettingType.BOOLEAN, Boolean.class)
                 .defaultValue(getConfigValue(plugin, "blockstats.show-names", false))
@@ -1731,6 +1786,13 @@ public class SettingRegisterer {
                 .range(0, 5000)
                 .description("Bonus for first kill of the round")
                 .customIcon(Material.REDSTONE)
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("points.seeker.environmental-elimination.amount", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "points.seeker.environmental-elimination.amount", 50))
+                .range(0, 5000)
+                .description("Points awarded to all seekers when hider dies to camping or world border")
+                .customIcon(Material.LIGHTNING_ROD)
                 .build());
     }
 
