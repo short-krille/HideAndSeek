@@ -475,6 +475,7 @@ public class MapManager {
                 workingWorld.setGameRule(GameRule.DO_TILE_DROPS, false);
                 workingWorld.setGameRule(GameRule.DO_ENTITY_DROPS, false);
                 workingWorld.setGameRule(GameRule.DO_MOB_LOOT, false);
+                workingWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
 
                 workingWorld.getWorldBorder().setDamageAmount(0);
                 workingWorld.getWorldBorder().setDamageBuffer(0);

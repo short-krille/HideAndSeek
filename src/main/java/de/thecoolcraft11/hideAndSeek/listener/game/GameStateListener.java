@@ -5,7 +5,9 @@ import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.GameMode;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -32,13 +34,54 @@ public class GameStateListener implements Listener {
 
         if (currentPhase.equals("seeking") || currentPhase.equals("hiding")) {
 
-            player.setGameMode(GameMode.SPECTATOR);
+            PlayerStateResetUtil.resetPlayerForSpectator(player, false);
             player.sendMessage(Component.text("A game is in progress. You're spectating.", NamedTextColor.YELLOW));
+            teleportNextTick(player, resolveIngameJoinSpawn());
         } else {
 
             PlayerStateResetUtil.resetPlayerCompletely(player, false);
             plugin.getVoteManager().setReady(player.getUniqueId(), false);
+            teleportNextTick(player, resolveLobbySpawn());
         }
+    }
+
+    private void teleportNextTick(Player player, Location target) {
+        if (target == null) {
+            return;
+        }
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            player.teleport(target);
+        });
+    }
+
+    private Location resolveIngameJoinSpawn() {
+        Location roundSpawn = HideAndSeek.getDataController().getRoundSpawnPoint();
+        if (roundSpawn != null && roundSpawn.getWorld() != null) {
+            return roundSpawn.clone();
+        }
+
+        String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
+        if (currentMapName != null && !currentMapName.isBlank()) {
+            World workingWorld = Bukkit.getWorld("has_" + currentMapName);
+            if (workingWorld != null) {
+                return workingWorld.getSpawnLocation();
+            }
+        }
+
+        return resolveLobbySpawn();
+    }
+
+    private Location resolveLobbySpawn() {
+        String lobbyWorldName = plugin.getMapManager().getLobbyWorld();
+        World lobbyWorld = Bukkit.getWorld(lobbyWorldName);
+        if (lobbyWorld != null) {
+            return lobbyWorld.getSpawnLocation();
+        }
+        return null;
     }
 
     @EventHandler
