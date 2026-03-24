@@ -340,6 +340,8 @@ public class PlayerHitListener implements Listener {
 
         int seekerPoints = plugin.getPointService().onHiderEliminated(hider, seeker);
 
+        plugin.getSeekingBossBarService().onHiderEliminated();
+
         Component announcement;
         if (seeker != null) {
             seeker.sendMessage(Component.text("+" + seekerPoints + " points for finding " + hider.getName() + "!", NamedTextColor.GOLD));

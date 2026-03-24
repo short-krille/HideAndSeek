@@ -148,7 +148,7 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.anticheat.seeking.visibility-range", Double.class, 12.0);
         plugin.getConfigRegistry().register("settings.anticheat.seeking.line-of-sight.enabled", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.anticheat.seeking.line-of-sight.range", Double.class, 64.0);
-        plugin.getConfigRegistry().register("settings.anticheat.seeking.line-of-sight.fov", Double.class, 24.0);
+        plugin.getConfigRegistry().register("settings.anticheat.seeking.line-of-sight.fov", Double.class, 60.0);
         plugin.getConfigRegistry().register("settings.anticheat.hider-camping.enabled", Boolean.class, true);
         plugin.getConfigRegistry().register("settings.anticheat.hider-camping.max-duration", Integer.class, 90);
         plugin.getConfigRegistry().register("settings.anticheat.hider-camping.warn-time", Integer.class, 15);
@@ -301,7 +301,7 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.loadout.token-cost-epic", Integer.class, 6);
         plugin.getConfigRegistry().register("settings.loadout.token-cost-legendary", Integer.class, 10);
 
-        plugin.getConfigRegistry().register("settings.skin-shop.points-per-coin", Integer.class, 50);
+        plugin.getConfigRegistry().register("settings.skin-shop.points-per-coin", Integer.class, 25);
         plugin.getConfigRegistry().register("settings.skin-shop.cost-common", Integer.class, 100);
         plugin.getConfigRegistry().register("settings.skin-shop.cost-uncommon", Integer.class, 250);
         plugin.getConfigRegistry().register("settings.skin-shop.cost-rare", Integer.class, 500);
@@ -341,6 +341,14 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.timer.seeking.secondary-color", String.class, "#00FFFF");
         plugin.getConfigRegistry().register("settings.timer.animation.type", String.class, "WAVE");
         plugin.getConfigRegistry().register("settings.timer.animation.speed", Double.class, 0.5);
+
+        plugin.getConfigRegistry().register("settings.game.seeking-bossbar.enabled", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.game.seeking-bossbar.name-layout", String.class, "HIDERS_AND_SEEKERS");
+        plugin.getConfigRegistry().register("settings.game.seeking-bossbar.progress-mode", String.class, "PROGRESS");
+        plugin.getConfigRegistry().register("settings.game.seeking-bossbar.color.mode", String.class, "DYNAMIC");
+        plugin.getConfigRegistry().register("settings.game.seeking-bossbar.color.static-color", String.class, "GREEN");
+        plugin.getConfigRegistry().register("settings.game.seeking-bossbar.animation.enabled", Boolean.class, true);
+        plugin.getConfigRegistry().register("settings.game.seeking-bossbar.animation.speed-ticks", Integer.class, 3);
     }
 
 
@@ -432,6 +440,9 @@ public class SettingRegisterer {
         plugin.getSectionRegistry().register(SectionDefinition.builder("anticheat.seeking").icon(Material.ENDER_EYE).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("anticheat.seeking.filter").icon(Material.HOPPER).build());
         plugin.getSectionRegistry().register(SectionDefinition.builder("anticheat.seeking.line-of-sight").icon(Material.SPYGLASS).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("game.seeking-bossbar").icon(Material.MAGMA_CREAM).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("game.seeking-bossbar.color").icon(Material.REDSTONE).build());
+        plugin.getSectionRegistry().register(SectionDefinition.builder("game.seeking-bossbar.animation").icon(Material.CLOCK).build());
     }
 
     public static void registerSettings(HideAndSeek plugin) {
@@ -800,7 +811,7 @@ public class SettingRegisterer {
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("anticheat.seeking.line-of-sight.fov", SettingType.DOUBLE, Double.class)
-                .defaultValue(getConfigValue(plugin, "anticheat.seeking.line-of-sight.fov", 24.0))
+                .defaultValue(getConfigValue(plugin, "anticheat.seeking.line-of-sight.fov", 60.0))
                 .rangeDouble(5.0, 90.0)
                 .description("Seeker view angle in degrees for line-of-sight reveal checks")
                 .customIcon(Material.ENDER_EYE)
@@ -930,7 +941,81 @@ public class SettingRegisterer {
                 .build());
 
 
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeking-bossbar.enabled", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "game.seeking-bossbar.enabled", true))
+                .description("Enable the seeking phase bossbar")
+                .customIcon(Material.MAGMA_CREAM)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.MAGMA_CREAM, true),
+                        false, setEnchanted(Material.MAGMA_CREAM, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeking-bossbar.name-layout", SettingType.ENUM, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarNameLayout.class)
+                .defaultValue(getEnumConfigValue(plugin, "game.seeking-bossbar.name-layout", de.thecoolcraft11.hideAndSeek.model.SeekingBossBarNameLayout.class, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarNameLayout.HIDERS_AND_SEEKERS))
+                .description("What to display in the bossbar title")
+                .customIcon(Material.NAME_TAG)
+                .valueIcons(Map.of(
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarNameLayout.HIDERS_ONLY, Material.PLAYER_HEAD,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarNameLayout.SEEKERS_ONLY, Material.ENDER_EYE,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarNameLayout.HIDERS_AND_SEEKERS, Material.PAPER
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeking-bossbar.progress-mode", SettingType.ENUM, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarProgressMode.class)
+                .defaultValue(getEnumConfigValue(plugin, "game.seeking-bossbar.progress-mode", de.thecoolcraft11.hideAndSeek.model.SeekingBossBarProgressMode.class, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarProgressMode.PROGRESS))
+                .description("How the bossbar progress is displayed")
+                .customIcon(Material.EXPERIENCE_BOTTLE)
+                .valueIcons(Map.of(
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarProgressMode.PROGRESS, Material.EMERALD,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarProgressMode.FULL, Material.GOLD_BLOCK
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeking-bossbar.color.mode", SettingType.ENUM, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarColorMode.class)
+                .defaultValue(getEnumConfigValue(plugin, "game.seeking-bossbar.color.mode", de.thecoolcraft11.hideAndSeek.model.SeekingBossBarColorMode.class, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarColorMode.DYNAMIC))
+                .description("Whether to use dynamic or static color for the bossbar")
+                .customIcon(Material.REDSTONE)
+                .valueIcons(Map.of(
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarColorMode.DYNAMIC, Material.LAVA_BUCKET,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarColorMode.STATIC, Material.REDSTONE_BLOCK
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeking-bossbar.color.static-color", SettingType.ENUM, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.class)
+                .defaultValue(getEnumConfigValue(plugin, "game.seeking-bossbar.color.static-color", de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.class, de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.GREEN))
+                .description("Static color when color mode is set to STATIC")
+                .customIcon(Material.LEATHER_BOOTS)
+                .valueIcons(Map.of(
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.RED, Material.RED_WOOL,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.GREEN, Material.GREEN_WOOL,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.YELLOW, Material.YELLOW_WOOL,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.BLUE, Material.BLUE_WOOL,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.PURPLE, Material.PURPLE_WOOL,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.PINK, Material.PINK_WOOL,
+                        de.thecoolcraft11.hideAndSeek.model.SeekingBossBarStaticColor.WHITE, Material.WHITE_WOOL
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeking-bossbar.animation.enabled", SettingType.BOOLEAN, Boolean.class)
+                .defaultValue(getConfigValue(plugin, "game.seeking-bossbar.animation.enabled", true))
+                .description("Enable animation when a hider is eliminated")
+                .customIcon(Material.CLOCK)
+                .valueIconStacks(Map.of(
+                        true, setEnchanted(Material.CLOCK, true),
+                        false, setEnchanted(Material.CLOCK, false)
+                ))
+                .build());
+
+        plugin.getSettingRegistry().register(SettingDefinition.builder("game.seeking-bossbar.animation.speed-ticks", SettingType.INTEGER, Integer.class)
+                .defaultValue(getConfigValue(plugin, "game.seeking-bossbar.animation.speed-ticks", 3))
+                .range(1, 10)
+                .description("Speed of death animation in ticks (lower = faster)")
+                .customIcon(Material.REDSTONE)
+                .build());
+
         plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.sound.cooldown", SettingType.INTEGER, Integer.class)
+
                 .defaultValue(getConfigValue(plugin, "hider-items.sound.cooldown", 4))
                 .range(1, 30)
                 .description("Cooldown for cat sound item in seconds")
@@ -1672,7 +1757,7 @@ public class SettingRegisterer {
                 .build());
 
         plugin.getSettingRegistry().register(SettingDefinition.builder("skin-shop.points-per-coin", SettingType.INTEGER, Integer.class)
-                .defaultValue(getConfigValue(plugin, "skin-shop.points-per-coin", 50))
+                .defaultValue(getConfigValue(plugin, "skin-shop.points-per-coin", 25))
                 .range(1, 500)
                 .description("How many points are converted into 1 coin at round end")
                 .customIcon(Material.SUNFLOWER)

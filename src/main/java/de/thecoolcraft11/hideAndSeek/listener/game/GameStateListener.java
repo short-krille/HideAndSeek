@@ -31,6 +31,7 @@ public class GameStateListener implements Listener {
         ItemSkinSelectionService.loadPlayer(plugin, player.getUniqueId());
         String currentPhase = plugin.getStateManager().getCurrentPhaseId();
 
+        plugin.getSeekingBossBarService().onPlayerJoin(player);
 
         if (currentPhase.equals("seeking") || currentPhase.equals("hiding")) {
 
@@ -93,6 +94,7 @@ public class GameStateListener implements Listener {
         HideAndSeek.getDataController().removeAllowedSpectator(player.getUniqueId());
         plugin.getVoteManager().clearVotes(player.getUniqueId());
 
+        plugin.getSeekingBossBarService().onPlayerQuit();
 
         if (HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())) {
             HideAndSeek.getDataController().removeHider(player.getUniqueId());

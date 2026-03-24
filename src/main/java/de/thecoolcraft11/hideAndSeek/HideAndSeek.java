@@ -19,6 +19,7 @@ import de.thecoolcraft11.hideAndSeek.phase.HidingPhase;
 import de.thecoolcraft11.hideAndSeek.phase.LobbyPhase;
 import de.thecoolcraft11.hideAndSeek.phase.SeekingPhase;
 import de.thecoolcraft11.hideAndSeek.util.DataController;
+import de.thecoolcraft11.hideAndSeek.util.SeekingBossBarService;
 import de.thecoolcraft11.hideAndSeek.util.map.MapManager;
 import de.thecoolcraft11.hideAndSeek.util.points.PointService;
 import de.thecoolcraft11.hideAndSeek.util.setting.SettingChangeListener;
@@ -51,6 +52,7 @@ public final class HideAndSeek extends MinigameFramework {
     private ReadyGUI readyGUI;
     private AntiCheatVisibilityListener antiCheatVisibilityListener;
     private HiderCampingListener hiderCampingListener;
+    private SeekingBossBarService seekingBossBarService;
 
     @Override
     protected void onGameEnable() {
@@ -67,6 +69,7 @@ public final class HideAndSeek extends MinigameFramework {
         voteManager = new VoteManager(this);
         voteGUI = new VoteGUI(this);
         readyGUI = new ReadyGUI(this);
+        seekingBossBarService = new SeekingBossBarService(this);
 
         nmsAdapter = NmsLoader.load(this);
 
@@ -157,6 +160,9 @@ public final class HideAndSeek extends MinigameFramework {
         }
         if (hiderCampingListener != null) {
             hiderCampingListener.shutdown();
+        }
+        if (seekingBossBarService != null) {
+            seekingBossBarService.stopSeekingSession();
         }
         KillEffectManager.clear();
         ItemSkinSelectionService.shutdown(this);
@@ -288,5 +294,9 @@ public final class HideAndSeek extends MinigameFramework {
 
     public AntiCheatVisibilityListener getAntiCheatVisibilityListener() {
         return antiCheatVisibilityListener;
+    }
+
+    public SeekingBossBarService getSeekingBossBarService() {
+        return seekingBossBarService;
     }
 }

@@ -163,6 +163,7 @@ public class SeekingPhase implements GamePhase {
         startWinConditionCheck(plugin);
         startHiderPointsTask(plugin);
         hideAndSeekPlugin.getPointService().startSeekingTracking();
+        hideAndSeekPlugin.getSeekingBossBarService().startSeekingSession();
         Bukkit.getScheduler().runTaskLater(hideAndSeekPlugin, () -> hideAndSeekPlugin.getAntiCheatVisibilityListener().refreshSoon(), 2L);
     }
 
@@ -171,6 +172,7 @@ public class SeekingPhase implements GamePhase {
 
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
         hideAndSeekPlugin.getPointService().stopSeekingTracking();
+        hideAndSeekPlugin.getSeekingBossBarService().stopSeekingSession();
         if (checkTask != null) {
             checkTask.cancel();
         }
