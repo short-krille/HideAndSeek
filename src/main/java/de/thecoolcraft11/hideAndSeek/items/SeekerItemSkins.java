@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek.items;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.seeker.*;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
+import de.thecoolcraft11.hideAndSeek.util.CustomModelDataUtil;
 import de.thecoolcraft11.minigameframework.items.variants.ItemVariant;
 import de.thecoolcraft11.minigameframework.items.variants.ItemVariantBuilder;
 import net.kyori.adventure.text.Component;
@@ -65,7 +66,7 @@ public final class SeekerItemSkins {
             int sortPriority,
             ItemRarity rarity
     ) {
-        ItemStack stack = createVariantStack(plugin, itemId, displayName, modelKey);
+        ItemStack stack = createVariantStack(plugin, itemId, variantId, displayName, modelKey);
         if (stack == null) {
             plugin.getLogger().warning("Skipping skin '" + variantId + "' for item '" + itemId + "' because base item stack is unavailable.");
             return;
@@ -80,7 +81,7 @@ public final class SeekerItemSkins {
         ItemSkinSelectionService.registerVariantMetadata(itemId, variantId, rarity);
     }
 
-    private static ItemStack createVariantStack(HideAndSeek plugin, String itemId, String displayName, String modelKey) {
+    private static ItemStack createVariantStack(HideAndSeek plugin, String itemId, String variantId, String displayName, String modelKey) {
         var customItem = plugin.getCustomItemManager().getItem(itemId);
         if (customItem == null) {
             return null;
@@ -99,6 +100,8 @@ public final class SeekerItemSkins {
             meta.setItemModel(new NamespacedKey("minecraft", modelKey));
             stack.setItemMeta(meta);
         }
+
+        CustomModelDataUtil.setCustomModelData(stack, itemId, variantId);
 
         return stack;
     }

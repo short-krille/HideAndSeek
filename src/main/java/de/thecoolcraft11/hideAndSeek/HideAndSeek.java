@@ -3,6 +3,8 @@ package de.thecoolcraft11.hideAndSeek;
 import de.thecoolcraft11.hideAndSeek.command.*;
 import de.thecoolcraft11.hideAndSeek.gui.*;
 import de.thecoolcraft11.hideAndSeek.items.*;
+import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectManager;
+import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectSkins;
 import de.thecoolcraft11.hideAndSeek.listener.game.*;
 import de.thecoolcraft11.hideAndSeek.listener.item.CrossbowTrackerListener;
 import de.thecoolcraft11.hideAndSeek.listener.item.LightningListener;
@@ -87,6 +89,7 @@ public final class HideAndSeek extends MinigameFramework {
 
         HiderItemSkins.registerAll(this);
         SeekerItemSkins.registerAll(this);
+        KillEffectSkins.registerAll(this);
 
         blockModeListener = new BlockModeListener(this);
         playerHitListener = new PlayerHitListener(this);
@@ -155,6 +158,7 @@ public final class HideAndSeek extends MinigameFramework {
         if (hiderCampingListener != null) {
             hiderCampingListener.shutdown();
         }
+        KillEffectManager.clear();
         ItemSkinSelectionService.shutdown(this);
     }
 

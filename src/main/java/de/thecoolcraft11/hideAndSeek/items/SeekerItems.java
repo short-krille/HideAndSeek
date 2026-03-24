@@ -4,6 +4,7 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.items.seeker.*;
 import de.thecoolcraft11.hideAndSeek.model.LoadoutItemType;
+import de.thecoolcraft11.hideAndSeek.util.CustomModelDataUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -70,6 +71,8 @@ public final class SeekerItems {
         removeItems(player);
 
         ItemStack sword = plugin.getCustomItemManager().getIdentifiedItemStack(SeekersSwordItem.ID, player);
+        String swordSkin = ItemSkinSelectionService.getSelectedVariant(player, ItemSkinSelectionService.normalizeLogicalItemId(SeekersSwordItem.ID));
+        CustomModelDataUtil.setCustomModelData(sword, SeekersSwordItem.ID, swordSkin);
         player.getInventory().setItem(0, sword);
 
         giveLoadoutItems(player, plugin);
@@ -160,6 +163,8 @@ public final class SeekerItems {
             ItemStack item = plugin.getCustomItemManager().getIdentifiedItemStack(itemId, player);
 
             if (item != null) {
+                String selectedVariant = ItemSkinSelectionService.getSelectedVariant(player, ItemSkinSelectionService.normalizeLogicalItemId(itemId));
+                CustomModelDataUtil.setCustomModelData(item, itemId, selectedVariant);
 
                 player.getInventory().setItem(slot++, item);
 
@@ -181,6 +186,7 @@ public final class SeekerItems {
             ItemStack blockStats = plugin.getCustomItemManager().getIdentifiedItemStack(BlockStatsItem.ID, player);
 
             if (blockStats != null) {
+                CustomModelDataUtil.setCustomModelData(blockStats, BlockStatsItem.ID);
 
                 player.getInventory().setItem(8, blockStats);
 
@@ -203,6 +209,7 @@ public final class SeekerItems {
     public static void applyMask(Player player, HideAndSeek plugin) {
 
         player.getInventory().setHelmet(plugin.getCustomItemManager().getIdentifiedItemStack(SeekersMaskItem.ID, player));
+        CustomModelDataUtil.setForInventorySlot(player.getInventory(), 39, SeekersMaskItem.ID, null);
 
     }
 
@@ -232,6 +239,8 @@ public final class SeekerItems {
 
 
         ItemStack sword = plugin.getCustomItemManager().getIdentifiedItemStack(SeekersSwordItem.ID, player);
+        String swordSkin = ItemSkinSelectionService.getSelectedVariant(player, ItemSkinSelectionService.normalizeLogicalItemId(SeekersSwordItem.ID));
+        CustomModelDataUtil.setCustomModelData(sword, SeekersSwordItem.ID, swordSkin);
         player.getInventory().setItem(0, sword);
 
 
@@ -253,6 +262,7 @@ public final class SeekerItems {
                 if (slot8Item == null || slot8Item.getType().isAir()) {
                     ItemStack blockStats = plugin.getCustomItemManager().getIdentifiedItemStack(BlockStatsItem.ID, player);
                     if (blockStats != null) {
+                        CustomModelDataUtil.setCustomModelData(blockStats, BlockStatsItem.ID);
                         player.getInventory().setItem(8, blockStats);
                         if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
                             plugin.getLogger().info("Gave BlockStats to " + player.getName() + " in slot 8");

@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek.listener.player;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
+import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectService;
 import de.thecoolcraft11.hideAndSeek.model.GameStyleEnum;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import de.thecoolcraft11.hideAndSeek.util.points.PointAction;
@@ -35,6 +36,7 @@ public class PlayerHitListener implements Listener {
     private final Map<UUID, EnvironmentalDeathCause> environmentalDeaths = new HashMap<>();
 
     private final HideAndSeek plugin;
+    private final KillEffectService killEffectService;
     private final Map<UUID, Long> hidersBorderExitTime = new HashMap<>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<>();
 
@@ -47,6 +49,7 @@ public class PlayerHitListener implements Listener {
 
     public PlayerHitListener(HideAndSeek plugin) {
         this.plugin = plugin;
+        this.killEffectService = new KillEffectService(plugin);
     }
 
     public EnvironmentalDeathCause peekEnvironmentalDeathCause(UUID playerId) {
@@ -99,6 +102,8 @@ public class PlayerHitListener implements Listener {
                 Object gameStyleObj = gameStyleResult.isSuccess() ? gameStyleResult.getValue() : GameStyleEnum.SPECTATOR;
                 GameStyleEnum gameStyle = (gameStyleObj instanceof GameStyleEnum) ?
                         (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
+
+                killEffectService.triggerKillEffect(killer, deceased, deceased.getLocation());
 
                 handleHiderElimination(deceased, killer, gameStyle);
             }

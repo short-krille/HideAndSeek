@@ -2,7 +2,9 @@ package de.thecoolcraft11.hideAndSeek.gui;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
+import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectSkins;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
+import de.thecoolcraft11.hideAndSeek.util.CustomModelDataUtil;
 import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
 import de.thecoolcraft11.minigameframework.inventory.InventoryBuilder;
 import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
@@ -98,6 +100,11 @@ public class SkinGUI {
     }
 
     private void openVariants(Player player, String logicalItemId) {
+        if (KillEffectSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
+            openKillEffectVariants(player, logicalItemId);
+            return;
+        }
+
         String runtimeItemId = ItemSkinSelectionService.resolveRuntimeItemId(player, logicalItemId);
         List<ItemVariant> variants = plugin.getCustomItemManager().getVariantManager().getVariants(runtimeItemId);
 
@@ -167,6 +174,75 @@ public class SkinGUI {
         plugin.getInventoryFramework().openInventory(player, inventory);
     }
 
+    private void openKillEffectVariants(Player player, String logicalItemId) {
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("skin_variants_" + player.getUniqueId() + "_" + logicalItemId)
+                .title(VARIANTS_TITLE_PREFIX + humanize(logicalItemId))
+                .rows(6)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .build();
+
+        int slot = 0;
+        String selected = ItemSkinSelectionService.getSelectedVariant(player, logicalItemId);
+        if (selected != null && !ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, selected)) {
+            selected = null;
+        }
+
+        for (KillEffectSkins.Definition definition : KillEffectSkins.getDefinitions()) {
+            if (slot >= 45) {
+                break;
+            }
+
+            String variantId = definition.id();
+            InventoryItem variantItem = new InventoryItem(createKillEffectVariantButton(player, logicalItemId, definition, selected));
+            variantItem.setClickHandler((p, item, event, s) -> {
+                handleVariantClick(p, logicalItemId, variantId, event.getClick());
+                event.setCancelled(true);
+            });
+            variantItem.setAllowTakeout(false);
+            variantItem.setAllowInsert(false);
+            variantItem.setMetadata("variant_id", variantId);
+            variantItem.setMetadata("logical_item_id", logicalItemId);
+            inventory.setItem(slot++, variantItem);
+        }
+
+        InventoryItem backBtn = new InventoryItem(createUtility(Material.ARROW, "Back", NamedTextColor.YELLOW,
+                List.of(Component.text("Return to skin item list", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        backBtn.setClickHandler((p, item, event, s) -> {
+            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
+            open(p);
+            event.setCancelled(true);
+        });
+        backBtn.setAllowTakeout(false);
+        backBtn.setAllowInsert(false);
+        inventory.setItem(45, backBtn);
+
+        InventoryItem clearBtn = new InventoryItem(createUtility(Material.BARRIER, "Clear Selection", NamedTextColor.RED,
+                List.of(Component.text("Remove saved skin for this item", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        clearBtn.setClickHandler((p, item, event, s) -> {
+            ItemSkinSelectionService.clearSelectedVariant(p.getUniqueId(), logicalItemId);
+            ItemSkinSelectionService.savePlayer(plugin, p.getUniqueId());
+            p.sendMessage(Component.text("Cleared saved skin for ", NamedTextColor.YELLOW)
+                    .append(Component.text(humanize(logicalItemId), NamedTextColor.GOLD)));
+            p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.7f, 1.1f);
+            openKillEffectVariants(p, logicalItemId);
+            event.setCancelled(true);
+        });
+        clearBtn.setAllowTakeout(false);
+        clearBtn.setAllowInsert(false);
+        inventory.setItem(53, clearBtn);
+
+        InventoryItem coinsItem = new InventoryItem(createCoinsHint(player));
+        coinsItem.setClickHandler((p, item, event, s) -> event.setCancelled(true));
+        coinsItem.setAllowTakeout(false);
+        coinsItem.setAllowInsert(false);
+        inventory.setItem(49, coinsItem);
+
+        plugin.getInventoryFramework().openInventory(player, inventory);
+    }
+
 
     private void handleVariantClick(Player player, String logicalItemId, String variantId, ClickType clickType) {
         boolean unlocked = ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, variantId);
@@ -205,6 +281,10 @@ public class SkinGUI {
     }
 
     private ItemStack createLogicalItemButton(Player player, String logicalItemId) {
+        if (KillEffectSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
+            return createKillEffectCategoryButton(player, logicalItemId);
+        }
+
         String runtimeItemId = ItemSkinSelectionService.resolveRuntimeItemId(player, logicalItemId);
         var customItem = plugin.getCustomItemManager().getItem(runtimeItemId);
 
@@ -234,6 +314,37 @@ public class SkinGUI {
                 logicalItemId
         );
         stack.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(stack, runtimeItemId, selected);
+        return stack;
+    }
+
+    private ItemStack createKillEffectCategoryButton(Player player, String logicalItemId) {
+        String selected = ItemSkinSelectionService.getSelectedVariant(player, logicalItemId);
+        KillEffectSkins.Definition selectedDef = selected == null ? null : KillEffectSkins.getDefinition(selected);
+        ItemStack stack = new ItemStack(selectedDef == null ? Material.FIREWORK_STAR : selectedDef.icon());
+
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return stack;
+        }
+
+        int variantCount = KillEffectSkins.getDefinitions().size();
+        int unlockedCount = (int) KillEffectSkins.getDefinitions().stream()
+                .filter(def -> ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, def.id()))
+                .count();
+
+        meta.displayName(Component.text("Kill Effects", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD)
+                .decoration(TextDecoration.ITALIC, false));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Unlocked: " + unlockedCount + "/" + variantCount, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Selected: " + (selectedDef == null ? "Default" : selectedDef.displayName()), NamedTextColor.YELLOW)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Left click to open", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore);
+
+        stack.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(stack, KillEffectSkins.LOGICAL_ITEM_ID, selected);
         return stack;
     }
 
@@ -274,6 +385,40 @@ public class SkinGUI {
                 variant.getId()
         );
         stack.setItemMeta(meta);
+        return stack;
+    }
+
+    private ItemStack createKillEffectVariantButton(Player player, String logicalItemId, KillEffectSkins.Definition definition, String selectedVariant) {
+        ItemStack stack = new ItemStack(definition.icon());
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return stack;
+        }
+
+        boolean selected = definition.id().equals(selectedVariant);
+        boolean unlocked = ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, definition.id());
+        int cost = ItemSkinSelectionService.getCost(plugin, logicalItemId, definition.id());
+
+        meta.displayName(Component.text(
+                        definition.displayName(),
+                        selected ? NamedTextColor.GREEN : (unlocked ? NamedTextColor.AQUA : NamedTextColor.RED),
+                        TextDecoration.BOLD
+                )
+                .decoration(TextDecoration.ITALIC, false));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("ID: " + definition.id(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Rarity: " + definition.rarity().name(), getRarityColor(definition.rarity())).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Cost: " + cost + " coins", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text(selected ? "Currently selected" : (unlocked ? "Click to select" : "Click to unlock + select"),
+                        selected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Right click: select/unlock and close", NamedTextColor.DARK_GRAY)
+                .decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore);
+
+        stack.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(stack, KillEffectSkins.LOGICAL_ITEM_ID, definition.id());
         return stack;
     }
 
@@ -319,6 +464,7 @@ public class SkinGUI {
         for (String itemId : plugin.getCustomItemManager().getVariantManager().getAllVariants().keySet()) {
             ids.add(ItemSkinSelectionService.normalizeLogicalItemId(itemId));
         }
+        ids.add(KillEffectSkins.LOGICAL_ITEM_ID);
         return new ArrayList<>(ids);
     }
 }

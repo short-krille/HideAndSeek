@@ -8,6 +8,7 @@ import de.thecoolcraft11.hideAndSeek.loadout.LoadoutManager;
 import de.thecoolcraft11.hideAndSeek.loadout.PlayerLoadout;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
 import de.thecoolcraft11.hideAndSeek.model.LoadoutItemType;
+import de.thecoolcraft11.hideAndSeek.util.CustomModelDataUtil;
 import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
 import de.thecoolcraft11.minigameframework.inventory.InventoryItem;
 import io.papermc.paper.datacomponent.DataComponentType;
@@ -254,9 +255,11 @@ public class LoadoutGUI {
     }
 
     private ItemStack createItemStack(LoadoutItemType type, int cost, boolean selected, int usedTokens, int maxTokens, int usedSlots, int maxSlots) {
-        Material material = getMaterialForItem(type);
-        ItemStack item = new ItemStack(material);
+        ItemStack item = getPreviewItemStack(type);
         ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return item;
+        }
 
         NamedTextColor rarityColor = getRarityColor(type.getRarity());
         meta.displayName(Component.text(formatName(type.name()), rarityColor, TextDecoration.BOLD)
@@ -301,6 +304,7 @@ public class LoadoutGUI {
 
         meta.lore(lore);
         item.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(item, resolveRuntimeItemId(type), null);
         item.setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hiddenComponents(ALL_TOOLTIP_COMPONENTS).build());
         return item;
     }
@@ -315,9 +319,11 @@ public class LoadoutGUI {
     }
 
     private ItemStack createSelectedItemDisplay(LoadoutItemType type, int cost) {
-        Material material = getMaterialForItem(type);
-        ItemStack item = new ItemStack(material);
+        ItemStack item = getPreviewItemStack(type);
         ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return item;
+        }
 
 
         NamedTextColor rarityColor = getRarityColor(type.getRarity());
@@ -335,17 +341,33 @@ public class LoadoutGUI {
 
         meta.lore(lore);
         item.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(item, resolveRuntimeItemId(type), null);
         item.setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hiddenComponents(ALL_TOOLTIP_COMPONENTS).build());
         return item;
     }
 
-    private Material getMaterialForItem(LoadoutItemType type) {
+    private ItemStack getPreviewItemStack(LoadoutItemType type) {
         GameItem item = SeekerItems.getItem(type.getItemId());
         if (item == null) {
             item = HiderItems.getItem(type.getItemId());
         }
 
-        return (item != null) ? item.createItem(plugin).getType() : Material.BARRIER;
+        if (item == null) {
+            return new ItemStack(Material.BARRIER);
+        }
+
+        ItemStack stack = item.createItem(plugin);
+        return stack == null ? new ItemStack(Material.BARRIER) : stack.clone();
+    }
+
+    private String resolveRuntimeItemId(LoadoutItemType type) {
+        if (type == LoadoutItemType.SPEED_BOOST) {
+            return de.thecoolcraft11.hideAndSeek.items.hider.SpeedBoostItem.ID + "_0";
+        }
+        if (type == LoadoutItemType.KNOCKBACK_STICK) {
+            return de.thecoolcraft11.hideAndSeek.items.hider.KnockbackStickItem.ID + "_1";
+        }
+        return type.getItemId();
     }
 
     private NamedTextColor getRarityColor(ItemRarity rarity) {

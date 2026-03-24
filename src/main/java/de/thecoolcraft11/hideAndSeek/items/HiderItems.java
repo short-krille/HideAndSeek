@@ -5,6 +5,7 @@ import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.items.hider.*;
 import de.thecoolcraft11.hideAndSeek.listener.player.HiderEquipmentChangeListener;
 import de.thecoolcraft11.hideAndSeek.model.LoadoutItemType;
+import de.thecoolcraft11.hideAndSeek.util.CustomModelDataUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -86,14 +87,19 @@ public final class HiderItems {
         if (gameModeObj != null && gameModeObj.toString().equals("BLOCK")) {
             int appearanceSlot = isHiding ? 7 : 8;
             if (HiderItemUtil.hasCustomizableBlock(player, plugin)) {
-                player.getInventory().setItem(appearanceSlot, plugin.getCustomItemManager().getIdentifiedItemStack(AppearanceItem.ID, player));
+                ItemStack appearance = plugin.getCustomItemManager().getIdentifiedItemStack(AppearanceItem.ID, player);
+                CustomModelDataUtil.setCustomModelData(appearance, AppearanceItem.ID);
+                player.getInventory().setItem(appearanceSlot, appearance);
             } else {
                 player.getInventory().setItem(appearanceSlot, new ItemStack(Material.AIR));
             }
         }
 
-        if (isHiding && (gameModeObj != null && gameModeObj.toString().equals("BLOCK")))
-            player.getInventory().setItem(8, plugin.getCustomItemManager().getIdentifiedItemStack(BlockSelectorItem.ID, player));
+        if (isHiding && (gameModeObj != null && gameModeObj.toString().equals("BLOCK"))) {
+            ItemStack selector = plugin.getCustomItemManager().getIdentifiedItemStack(BlockSelectorItem.ID, player);
+            CustomModelDataUtil.setCustomModelData(selector, BlockSelectorItem.ID);
+            player.getInventory().setItem(8, selector);
+        }
 
         HiderEquipmentChangeListener.hideHandItem(player, EquipmentSlot.HAND);
         HiderEquipmentChangeListener.hideHandItem(player, EquipmentSlot.OFF_HAND);
@@ -158,6 +164,8 @@ public final class HiderItems {
             }
             ItemStack item = plugin.getCustomItemManager().getIdentifiedItemStack(itemId, player);
             if (item != null) {
+                String selectedVariant = ItemSkinSelectionService.getSelectedVariant(player, ItemSkinSelectionService.normalizeLogicalItemId(itemId));
+                CustomModelDataUtil.setCustomModelData(item, itemId, selectedVariant);
                 player.getInventory().setItem(slot++, item);
                 if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
                     plugin.getLogger().info("  Item placed successfully");
