@@ -117,4 +117,3 @@ public class BanHammerKillEffect implements KillEffect {
         }.runTaskTimer(plugin, 1L, 1L);
     }
 }
-

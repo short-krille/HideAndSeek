@@ -6,10 +6,7 @@ import de.thecoolcraft11.hideAndSeek.items.*;
 import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectManager;
 import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectSkins;
 import de.thecoolcraft11.hideAndSeek.listener.game.*;
-import de.thecoolcraft11.hideAndSeek.listener.item.CrossbowTrackerListener;
-import de.thecoolcraft11.hideAndSeek.listener.item.LightningListener;
-import de.thecoolcraft11.hideAndSeek.listener.item.SlownessBallListener;
-import de.thecoolcraft11.hideAndSeek.listener.item.SmokeBombListener;
+import de.thecoolcraft11.hideAndSeek.listener.item.*;
 import de.thecoolcraft11.hideAndSeek.listener.player.*;
 import de.thecoolcraft11.hideAndSeek.loadout.LoadoutManager;
 import de.thecoolcraft11.hideAndSeek.nms.NmsAdapter;
@@ -92,7 +89,7 @@ public final class HideAndSeek extends MinigameFramework {
 
         HiderItemSkins.registerAll(this);
         SeekerItemSkins.registerAll(this);
-        KillEffectSkins.registerAll(this);
+        KillEffectSkins.registerAll();
 
         blockModeListener = new BlockModeListener(this);
         playerHitListener = new PlayerHitListener(this);
@@ -107,6 +104,7 @@ public final class HideAndSeek extends MinigameFramework {
         Bukkit.getPluginManager().registerEvents(hiderCampingListener, this);
         Bukkit.getPluginManager().registerEvents(new HiderEquipmentChangeListener(this), this);
         Bukkit.getPluginManager().registerEvents(new CrossbowTrackerListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new CameraViewListener(this), this);
 
         Bukkit.getPluginManager().registerEvents(new SeekerKillModeListener(this), this);
         Bukkit.getPluginManager().registerEvents(new HiderTotemListener(), this);

@@ -4,6 +4,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
@@ -44,7 +45,16 @@ public interface NmsAdapter {
 
     boolean setEntityVisibilityForViewer(Player viewer, Player target, boolean visible);
 
-    void clearVisibilityFilters();
+    int spawnClientCameraEntity(Player viewer, Location location, float yaw, float pitch, EntityType entityType);
 
+    boolean removeClientEntity(Player viewer, int entityId);
+
+    boolean setCameraEntity(Player viewer, int entityId);
+
+    boolean resetCamera(Player viewer);
+
+    boolean setEntityGlowingForViewer(Player viewer, Player target, boolean glowing);
+
+    void clearVisibilityFilters();
 
 }

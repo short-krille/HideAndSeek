@@ -8,4 +8,3 @@ public interface KillEffect {
 
     void execute(Player killer, Player victim, Location killLocation, HideAndSeek plugin);
 }
-

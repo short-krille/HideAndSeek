@@ -55,7 +55,7 @@ public class VoteGUI {
             int maxMapRows = Math.max(1, 6 - gamemodeRows - separatorRows - readinessRows);
             mapRows = Math.min(requestedRows, maxMapRows);
         }
-        int totalRows = Math.max(1, Math.min(6, gamemodeRows + separatorRows + mapRows + readinessRows));
+        int totalRows = Math.clamp(gamemodeRows + separatorRows + mapRows + readinessRows, 1, 6);
 
         FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
                 .id("vote_menu_" + player.getUniqueId() + "_" + System.currentTimeMillis())
@@ -418,4 +418,3 @@ public class VoteGUI {
         return item;
     }
 }
-

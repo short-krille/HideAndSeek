@@ -197,7 +197,7 @@ public class SeekingBossBarService {
             return 1.0f;
         }
 
-        return Math.max(0.0f, Math.min(1.0f, hidersLeft / (float) Math.max(1, maxHidersAtSeekingStart)));
+        return Math.clamp(hidersLeft / (float) Math.max(1, maxHidersAtSeekingStart), 0.0f, 1.0f);
     }
 
     private BarColor resolveConfiguredColor(int hidersLeft) {
@@ -272,6 +272,3 @@ public class SeekingBossBarService {
         return !"seeking".equals(plugin.getStateManager().getCurrentPhaseId());
     }
 }
-
-
-

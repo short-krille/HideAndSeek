@@ -18,7 +18,7 @@ public class ScoreCrownKillEffect implements KillEffect {
         }
 
         int points = HideAndSeek.getDataController().getAllPoints().getOrDefault(killer.getUniqueId(), 0);
-        int cappedPoints = Math.max(0, Math.min(points, 5000));
+        int cappedPoints = Math.clamp(points, 0, 5000);
         double scoreFactor = cappedPoints / 5000.0;
         double radius = 1.1 + scoreFactor * 1.9;
         int orbitPoints = 14 + (cappedPoints / 250);
@@ -96,5 +96,3 @@ public class ScoreCrownKillEffect implements KillEffect {
         }.runTaskTimer(plugin, 1L, 1L);
     }
 }
-
-

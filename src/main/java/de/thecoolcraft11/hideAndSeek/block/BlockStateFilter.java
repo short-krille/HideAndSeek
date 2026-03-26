@@ -12,23 +12,13 @@ public class BlockStateFilter {
         }
     }
 
-    public static void removeDisallowedProperty(String property) {
-        if (property != null) {
-            DISALLOWED_PROPERTIES.remove(property);
-        }
-    }
-
     public static boolean isDisallowed(String property) {
         if (property == null) return false;
         return DISALLOWED_PROPERTIES.contains(property);
     }
 
-    public static Set<String> getDisallowedProperties() {
-        return new HashSet<>(DISALLOWED_PROPERTIES);
-    }
 
     public static void clear() {
         DISALLOWED_PROPERTIES.clear();
     }
 }
-

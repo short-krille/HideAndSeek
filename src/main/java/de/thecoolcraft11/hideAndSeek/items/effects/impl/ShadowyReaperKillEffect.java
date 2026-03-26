@@ -81,4 +81,3 @@ public class ShadowyReaperKillEffect implements KillEffect {
         }.runTaskTimer(plugin, 1L, 1L);
     }
 }
-

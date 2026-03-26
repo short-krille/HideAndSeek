@@ -3,7 +3,6 @@ package de.thecoolcraft11.hideAndSeek.items.seeker;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
-import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
 import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
 import de.thecoolcraft11.hideAndSeek.util.XpProgressHelper;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
@@ -98,9 +97,6 @@ public class SeekersSwordItem implements GameItem {
 
         clearSwordCharge(seeker);
 
-        ItemStateManager.SwordChargeState state = new ItemStateManager.SwordChargeState(System.currentTimeMillis());
-        swordChargeStates.put(seeker.getUniqueId(), state);
-
         XpProgressHelper.SavedXp savedXp = XpProgressHelper.saveXp(seeker);
         swordChargeXp.put(seeker.getUniqueId(), savedXp);
 
@@ -108,7 +104,8 @@ public class SeekersSwordItem implements GameItem {
         swordChargeXpTasks.put(seeker.getUniqueId(), xpTask);
 
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
-            long nextSoundAtMs = System.currentTimeMillis();
+            final long startTime = System.currentTimeMillis();
+            long nextSoundAtMs = startTime;
 
             @Override
             public void run() {
@@ -118,7 +115,7 @@ public class SeekersSwordItem implements GameItem {
                 }
 
                 long now = System.currentTimeMillis();
-                long elapsed = now - state.startedAtMs();
+                long elapsed = now - startTime;
                 double progress = Math.min(1.0, (double) elapsed / maxChargeMs);
 
                 if (now >= nextSoundAtMs && progress < 1.0) {
@@ -139,11 +136,7 @@ public class SeekersSwordItem implements GameItem {
         int maxChargeSeconds = Math.max(1, plugin.getSettingRegistry().get("seeker-items.seeker-sword-throw.max-charge-seconds", 5));
         long maxChargeMs = maxChargeSeconds * 1000L;
 
-        ItemStateManager.SwordChargeState state = swordChargeStates.get(seeker.getUniqueId());
         long measuredHoldMs = Math.max(0L, context.getHoldDurationMs());
-        if (state != null) {
-            measuredHoldMs = Math.max(measuredHoldMs, System.currentTimeMillis() - state.startedAtMs());
-        }
 
         clearSwordCharge(seeker);
 
@@ -160,8 +153,6 @@ public class SeekersSwordItem implements GameItem {
         BukkitTask xpTask = swordChargeXpTasks.remove(player.getUniqueId());
         XpProgressHelper.SavedXp savedXp = swordChargeXp.remove(player.getUniqueId());
         XpProgressHelper.stopAndRestore(player, xpTask, savedXp);
-
-        swordChargeStates.remove(player.getUniqueId());
     }
 
     public static void cleanupSwordCharge(UUID playerId) {
@@ -178,7 +169,6 @@ public class SeekersSwordItem implements GameItem {
         if (xpTask != null) xpTask.cancel();
 
         swordChargeXp.remove(playerId);
-        swordChargeStates.remove(playerId);
     }
 
     private void throwChargedSword(Player seeker, HideAndSeek plugin, double chargeRatio) {

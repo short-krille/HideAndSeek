@@ -42,4 +42,3 @@ public class EnergyBladeKillEffect implements KillEffect {
         }
     }
 }
-

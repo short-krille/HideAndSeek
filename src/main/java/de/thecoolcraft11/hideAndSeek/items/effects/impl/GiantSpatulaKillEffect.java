@@ -64,5 +64,3 @@ public class GiantSpatulaKillEffect implements KillEffect {
         }
     }
 }
-
-

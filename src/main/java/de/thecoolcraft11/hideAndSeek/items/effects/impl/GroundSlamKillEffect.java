@@ -229,8 +229,3 @@ public class GroundSlamKillEffect implements KillEffect {
     private record Debris(FallingBlock entity, BlockData data) {
     }
 }
-
-
-
-
-

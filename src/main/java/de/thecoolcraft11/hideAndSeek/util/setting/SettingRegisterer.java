@@ -278,6 +278,8 @@ public class SettingRegisterer {
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.range", Double.class, 8.0);
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.duration", Integer.class, 25);
         plugin.getConfigRegistry().register("settings.seeker-items.proximity-sensor.fov-angle", Double.class, 160.0);
+        plugin.getConfigRegistry().register("settings.seeker-items.camera.cooldown", Integer.class, 2);
+        plugin.getConfigRegistry().register("settings.seeker-items.camera.max-placed", Integer.class, 5);
         plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.cooldown", Integer.class, 25);
         plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.range", Double.class, 3.0);
         plugin.getConfigRegistry().register("settings.seeker-items.cage-trap.duration", Integer.class, -1);

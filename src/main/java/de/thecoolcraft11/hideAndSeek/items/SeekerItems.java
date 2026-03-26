@@ -33,6 +33,7 @@ public final class SeekerItems {
         add(new BlockRandomizerItem());
         add(new ChainPullItem());
         add(new ProximitySensorItem());
+        add(new CameraItem());
         add(new CageTrapItem());
         add(new SeekersSwordItem());
         add(new SeekersMaskItem());

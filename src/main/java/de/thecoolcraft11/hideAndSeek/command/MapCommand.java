@@ -89,6 +89,3 @@ public class MapCommand implements MinigameSubcommand {
                 .toList();
     }
 }
-
-
-

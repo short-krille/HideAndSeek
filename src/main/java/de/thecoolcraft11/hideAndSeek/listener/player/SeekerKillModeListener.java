@@ -197,7 +197,3 @@ public class SeekerKillModeListener implements Listener {
         }
     }
 }
-
-
-
-

@@ -326,6 +326,3 @@ public final class ItemSkinSelectionService {
         return itemId;
     }
 }
-
-
-

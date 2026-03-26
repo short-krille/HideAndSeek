@@ -53,5 +53,3 @@ public class FrostbiteKillEffect implements KillEffect {
         }
     }
 }
-
-

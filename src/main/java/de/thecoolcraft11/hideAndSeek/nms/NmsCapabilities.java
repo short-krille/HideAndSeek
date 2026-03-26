@@ -9,5 +9,4 @@ public enum NmsCapabilities {
     CLIENT_LIGHTNING_PACKET,
     PROJECTILE_ENTITY_RAYCAST,
     ANTI_CHEAT_PACKET_FILTER
-
 }

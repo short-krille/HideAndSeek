@@ -468,5 +468,3 @@ public class SkinGUI {
         return new ArrayList<>(ids);
     }
 }
-
-

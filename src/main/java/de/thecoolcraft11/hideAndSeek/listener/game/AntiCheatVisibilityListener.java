@@ -1,6 +1,8 @@
 package de.thecoolcraft11.hideAndSeek.listener.game;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
+import de.thecoolcraft11.hideAndSeek.items.seeker.CameraItem;
 import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
 import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
@@ -83,6 +85,27 @@ public class AntiCheatVisibilityListener implements Listener {
                 continue;
             }
 
+
+            ItemStateManager.CameraSessionState cameraSession = ItemStateManager.activeCameraSessions.get(seekerId);
+            Location seekerViewLocation = null;
+            Vector seekerViewDirection = null;
+            double seekerViewDistanceSq = seekingRangeSq;
+
+            if (cameraSession != null) {
+                var cameraData = getCameraViewData(seekerId, cameraSession);
+                if (cameraData != null) {
+                    seekerViewLocation = cameraData.location;
+                    seekerViewDirection = cameraData.direction;
+                    seekerViewDistanceSq = cameraData.rangeSq;
+                }
+            }
+
+            if (seekerViewLocation == null) {
+                seekerViewLocation = seeker.getEyeLocation();
+                seekerViewDirection = seeker.getLocation().getDirection();
+                seekerViewDistanceSq = seekingRangeSq;
+            }
+
             for (UUID hiderId : hiders) {
                 if (seekerId.equals(hiderId)) {
                     continue;
@@ -93,7 +116,6 @@ public class AntiCheatVisibilityListener implements Listener {
                     continue;
                 }
 
-                
                 boolean isGlowing = hider.hasPotionEffect(PotionEffectType.GLOWING)
                         || HideAndSeek.getDataController().isGlowing(hiderId);
 
@@ -102,13 +124,13 @@ public class AntiCheatVisibilityListener implements Listener {
                     if (phase.equals("hiding") && hideDuringHiding) {
                         shouldSee = false;
                     } else if (phase.equals("seeking") && proximityDuringSeeking) {
-                        if (!seeker.getWorld().equals(hider.getWorld())) {
+                        if (!seekerViewLocation.getWorld().equals(hider.getWorld())) {
                             shouldSee = false;
                         } else if (blockMode && HideAndSeek.getDataController().isHidden(hiderId)) {
                             shouldSee = false;
                         } else {
-                            shouldSee = seeker.getLocation().distanceSquared(hider.getLocation()) <= seekingRangeSq
-                                    || (seekingLosRevealEnabled && hasLineOfSightReveal(seeker, hider, seekingLosRevealRange, seekingLosRevealFov));
+                            shouldSee = seekerViewLocation.distanceSquared(hider.getLocation()) <= seekerViewDistanceSq
+                                    || (seekingLosRevealEnabled && hasLineOfSightReveal(seekerViewLocation, seekerViewDirection, hider, seekingLosRevealRange, seekingLosRevealFov));
                         }
                     }
                 }
@@ -136,12 +158,33 @@ public class AntiCheatVisibilityListener implements Listener {
         }
     }
 
-    private boolean hasLineOfSightReveal(Player seeker, Player hider, double maxRange, double maxFovDegrees) {
-        if (!seeker.getWorld().equals(hider.getWorld())) {
+    private CameraViewData getCameraViewData(UUID seekerId, ItemStateManager.CameraSessionState session) {
+        var cameras = CameraItem.getPlacedCameras(seekerId);
+        if (cameras.isEmpty()) {
+            return null;
+        }
+
+        int idx = Math.floorMod(session.currentIndex(), cameras.size());
+        var camera = cameras.get(idx);
+        Location viewLoc = CameraItem.getViewLocation(camera);
+        Vector viewDir = getDirectionFromYaw(session.rotationYaw());
+
+        double seekingRange = Math.max(1.0, plugin.getSettingRegistry().get("anticheat.seeking.visibility-range", 12.0));
+        return new CameraViewData(viewLoc, viewDir, seekingRange * seekingRange);
+    }
+
+    private Vector getDirectionFromYaw(float yaw) {
+        float radians = (float) Math.toRadians(yaw);
+        double x = -Math.sin(radians);
+        double z = Math.cos(radians);
+        return new Vector(x, 0, z).normalize();
+    }
+
+    private boolean hasLineOfSightReveal(Location eye, Vector eyeDirection, Player hider, double maxRange, double maxFovDegrees) {
+        if (!eye.getWorld().equals(hider.getWorld())) {
             return false;
         }
 
-        Location eye = seeker.getEyeLocation();
         Location target = hider.getLocation().add(0, Math.min(1.2, hider.getHeight() * 0.75), 0);
         Vector toTarget = target.toVector().subtract(eye.toVector());
         double distance = toTarget.length();
@@ -151,16 +194,16 @@ public class AntiCheatVisibilityListener implements Listener {
 
         Vector dir = toTarget.clone().normalize();
         double fovRadians = Math.toRadians(maxFovDegrees);
-        if (eye.getDirection().normalize().angle(dir) > fovRadians) {
+        if (eyeDirection.normalize().angle(dir) > fovRadians) {
             return false;
         }
 
-        var blockHit = seeker.getWorld().rayTraceBlocks(eye, dir, distance, FluidCollisionMode.NEVER, true);
+        var blockHit = eye.getWorld().rayTraceBlocks(eye, dir, distance, FluidCollisionMode.NEVER, true);
         if (blockHit != null) {
             return false;
         }
 
-        var entityHit = seeker.getWorld().rayTraceEntities(
+        var entityHit = eye.getWorld().rayTraceEntities(
                 eye,
                 dir,
                 distance,
@@ -169,6 +212,9 @@ public class AntiCheatVisibilityListener implements Listener {
         );
 
         return entityHit != null && entityHit.getHitEntity() != null;
+    }
+
+    private record CameraViewData(Location location, Vector direction, double rangeSq) {
     }
 
     private void restoreAllVisibility() {
@@ -200,5 +246,3 @@ public class AntiCheatVisibilityListener implements Listener {
         }
     }
 }
-
-

@@ -34,6 +34,7 @@ public enum LoadoutItemType {
     BLOCK_RANDOMIZER(false, true, ItemRarity.EPIC, BlockRandomizerItem.ID),
     CHAIN_PULL(false, true, ItemRarity.UNCOMMON, ChainPullItem.ID),
     PROXIMITY_SENSOR(false, true, ItemRarity.RARE, ProximitySensorItem.ID),
+    CAMERA(false, true, ItemRarity.EPIC, CameraItem.ID),
     CAGE_TRAP(false, true, ItemRarity.RARE, CageTrapItem.ID),
     ;
 

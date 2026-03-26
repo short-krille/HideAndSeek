@@ -56,6 +56,3 @@ public class CustomModelDataUtil {
         inventory.setItem(slot, stack);
     }
 }
-
-
-

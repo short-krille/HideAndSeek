@@ -389,6 +389,3 @@ public class LoadoutGUI {
         return result.toString();
     }
 }
-
-
-

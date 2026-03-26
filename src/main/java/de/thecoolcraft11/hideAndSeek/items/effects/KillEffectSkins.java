@@ -1,6 +1,5 @@
 package de.thecoolcraft11.hideAndSeek.items.effects;
 
-import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.effects.impl.*;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
@@ -21,7 +20,7 @@ public final class KillEffectSkins {
     private KillEffectSkins() {
     }
 
-    public static void registerAll(HideAndSeek plugin) {
+    public static void registerAll() {
         KillEffectManager.clear();
         DEFINITIONS.clear();
 
@@ -57,4 +56,3 @@ public final class KillEffectSkins {
     public record Definition(String id, String displayName, Material icon, ItemRarity rarity, int sortPriority) {
     }
 }
-

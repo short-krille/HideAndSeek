@@ -54,5 +54,3 @@ public class InfernoBladeKillEffect implements KillEffect {
         }
     }
 }
-
-

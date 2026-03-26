@@ -4,11 +4,11 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
-import org.bukkit.util.VoxelShape;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,8 +39,7 @@ public class NoopNmsAdapter implements NmsAdapter {
 
     @Override
     public List<BoundingBox> getBoundingBoxes(BlockData blockData, Location location) {
-        VoxelShape shape = blockData.getCollisionShape(location);
-        return List.copyOf(shape.getBoundingBoxes());
+        return Collections.emptyList();
     }
 
 
@@ -73,6 +72,31 @@ public class NoopNmsAdapter implements NmsAdapter {
 
     @Override
     public boolean setEntityVisibilityForViewer(Player viewer, Player target, boolean visible) {
+        return false;
+    }
+
+    @Override
+    public int spawnClientCameraEntity(Player viewer, Location location, float yaw, float pitch, EntityType entityType) {
+        return Integer.MIN_VALUE;
+    }
+
+    @Override
+    public boolean removeClientEntity(Player viewer, int entityId) {
+        return false;
+    }
+
+    @Override
+    public boolean setCameraEntity(Player viewer, int entityId) {
+        return false;
+    }
+
+    @Override
+    public boolean resetCamera(Player viewer) {
+        return false;
+    }
+
+    @Override
+    public boolean setEntityGlowingForViewer(Player viewer, Player target, boolean glowing) {
         return false;
     }
 

@@ -44,5 +44,3 @@ public class LoadoutCommand implements MinigameSubcommand {
         return true;
     }
 }
-
-

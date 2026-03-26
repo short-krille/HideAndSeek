@@ -89,17 +89,6 @@ public class VoteManager {
         return readyStates.compute(playerId, (id, current) -> current == null || !current);
     }
 
-    public void clearReady(UUID playerId) {
-        if (playerId == null) {
-            return;
-        }
-        readyStates.remove(playerId);
-    }
-
-    public void resetReadiness() {
-        readyStates.clear();
-    }
-
     public void castGamemodeVote(UUID playerId, GameModeEnum mode) {
         if (playerId == null || mode == null) {
             return;
@@ -264,5 +253,3 @@ public class VoteManager {
         return topEntries.get(random.nextInt(topEntries.size()));
     }
 }
-
-

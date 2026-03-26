@@ -204,6 +204,7 @@ public class ItemSkinCommand implements MinigameSubcommand {
         addAliases(ChainPullItem.ID, "chainpullitem", "chainpull");
         addAliases(CageTrapItem.ID, "cagetrapitem", "cagetrap");
         addAliases(ProximitySensorItem.ID, "proximitysensoritem", "proximitysensor");
+        addAliases(CameraItem.ID, "cameraitem", "camera");
         addAliases(CurseSpellItem.ID, "cursespellitem", "cursespell");
         addAliases(InkSplashItem.ID, "inksplashitem", "inksplash");
         addAliases(LightningFreezeItem.ID, "lightningfreezeitem", "lightningfreeze");
@@ -243,6 +244,3 @@ public class ItemSkinCommand implements MinigameSubcommand {
                 .toList();
     }
 }
-
-
-

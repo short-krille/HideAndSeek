@@ -2,6 +2,7 @@ package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
+import de.thecoolcraft11.hideAndSeek.items.seeker.CameraItem;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
@@ -32,6 +33,7 @@ public class EndedPhase implements GamePhase {
     @Override
     public void onStart(MinigameFramework plugin) {
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
+        CameraItem.clearAllCameraState(hideAndSeekPlugin);
         if (hideAndSeekPlugin.getDebugSettings().isVerboseLoggingEnabled()) {
             plugin.getLogger().info("Game ended");
         }

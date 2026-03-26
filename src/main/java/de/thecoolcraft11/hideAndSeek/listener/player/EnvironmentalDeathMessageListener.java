@@ -23,5 +23,3 @@ public class EnvironmentalDeathMessageListener implements Listener {
         event.deathMessage(Component.text(event.getEntity().getName() + " was struck down for camping too long."));
     }
 }
-
-

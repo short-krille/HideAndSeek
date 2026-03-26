@@ -27,7 +27,7 @@ public class VitalityWaveKillEffect implements KillEffect {
     }
 
     private static double clamp01(double value) {
-        return Math.max(0.0, Math.min(1.0, value));
+        return Math.clamp(value, 0.0, 1.0);
     }
 
     private static Color mix(Color first, Color second, double t) {
@@ -45,7 +45,7 @@ public class VitalityWaveKillEffect implements KillEffect {
         }
 
         int points = HideAndSeek.getDataController().getAllPoints().getOrDefault(killer.getUniqueId(), 0);
-        double scoreFactor = Math.min(1.0, Math.max(0.0, points / 5000.0));
+        double scoreFactor = Math.clamp(points / 2500.0, 0.0, 1.0);
         double speedFactor = Math.min(1.2, killer.getVelocity().length());
 
         int nearbyPlayers = (int) killLocation.getWorld().getNearbyEntities(killLocation, 9.0, 5.0, 9.0).stream()
@@ -128,8 +128,3 @@ public class VitalityWaveKillEffect implements KillEffect {
     }
 
 }
-
-
-
-
-

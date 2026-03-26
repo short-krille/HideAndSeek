@@ -9,12 +9,14 @@ import io.netty.channel.ChannelPromise;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
-import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import net.minecraft.network.protocol.game.*;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,9 +28,11 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.block.data.CraftBlockData;
 import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.craftbukkit.entity.CraftEntityType;
 import org.bukkit.craftbukkit.entity.CraftMob;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
@@ -56,6 +60,7 @@ public class NmsAdapterImpl implements NmsAdapter {
                     NmsCapabilities.ANTI_CHEAT_PACKET_FILTER
             );
     private final Map<UUID, Set<Integer>> blockedEntityIdsByViewer = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<Integer, net.minecraft.world.entity.Entity>> clientCameraEntities = new ConcurrentHashMap<>();
 
     @Override
     public String name() {
@@ -470,10 +475,200 @@ public class NmsAdapterImpl implements NmsAdapter {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static EntityDataAccessor<Byte> getSharedFlagsAccessor() {
+        try {
+            Field field = net.minecraft.world.entity.Entity.class.getDeclaredField("DATA_SHARED_FLAGS_ID");
+            field.setAccessible(true);
+            return (EntityDataAccessor<Byte>) field.get(null);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    @Override
+    public int spawnClientCameraEntity(Player viewer, Location location, float yaw, float pitch, EntityType entityType) {
+        if (viewer == null || location == null || location.getWorld() == null || !viewer.isOnline()) {
+            return Integer.MIN_VALUE;
+        }
+
+        if (entityType == null || entityType == EntityType.UNKNOWN) {
+            return Integer.MIN_VALUE;
+        }
+
+        try {
+            ServerPlayer viewerHandle = ((CraftPlayer) viewer).getHandle();
+            ServerLevel level = ((CraftWorld) location.getWorld()).getHandle();
+            double targetEyeY = location.getY() + 0.16;
+
+            net.minecraft.world.entity.EntityType<?> nmsType = CraftEntityType.bukkitToMinecraft(entityType);
+            if (nmsType == null) {
+                return Integer.MIN_VALUE;
+            }
+
+            net.minecraft.world.entity.Entity fake = nmsType.create(level, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+            if (fake == null) {
+                return Integer.MIN_VALUE;
+            }
+
+            fake.setYRot(yaw);
+            fake.setXRot(pitch);
+            fake.setYHeadRot(yaw);
+            fake.setNoGravity(true);
+            fake.setInvulnerable(true);
+
+            if (fake instanceof Creeper creeper) {
+                creeper.setNoAi(true);
+                creeper.setSilent(true);
+                creeper.setInvisible(true);
+            }
+
+            if (fake instanceof ArmorStand stand) {
+                stand.setInvisible(true);
+                stand.setMarker(true);
+            }
+
+            double eyeHeight = fake.getEyeHeight(fake.getPose());
+            double spawnY = targetEyeY - eyeHeight;
+            fake.setPos(location.getX(), spawnY, location.getZ());
+
+            ClientboundAddEntityPacket addPacket = new ClientboundAddEntityPacket(
+                    fake.getId(),
+                    fake.getUUID(),
+                    location.getX(),
+                    spawnY,
+                    location.getZ(),
+                    pitch,
+                    yaw,
+                    fake.getType(),
+                    0,
+                    Vec3.ZERO,
+                    yaw
+            );
+
+            List<SynchedEntityData.DataValue<?>> values = fake.getEntityData().getNonDefaultValues();
+            if (values == null) {
+                values = List.of();
+            }
+
+            viewerHandle.connection.send(addPacket);
+            viewerHandle.connection.send(new ClientboundSetEntityDataPacket(fake.getId(), values));
+
+            clientCameraEntities
+                    .computeIfAbsent(viewer.getUniqueId(), ignored -> new ConcurrentHashMap<>())
+                    .put(fake.getId(), fake);
+
+            return fake.getId();
+        } catch (Throwable ignored) {
+            return Integer.MIN_VALUE;
+        }
+    }
+
+    @Override
+    public boolean removeClientEntity(Player viewer, int entityId) {
+        if (viewer == null || !viewer.isOnline() || entityId == Integer.MIN_VALUE) {
+            return false;
+        }
+
+        try {
+            ServerPlayer viewerHandle = ((CraftPlayer) viewer).getHandle();
+            viewerHandle.connection.send(new ClientboundRemoveEntitiesPacket(entityId));
+
+            Map<Integer, net.minecraft.world.entity.Entity> byEntityId = clientCameraEntities.get(viewer.getUniqueId());
+            if (byEntityId != null) {
+                byEntityId.remove(entityId);
+                if (byEntityId.isEmpty()) {
+                    clientCameraEntities.remove(viewer.getUniqueId());
+                }
+            }
+
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean setCameraEntity(Player viewer, int entityId) {
+        if (viewer == null || !viewer.isOnline() || entityId == Integer.MIN_VALUE) {
+            return false;
+        }
+
+        try {
+            Map<Integer, net.minecraft.world.entity.Entity> byEntityId = clientCameraEntities.get(viewer.getUniqueId());
+            if (byEntityId == null) {
+                return false;
+            }
+
+            net.minecraft.world.entity.Entity cameraEntity = byEntityId.get(entityId);
+            if (cameraEntity == null) {
+                return false;
+            }
+
+            ServerPlayer viewerHandle = ((CraftPlayer) viewer).getHandle();
+            viewerHandle.connection.send(new ClientboundSetCameraPacket(cameraEntity));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean resetCamera(Player viewer) {
+        if (viewer == null || !viewer.isOnline()) {
+            return false;
+        }
+
+        try {
+            ServerPlayer serverPlayer = ((CraftPlayer) viewer).getHandle();
+            serverPlayer.connection.send(new ClientboundSetCameraPacket(serverPlayer));
+
+            Map<Integer, net.minecraft.world.entity.Entity> byEntityId = clientCameraEntities.remove(viewer.getUniqueId());
+            if (byEntityId != null && !byEntityId.isEmpty()) {
+                int[] ids = byEntityId.keySet().stream().mapToInt(Integer::intValue).toArray();
+                serverPlayer.connection.send(new ClientboundRemoveEntitiesPacket(ids));
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean setEntityGlowingForViewer(Player viewer, Player target, boolean glowing) {
+        if (viewer == null || target == null || !viewer.isOnline() || !target.isOnline()) {
+            return false;
+        }
+
+        try {
+            ServerPlayer viewerHandle = ((CraftPlayer) viewer).getHandle();
+            ServerPlayer targetHandle = ((CraftPlayer) target).getHandle();
+
+            EntityDataAccessor<Byte> sharedFlagsAccessor = getSharedFlagsAccessor();
+            if (sharedFlagsAccessor == null) {
+                return false;
+            }
+
+            byte flags = targetHandle.getEntityData().get(sharedFlagsAccessor);
+            byte updated = glowing ? (byte) (flags | 0x40) : (byte) (flags & ~0x40);
+
+            SynchedEntityData.DataValue<Byte> value = SynchedEntityData.DataValue.create(
+                    sharedFlagsAccessor,
+                    updated
+            );
+
+            viewerHandle.connection.send(new ClientboundSetEntityDataPacket(targetHandle.getId(), List.of(value)));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     @Override
     public void clearVisibilityFilters() {
         Set<UUID> viewers = new HashSet<>(blockedEntityIdsByViewer.keySet());
         blockedEntityIdsByViewer.clear();
+        clientCameraEntities.clear();
 
         for (UUID viewerId : viewers) {
             Player viewer = org.bukkit.Bukkit.getPlayer(viewerId);

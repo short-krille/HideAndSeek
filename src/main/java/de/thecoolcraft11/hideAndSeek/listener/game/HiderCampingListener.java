@@ -271,7 +271,3 @@ public class HiderCampingListener implements Listener {
         }
     }
 }
-
-
-
-

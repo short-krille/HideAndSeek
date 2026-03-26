@@ -37,9 +37,6 @@ public class KillEffectService {
             killEffect.execute(killer, victim, killLocation, plugin);
         } catch (Exception e) {
             plugin.getLogger().warning("Error executing kill effect: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }
-
-
