@@ -34,7 +34,7 @@ public enum LoadoutItemType {
     BLOCK_RANDOMIZER(false, true, ItemRarity.EPIC, BlockRandomizerItem.ID),
     CHAIN_PULL(false, true, ItemRarity.UNCOMMON, ChainPullItem.ID),
     PROXIMITY_SENSOR(false, true, ItemRarity.RARE, ProximitySensorItem.ID),
-    CAMERA(false, true, ItemRarity.EPIC, CameraItem.ID),
+    CAMERA(false, true, ItemRarity.EPIC, CameraItem.ID, NmsCapabilities.CLIENT_GAMEMODE_SPOOFING, NmsCapabilities.CLIENT_ENTITY_GLOWING, NmsCapabilities.CLIENT_ENTITY_SPAWNING),
     CAGE_TRAP(false, true, ItemRarity.RARE, CageTrapItem.ID),
     ;
 

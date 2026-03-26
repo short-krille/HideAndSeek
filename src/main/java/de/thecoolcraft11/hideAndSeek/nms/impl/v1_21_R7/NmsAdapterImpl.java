@@ -57,7 +57,10 @@ public class NmsAdapterImpl implements NmsAdapter {
                     NmsCapabilities.NO_CLIP_MOB,
                     NmsCapabilities.CLIENT_LIGHTNING_PACKET,
                     NmsCapabilities.PROJECTILE_ENTITY_RAYCAST,
-                    NmsCapabilities.ANTI_CHEAT_PACKET_FILTER
+                    NmsCapabilities.ANTI_CHEAT_PACKET_FILTER,
+                    NmsCapabilities.CLIENT_ENTITY_SPAWNING,
+                    NmsCapabilities.CLIENT_ENTITY_GLOWING,
+                    NmsCapabilities.CLIENT_CAMERA_SPOOFING
             );
     private final Map<UUID, Set<Integer>> blockedEntityIdsByViewer = new ConcurrentHashMap<>();
     private final Map<UUID, Map<Integer, net.minecraft.world.entity.Entity>> clientCameraEntities = new ConcurrentHashMap<>();
