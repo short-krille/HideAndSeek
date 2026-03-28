@@ -139,22 +139,25 @@ public class AntiCheatVisibilityListener implements Listener {
                     if (nmsPacketFilter) {
                         boolean applied = plugin.getNmsAdapter().setEntityVisibilityForViewer(seeker, hider, shouldSee);
                         if (!applied) {
-                            if (shouldSee) {
-                                seeker.showEntity(plugin, hider);
-                            } else {
-                                seeker.hideEntity(plugin, hider);
-                            }
+                            applyBukkitVisibility(seeker, hider, shouldSee, true);
                         }
                     } else {
-                        if (shouldSee) {
-                            seeker.showEntity(plugin, hider);
-                        } else {
-                            seeker.hideEntity(plugin, hider);
-                        }
+                        applyBukkitVisibility(seeker, hider, shouldSee, false);
                     }
                 } catch (Exception ignored) {
                 }
             }
+        }
+    }
+
+    private void applyBukkitVisibility(Player viewer, Player target, boolean shouldSee, boolean forceRefreshShow) {
+        if (shouldSee) {
+            if (forceRefreshShow) {
+                viewer.hideEntity(plugin, target);
+            }
+            viewer.showEntity(plugin, target);
+        } else {
+            viewer.hideEntity(plugin, target);
         }
     }
 
@@ -239,6 +242,7 @@ public class AntiCheatVisibilityListener implements Listener {
 
                 try {
                     plugin.getNmsAdapter().setEntityVisibilityForViewer(seeker, hider, true);
+                    seeker.hideEntity(plugin, hider);
                     seeker.showEntity(plugin, hider);
                 } catch (Exception ignored) {
                 }

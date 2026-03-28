@@ -453,7 +453,7 @@ public class NmsAdapterImpl implements NmsAdapter {
             ServerPlayer viewerHandle = ((CraftPlayer) viewer).getHandle();
             int targetEntityId = ((CraftPlayer) target).getHandle().getId();
 
-            ensurePacketFilterInstalled(viewerHandle, viewer.getUniqueId());
+            boolean filterReady = ensurePacketFilterInstalled(viewerHandle, viewer.getUniqueId());
             Set<Integer> blocked = blockedEntityIdsByViewer.computeIfAbsent(viewer.getUniqueId(), ignored -> ConcurrentHashMap.newKeySet());
 
             if (visible) {
@@ -468,8 +468,13 @@ public class NmsAdapterImpl implements NmsAdapter {
                 return true;
             }
 
+            if (!filterReady) {
+                return false;
+            }
+
             boolean changed = blocked.add(targetEntityId);
-            if (changed) {
+
+            if (changed || blocked.contains(targetEntityId)) {
                 viewerHandle.connection.send(new ClientboundRemoveEntitiesPacket(targetEntityId));
             }
             return true;
@@ -686,27 +691,35 @@ public class NmsAdapterImpl implements NmsAdapter {
         }
     }
 
-    private void ensurePacketFilterInstalled(ServerPlayer viewerHandle, UUID viewerId) {
+    private boolean ensurePacketFilterInstalled(ServerPlayer viewerHandle, UUID viewerId) {
         Channel channel = getChannel(viewerHandle);
-        if (channel == null) {
-            return;
+        if (channel == null || !channel.isActive()) {
+            return false;
         }
 
         String handlerName = FILTER_PREFIX + viewerId;
         if (channel.pipeline().get(handlerName) != null) {
-            return;
+            return true;
         }
 
-        channel.pipeline().addBefore("packet_handler", handlerName, new ChannelDuplexHandler() {
-            @Override
-            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-                Set<Integer> blocked = blockedEntityIdsByViewer.get(viewerId);
-                if (blocked != null && !blocked.isEmpty() && shouldDropPacket(msg, blocked)) {
-                    return;
-                }
-                super.write(ctx, msg, promise);
+        try {
+            if (channel.pipeline().get(handlerName) == null) {
+                channel.pipeline().addBefore("packet_handler", handlerName, new ChannelDuplexHandler() {
+                    @Override
+                    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                        Set<Integer> blocked = blockedEntityIdsByViewer.get(viewerId);
+                        if (blocked != null && !blocked.isEmpty() && shouldDropPacket(msg, blocked)) {
+                            return;
+                        }
+                        super.write(ctx, msg, promise);
+                    }
+                });
             }
-        });
+
+            return channel.pipeline().get(handlerName) != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private void removePacketFilter(ServerPlayer viewerHandle, UUID viewerId) {
