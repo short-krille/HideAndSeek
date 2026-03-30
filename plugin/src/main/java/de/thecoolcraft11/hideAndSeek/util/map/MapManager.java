@@ -109,6 +109,56 @@ public class MapManager {
         return mapDataCache.get(mapName);
     }
 
+    public Material getMapIconMaterial(String mapName, Material fallback) {
+        Material safeFallback = (fallback == null || fallback.isAir()) ? Material.GRASS_BLOCK : fallback;
+        if (mapName == null || mapName.isBlank()) {
+            return safeFallback;
+        }
+
+        MapData mapData = getMapData(mapName);
+        if (mapData == null || mapData.getIcon() == null || mapData.getIcon().isBlank()) {
+            return safeFallback;
+        }
+
+        String iconName = mapData.getIcon().trim();
+        Material iconMaterial = resolveIconMaterial(iconName);
+        if (iconMaterial == null) {
+            plugin.getLogger().warning("Invalid icon material for map '" + mapName + "': " + iconName + ". Falling back to " + safeFallback.name());
+            return safeFallback;
+        }
+        if (iconMaterial.isAir()) {
+            plugin.getLogger().warning("Map icon material cannot be air for map '" + mapName + "': " + iconName + ". Falling back to " + safeFallback.name());
+            return safeFallback;
+        }
+        return iconMaterial;
+    }
+
+    private Material resolveIconMaterial(String rawIconName) {
+        if (rawIconName == null || rawIconName.isBlank()) {
+            return null;
+        }
+
+
+        String normalizedName = rawIconName.trim()
+                .replace(' ', '_')
+                .replace('-', '_')
+                .toUpperCase(Locale.ROOT);
+
+        Material material = Material.getMaterial(normalizedName);
+        if (material != null) {
+            return material;
+        }
+
+
+        material = Material.matchMaterial(rawIconName);
+        if (material != null) {
+            return material;
+        }
+
+
+        return Material.matchMaterial(normalizedName);
+    }
+
     public void applySettingOverridesForMap(String mapName) {
         clearAppliedSettingOverrides();
 
@@ -226,6 +276,9 @@ public class MapManager {
         if (size != null && !size.isEmpty()) {
             mapData.setSize(size);
         }
+
+        String icon = section.getString("icon");
+        mapData.setIcon(icon);
 
 
         List<String> spawnPointStrings = section.getStringList("spawn-points");

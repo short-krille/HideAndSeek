@@ -8,6 +8,7 @@
 #   description: "A brief description of the map"
 #   author: "Map Creator"                          # Optional: Name of the map creator
 #   size: "MEDIUM"                                 # Optional: Map size - SMALL, MEDIUM, LARGE
+#   icon: "SNOW_BLOCK"                             # Optional: Material used in map/vote GUIs and world icon
 #   spawn-points:
 #     - "x,y,z,yaw,pitch"
 #     - "x2,y2,z2,yaw2,pitch2"
@@ -63,6 +64,7 @@ map1:
   description: "Default map"
   author: "Server Admin"
   size: "MEDIUM"
+  icon: "GRASS_BLOCK"
   spawn-points:
     - "0,65,0,0,0"     # Format: x,y,z,yaw,pitch
   world-borders: [ ]    # Optional, format: centerX,centerZ,radius

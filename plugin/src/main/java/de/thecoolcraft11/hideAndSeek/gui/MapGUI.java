@@ -139,7 +139,7 @@ public class MapGUI {
     }
 
     private ItemStack createMapItemWithData(String mapName, MapData mapData, boolean isCurrentMap) {
-        ItemStack item = new ItemStack(Material.GRASS_BLOCK);
+        ItemStack item = new ItemStack(plugin.getMapManager().getMapIconMaterial(mapName, Material.GRASS_BLOCK));
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             NamedTextColor nameColor = isCurrentMap ? NamedTextColor.GREEN : NamedTextColor.AQUA;

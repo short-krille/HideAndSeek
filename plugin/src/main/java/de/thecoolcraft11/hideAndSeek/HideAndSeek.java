@@ -125,7 +125,6 @@ public final class HideAndSeek extends MinigameFramework {
                 5L
         );
 
-
         registerMapSelectionMenu();
         registerLoadoutMenu();
         registerSkinMenu();
@@ -140,6 +139,8 @@ public final class HideAndSeek extends MinigameFramework {
         if (timerPlugin != null) {
             api = timerPlugin.getAPI();
         }
+
+        updateWorldIconsForAllMaps();
 
         getLogger().info("Hide and Seek enabled with all features!");
     }
@@ -297,5 +298,18 @@ public final class HideAndSeek extends MinigameFramework {
 
     public SeekingBossBarService getSeekingBossBarService() {
         return seekingBossBarService;
+    }
+
+    public void updateWorldIconsForAllMaps() {
+        if (mapManager == null) {
+            return;
+        }
+
+        for (String mapName : mapManager.getAvailableMaps()) {
+            if (mapName != null && !mapName.isBlank()) {
+                Material icon = mapManager.getMapIconMaterial(mapName, Material.GRASS_BLOCK);
+                getWorldManager().setWorldIcon(mapName, icon);
+            }
+        }
     }
 }

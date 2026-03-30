@@ -18,6 +18,7 @@ public class MapData {
     private String description;
     private String author;
     private String size;
+    private String icon;
     private final List<SpawnPoint> spawnPoints;
     private final List<WorldBorderData> worldBorders;
     private final List<GameModeEnum> preferredModes;
@@ -47,6 +48,7 @@ public class MapData {
         this.description = "";
         this.author = null;
         this.size = null;
+        this.icon = null;
         this.spawnPoints = new ArrayList<>();
         this.worldBorders = new ArrayList<>();
         this.preferredModes = new ArrayList<>();
@@ -99,6 +101,18 @@ public class MapData {
 
     public void setSize(String size) {
         this.size = size;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        if (icon == null || icon.trim().isEmpty()) {
+            this.icon = null;
+            return;
+        }
+        this.icon = icon.trim();
     }
 
     public List<SpawnPoint> getSpawnPoints() {

@@ -302,7 +302,10 @@ public class VoteGUI {
     }
 
     private ItemStack createMapItem(String mapName, MapData mapData, boolean selected, long votes, boolean lockedNoGamemode) {
-        ItemStack item = new ItemStack(lockedNoGamemode ? Material.DIRT_PATH : Material.GRASS_BLOCK);
+        Material icon = lockedNoGamemode
+                ? Material.DIRT_PATH
+                : plugin.getMapManager().getMapIconMaterial(mapName, Material.GRASS_BLOCK);
+        ItemStack item = new ItemStack(icon);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
             return item;
