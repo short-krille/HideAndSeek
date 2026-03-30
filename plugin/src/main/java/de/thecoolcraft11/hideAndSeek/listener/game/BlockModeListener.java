@@ -750,7 +750,7 @@ public class BlockModeListener implements Listener {
                     blockData = chosenBlock.createBlockData();
                 }
                 double scale = getHeightFactorComparedToPlayer(getCombinedBoundingBox(blockData, playerLoc));
-                scale = Math.max(0.1, Math.min(2.0, scale));
+                scale = Math.clamp(scale, 0.1, 2.0);
                 Objects.requireNonNull(player.getAttribute(Attribute.SCALE)).setBaseValue(scale);
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to scale player to block size: " + e.getMessage());

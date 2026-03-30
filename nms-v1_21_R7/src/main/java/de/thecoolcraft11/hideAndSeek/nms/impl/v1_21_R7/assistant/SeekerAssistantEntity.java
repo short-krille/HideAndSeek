@@ -16,13 +16,11 @@ import java.util.UUID;
 public class SeekerAssistantEntity extends Creeper {
 
     private final Plugin plugin;
-    private final UUID seekerId;
     private final AssistantSharedState sharedState;
 
     public SeekerAssistantEntity(Plugin plugin, UUID seekerId, Location origin, Level level) {
         super(EntityType.CREEPER, level);
         this.plugin = plugin;
-        this.seekerId = seekerId;
         this.sharedState = new AssistantSharedState(origin);
     }
 
@@ -40,13 +38,5 @@ public class SeekerAssistantEntity extends Creeper {
         this.goalSelector.addGoal(3, new AssistantPathfindGoal(this, plugin, sharedState));
         this.goalSelector.addGoal(4, new AssistantAlertGoal(this, plugin, sharedState));
         this.goalSelector.addGoal(5, new AssistantWanderGoal(this, plugin, sharedState));
-    }
-
-    public Plugin getPlugin() {
-        return plugin;
-    }
-
-    public UUID getSeekerId() {
-        return seekerId;
     }
 }

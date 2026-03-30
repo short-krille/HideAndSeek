@@ -106,7 +106,7 @@ public class BlockStatsGUI {
             meta.lore(lore);
             item.setItemMeta(meta);
         }
-        item.setAmount(Math.min(64, Math.max(1, count)));
+        item.setAmount(Math.clamp(count, 1, 64));
         return item;
     }
 

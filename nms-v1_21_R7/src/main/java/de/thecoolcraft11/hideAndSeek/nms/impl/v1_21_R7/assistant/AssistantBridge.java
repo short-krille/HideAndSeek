@@ -65,24 +65,6 @@ public final class AssistantBridge {
         return Collections.emptyList();
     }
 
-    @SuppressWarnings("unchecked")
-    public static List<UUID> getSeekers() {
-        Object controller = getDataController();
-        if (controller == null) {
-            return Collections.emptyList();
-        }
-
-        try {
-            Method method = controller.getClass().getMethod("getSeekers");
-            Object value = method.invoke(controller);
-            if (value instanceof List<?> list) {
-                return (List<UUID>) list;
-            }
-        } catch (Throwable ignored) {
-        }
-        return Collections.emptyList();
-    }
-
     public static boolean isHidden(UUID playerId) {
         Object controller = getDataController();
         if (controller == null || playerId == null) {

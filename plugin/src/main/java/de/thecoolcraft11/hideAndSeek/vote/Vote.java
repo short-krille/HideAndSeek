@@ -54,17 +54,5 @@ public class Vote<T> {
         }
         return counts;
     }
-
-    public Set<Map.Entry<UUID, T>> getAllVotes() {
-        return votes.entrySet();
-    }
-
-    public boolean isEmpty() {
-        return votes.isEmpty();
-    }
-
-    public int size() {
-        return votes.size();
-    }
 }
 

@@ -20,7 +20,7 @@ public final class XpProgressHelper {
         double remaining = Math.max(0.0, 1.0 - (double) elapsedMs / safeTotalMs);
         int secondsLeft = (int) Math.ceil((safeTotalMs - elapsedMs) / 1000.0);
         player.setLevel(Math.max(0, secondsLeft));
-        player.setExp((float) Math.max(0.0, Math.min(0.9999, remaining)));
+        player.setExp((float) Math.clamp(remaining, 0.0, 0.9999));
     }
 
     public static void applyCountup(Player player, long elapsedMs, long totalMs, int maxLevel) {
@@ -68,13 +68,13 @@ public final class XpProgressHelper {
                     return;
                 }
 
-                double progress = Math.max(0.0, Math.min(1.0, (double) tick / safeDurationTicks));
+                double progress = Math.clamp((double) tick / safeDurationTicks, 0.0, 1.0);
 
                 if (mode == Mode.COUNTDOWN) {
                     double remaining = 1.0 - progress;
                     int secondsLeft = (int) Math.ceil((safeDurationTicks - tick) / 20.0);
                     player.setLevel(Math.max(0, secondsLeft));
-                    player.setExp((float) Math.max(0.0, Math.min(0.9999, remaining)));
+                    player.setExp((float) Math.clamp(remaining, 0.0, 0.9999));
                 } else {
                     player.setExp((float) Math.min(0.9999, progress));
                     player.setLevel((int) (progress * maxLevel));

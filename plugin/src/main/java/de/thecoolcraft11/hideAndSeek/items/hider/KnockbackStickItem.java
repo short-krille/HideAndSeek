@@ -86,7 +86,7 @@ public class KnockbackStickItem implements GameItem {
                     Component.text("Left click to knock seekers away", NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false)
             ));
-            meta.addEnchant(Enchantment.KNOCKBACK, Math.max(1, Math.min(5, level)), true);
+            meta.addEnchant(Enchantment.KNOCKBACK, Math.clamp(level, 1, 5), true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             meta.setUnbreakable(true);
             item.setItemMeta(meta);

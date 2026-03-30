@@ -591,9 +591,9 @@ public class NmsAdapterImpl implements NmsAdapter {
     }
 
     @Override
-    public boolean removeClientEntity(Player viewer, int entityId) {
+    public void removeClientEntity(Player viewer, int entityId) {
         if (viewer == null || !viewer.isOnline() || entityId == Integer.MIN_VALUE) {
-            return false;
+            return;
         }
 
         try {
@@ -608,41 +608,37 @@ public class NmsAdapterImpl implements NmsAdapter {
                 }
             }
 
-            return true;
         } catch (Throwable ignored) {
-            return false;
         }
     }
 
     @Override
-    public boolean setCameraEntity(Player viewer, int entityId) {
+    public void setCameraEntity(Player viewer, int entityId) {
         if (viewer == null || !viewer.isOnline() || entityId == Integer.MIN_VALUE) {
-            return false;
+            return;
         }
 
         try {
             Map<Integer, net.minecraft.world.entity.Entity> byEntityId = clientCameraEntities.get(viewer.getUniqueId());
             if (byEntityId == null) {
-                return false;
+                return;
             }
 
             net.minecraft.world.entity.Entity cameraEntity = byEntityId.get(entityId);
             if (cameraEntity == null) {
-                return false;
+                return;
             }
 
             ServerPlayer viewerHandle = ((CraftPlayer) viewer).getHandle();
             viewerHandle.connection.send(new ClientboundSetCameraPacket(cameraEntity));
-            return true;
         } catch (Throwable ignored) {
-            return false;
         }
     }
 
     @Override
-    public boolean resetCamera(Player viewer) {
+    public void resetCamera(Player viewer) {
         if (viewer == null || !viewer.isOnline()) {
-            return false;
+            return;
         }
 
         try {
@@ -654,16 +650,14 @@ public class NmsAdapterImpl implements NmsAdapter {
                 int[] ids = byEntityId.keySet().stream().mapToInt(Integer::intValue).toArray();
                 serverPlayer.connection.send(new ClientboundRemoveEntitiesPacket(ids));
             }
-            return true;
         } catch (Throwable ignored) {
-            return false;
         }
     }
 
     @Override
-    public boolean setEntityGlowingForViewer(Player viewer, Player target, boolean glowing) {
+    public void setEntityGlowingForViewer(Player viewer, Player target, boolean glowing) {
         if (viewer == null || target == null || !viewer.isOnline() || !target.isOnline()) {
-            return false;
+            return;
         }
 
         try {
@@ -672,7 +666,7 @@ public class NmsAdapterImpl implements NmsAdapter {
 
             EntityDataAccessor<Byte> sharedFlagsAccessor = getSharedFlagsAccessor();
             if (sharedFlagsAccessor == null) {
-                return false;
+                return;
             }
 
             byte flags = targetHandle.getEntityData().get(sharedFlagsAccessor);
@@ -684,9 +678,7 @@ public class NmsAdapterImpl implements NmsAdapter {
             );
 
             viewerHandle.connection.send(new ClientboundSetEntityDataPacket(targetHandle.getId(), List.of(value)));
-            return true;
         } catch (Throwable ignored) {
-            return false;
         }
     }
 

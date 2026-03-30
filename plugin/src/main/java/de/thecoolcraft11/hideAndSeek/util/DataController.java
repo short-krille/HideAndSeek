@@ -9,7 +9,7 @@ import java.util.*;
 public class DataController {
 
     private static DataController instance;
-    private List<UUID> hiders;
+    private final List<UUID> hiders;
     private final List<UUID> seekers;
     private final Map<UUID, Block> hiddenBlocks;
     private final Map<UUID, org.bukkit.Material> chosenBlocks;
@@ -80,10 +80,6 @@ public class DataController {
         return hiders;
     }
 
-    public void setHiders(List<UUID> hiders) {
-        this.hiders = hiders;
-    }
-
     public void removeHiddenBlock(UUID uuid) {
         hiddenBlocks.remove(uuid);
     }
@@ -97,7 +93,7 @@ public class DataController {
     }
 
     public void reset() {
-        if (hiders != null) hiders.clear();
+        hiders.clear();
         seekers.clear();
         hiddenBlocks.clear();
         chosenBlocks.clear();

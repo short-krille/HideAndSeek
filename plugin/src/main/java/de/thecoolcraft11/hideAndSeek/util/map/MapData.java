@@ -65,10 +65,6 @@ public class MapData {
         this.seekingTime = null;
     }
 
-    public String getName() {
-        return name;
-    }
-
     public void setPrettyName(String prettyName) {
         if (prettyName == null || prettyName.trim().isEmpty()) {
             this.prettyName = null;

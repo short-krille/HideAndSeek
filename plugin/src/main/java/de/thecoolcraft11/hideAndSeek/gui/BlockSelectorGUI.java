@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -127,39 +128,7 @@ public class BlockSelectorGUI {
             BlockAppearanceConfig config = configMap.get(material);
             ItemStack item = createBlockItem(material, currentlyChosen == material);
 
-            InventoryItem blockItem = new InventoryItem(item);
-            blockItem.setClickHandler((p, invItem, event, s) -> {
-                if (event.getClick() == ClickType.LEFT) {
-                    HideAndSeek.getDataController().setChosenBlock(p.getUniqueId(), material);
-                    playerConfigs.put(p.getUniqueId(), config);
-
-                    if (config.getDefaultVariant() != null) {
-                        try {
-                            Material variantMaterial = Material.valueOf(config.getDefaultVariant());
-                            HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), variantMaterial.createBlockData());
-                        } catch (IllegalArgumentException e) {
-                            HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), material.createBlockData());
-                        }
-                    } else {
-                        HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), material.createBlockData());
-                    }
-
-                    de.thecoolcraft11.hideAndSeek.items.HiderItems.updateAppearanceItem(p, plugin);
-
-                    p.sendMessage(Component.text("Selected ", NamedTextColor.GREEN)
-                            .append(Component.text(formatName(material.name()), NamedTextColor.GOLD)));
-
-                    if (config.isAllowAllVariants() || config.hasVariantGroup() || config.isAllowAllBlockStates() || !config.getAllowedStates().isEmpty()) {
-                        p.closeInventory();
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> new AppearanceGUI(plugin, BlockSelectorGUI.this).open(p), 1L);
-                    } else {
-                        p.closeInventory();
-                    }
-                }
-                event.setCancelled(true);
-            });
-            blockItem.setAllowTakeout(false);
-            blockItem.setAllowInsert(false);
+            InventoryItem blockItem = getSelectedItem(material, item, config);
             blockItem.setMetadata("material", material.name());
             blockItem.setMetadata("is_selected", currentlyChosen == material);
 
@@ -167,6 +136,43 @@ public class BlockSelectorGUI {
             slot++;
         }
         plugin.getInventoryFramework().openInventory(player, inventory);
+    }
+
+    private @NonNull InventoryItem getSelectedItem(Material material, ItemStack item, BlockAppearanceConfig config) {
+        InventoryItem blockItem = new InventoryItem(item);
+        blockItem.setClickHandler((p, invItem, event, s) -> {
+            if (event.getClick() == ClickType.LEFT) {
+                HideAndSeek.getDataController().setChosenBlock(p.getUniqueId(), material);
+                playerConfigs.put(p.getUniqueId(), config);
+
+                if (config.getDefaultVariant() != null) {
+                    try {
+                        Material variantMaterial = Material.valueOf(config.getDefaultVariant());
+                        HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), variantMaterial.createBlockData());
+                    } catch (IllegalArgumentException e) {
+                        HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), material.createBlockData());
+                    }
+                } else {
+                    HideAndSeek.getDataController().setChosenBlockData(p.getUniqueId(), material.createBlockData());
+                }
+
+                de.thecoolcraft11.hideAndSeek.items.HiderItems.updateAppearanceItem(p, plugin);
+
+                p.sendMessage(Component.text("Selected ", NamedTextColor.GREEN)
+                        .append(Component.text(formatName(material.name()), NamedTextColor.GOLD)));
+
+                if (config.isAllowAllVariants() || config.hasVariantGroup() || config.isAllowAllBlockStates() || !config.getAllowedStates().isEmpty()) {
+                    p.closeInventory();
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> new AppearanceGUI(plugin, BlockSelectorGUI.this).open(p), 1L);
+                } else {
+                    p.closeInventory();
+                }
+            }
+            event.setCancelled(true);
+        });
+        blockItem.setAllowTakeout(false);
+        blockItem.setAllowInsert(false);
+        return blockItem;
     }
 
     public BlockAppearanceConfig getPlayerConfig(UUID uuid) {

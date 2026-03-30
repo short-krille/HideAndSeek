@@ -88,23 +88,19 @@ public class NoopNmsAdapter implements NmsAdapter {
     }
 
     @Override
-    public boolean removeClientEntity(Player viewer, int entityId) {
-        return false;
+    public void removeClientEntity(Player viewer, int entityId) {
     }
 
     @Override
-    public boolean setCameraEntity(Player viewer, int entityId) {
-        return false;
+    public void setCameraEntity(Player viewer, int entityId) {
     }
 
     @Override
-    public boolean resetCamera(Player viewer) {
-        return false;
+    public void resetCamera(Player viewer) {
     }
 
     @Override
-    public boolean setEntityGlowingForViewer(Player viewer, Player target, boolean glowing) {
-        return false;
+    public void setEntityGlowingForViewer(Player viewer, Player target, boolean glowing) {
     }
 
     @Override

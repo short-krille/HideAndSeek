@@ -108,14 +108,14 @@ public final class ItemSkinSelectionService {
         return PLAYER_COINS.getOrDefault(playerId, 0);
     }
 
-    public static int addCoins(HideAndSeek plugin, UUID playerId, int amount) {
+    public static void addCoins(HideAndSeek plugin, UUID playerId, int amount) {
         if (amount <= 0) {
-            return getCoins(playerId);
+            getCoins(playerId);
+            return;
         }
         int updated = getCoins(playerId) + amount;
         PLAYER_COINS.put(playerId, updated);
         savePlayer(plugin, playerId);
-        return updated;
     }
 
     public static boolean isUnlocked(UUID playerId, String logicalItemId, String variantId) {

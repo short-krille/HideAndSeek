@@ -14,7 +14,7 @@ import org.bukkit.entity.Player;
 
 public class BlockDirectionUtil {
 
-    public static BlockData applyPlayerDirection(BlockData blockData, Player player) {
+    public static void applyPlayerDirection(BlockData blockData, Player player) {
         Location loc = player.getLocation();
         float yaw = loc.getYaw();
         float pitch = loc.getPitch();
@@ -35,7 +35,6 @@ public class BlockDirectionUtil {
 
         applyHalfProperty(blockData, pitch);
 
-        return blockData;
     }
 
     private static void applyFacing(Directional directional, float yaw, float pitch) {

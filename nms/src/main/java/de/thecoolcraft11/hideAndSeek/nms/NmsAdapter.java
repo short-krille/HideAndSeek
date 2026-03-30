@@ -51,13 +51,13 @@ public interface NmsAdapter {
 
     int spawnClientCameraEntity(Player viewer, Location location, float yaw, float pitch, EntityType entityType);
 
-    boolean removeClientEntity(Player viewer, int entityId);
+    void removeClientEntity(Player viewer, int entityId);
 
-    boolean setCameraEntity(Player viewer, int entityId);
+    void setCameraEntity(Player viewer, int entityId);
 
-    boolean resetCamera(Player viewer);
+    void resetCamera(Player viewer);
 
-    boolean setEntityGlowingForViewer(Player viewer, Player target, boolean glowing);
+    void setEntityGlowingForViewer(Player viewer, Player target, boolean glowing);
 
     Entity spawnSeekerAssistant(Plugin plugin, Player seeker, Location location);
 
