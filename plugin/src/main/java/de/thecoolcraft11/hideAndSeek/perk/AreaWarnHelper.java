@@ -5,11 +5,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
-import org.bukkit.Bukkit;
-import org.bukkit.Color;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -17,10 +13,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.time.Duration;
 
 public class AreaWarnHelper {
 
@@ -77,6 +73,12 @@ public class AreaWarnHelper {
     }
 
     private void refreshBossBars(Iterable<UUID> candidates) {
+
+        if (safeWorld(center) == null) {
+            stop();
+            return;
+        }
+
         for (UUID uid : candidates) {
             Player p = Bukkit.getPlayer(uid);
             if (p == null || !p.isOnline()) {
@@ -94,15 +96,24 @@ public class AreaWarnHelper {
     }
 
     private void applyWarnEffect(Player player) {
-        int steps = 48;
+        World centerWorld = safeWorld(center);
+        if (centerWorld == null) {
+            stop();
+            return;
+        }
+
+        int steps = 96;
         for (int i = 0; i < steps; i++) {
             double angle = (Math.PI * 2 / steps) * i;
             double x = center.getX() + Math.cos(angle) * radius;
             double z = center.getZ() + Math.sin(angle) * radius;
-            Location ringPoint = new Location(center.getWorld(), x, player.getLocation().getY(), z);
+            Location ringPoint = new Location(centerWorld, x, player.getLocation().getY(), z);
 
-            player.spawnParticle(Particle.DUST, ringPoint, 1, 0, 0, 0, 0,
-                    new Particle.DustOptions(Color.RED, 1.5f));
+            for (int j = 0; j < 10; j++) {
+                player.spawnParticle(Particle.DUST, ringPoint.clone().add(0, j - 5, 0), 1, 0, 0, 0, 0,
+                        new Particle.DustOptions(Color.RED, 1.5f));
+            }
+
         }
 
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.5f, 0.5f);
@@ -116,7 +127,7 @@ public class AreaWarnHelper {
         ));
 
         if (plugin.getNmsAdapter().hasCapability(de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities.CLIENT_FAKE_BORDER_WARNING)) {
-            int warningDistance = (int) Math.ceil(Math.max(6.0, radius));
+            int warningDistance = (int) Math.ceil(Math.max(6.0, 1 + (double) ((totalTicks - ticksRemaining) * (6 - 1)) / totalTicks));
             plugin.getNmsAdapter().showWarningBorder(player, warningDistance);
             borderWarningActive.put(player.getUniqueId(), true);
         }
@@ -150,15 +161,28 @@ public class AreaWarnHelper {
     }
 
     public boolean isInsideZone(Location loc) {
-        if (loc == null || loc.getWorld() == null || center.getWorld() == null) {
+        World locWorld = safeWorld(loc);
+        World centerWorld = safeWorld(center);
+        if (locWorld == null || centerWorld == null) {
             return false;
         }
-        if (!loc.getWorld().equals(center.getWorld())) {
+        if (!locWorld.equals(centerWorld)) {
             return false;
         }
         double dx = loc.getX() - center.getX();
         double dz = loc.getZ() - center.getZ();
         return (dx * dx + dz * dz) <= (radius * radius);
+    }
+
+    private @org.jspecify.annotations.Nullable World safeWorld(@org.jspecify.annotations.Nullable Location location) {
+        if (location == null) {
+            return null;
+        }
+        try {
+            return location.getWorld();
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     public int getTicksRemaining() {

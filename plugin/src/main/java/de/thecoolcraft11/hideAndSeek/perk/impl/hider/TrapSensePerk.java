@@ -2,10 +2,10 @@ package de.thecoolcraft11.hideAndSeek.perk.impl.hider;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
+import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTarget;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTier;
 import de.thecoolcraft11.hideAndSeek.perk.impl.BasePerk;
-import de.thecoolcraft11.hideAndSeek.nms.NmsCapabilities;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
@@ -15,10 +15,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.time.Duration;
 
 public class TrapSensePerk extends BasePerk {
 
@@ -75,7 +75,7 @@ public class TrapSensePerk extends BasePerk {
                     .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>());
 
             for (Location trapLoc : ItemStateManager.cageTrapLocations.keySet()) {
-                if (!sameWorld(player.getLocation(), trapLoc)) {
+                if (differentWorld(player.getLocation(), trapLoc)) {
                     continue;
                 }
                 double dist = player.getLocation().distance(trapLoc);
@@ -146,7 +146,7 @@ public class TrapSensePerk extends BasePerk {
     private void updateTrapIndicatorVisibility(Player viewer, Set<UUID> shownIndicators, double range, HideAndSeek plugin) {
         for (UUID id : ItemStateManager.cageTrapIndicatorEntities) {
             Entity entity = Bukkit.getEntity(id);
-            if (entity == null || !entity.isValid() || !sameWorld(viewer.getLocation(), entity.getLocation())) {
+            if (entity == null || !entity.isValid() || differentWorld(viewer.getLocation(), entity.getLocation())) {
                 continue;
             }
 
@@ -171,7 +171,7 @@ public class TrapSensePerk extends BasePerk {
     private void updateGlowSet(Player viewer, Set<UUID> candidates, double range, HideAndSeek plugin, Color glowColor) {
         for (UUID id : candidates) {
             Entity entity = Bukkit.getEntity(id);
-            if (entity == null || !entity.isValid() || !sameWorld(viewer.getLocation(), entity.getLocation())) {
+            if (entity == null || !entity.isValid() || differentWorld(viewer.getLocation(), entity.getLocation())) {
                 continue;
             }
             if (viewer.getLocation().distance(entity.getLocation()) <= range) {
@@ -188,8 +188,8 @@ public class TrapSensePerk extends BasePerk {
         }
     }
 
-    private boolean sameWorld(Location a, Location b) {
-        return a != null && b != null && a.getWorld() != null && a.getWorld().equals(b.getWorld());
+    private boolean differentWorld(Location a, Location b) {
+        return a == null || b == null || a.getWorld() == null || !a.getWorld().equals(b.getWorld());
     }
 }
 

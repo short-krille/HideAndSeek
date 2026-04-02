@@ -32,22 +32,22 @@ public abstract class BasePerk implements PerkDefinition {
 
     @Override
     public PerkTier getTier() {
-        return PerkTier.COMMON;
+        return PerkTier.NONE;
     }
 
     @Override
     public PerkTarget getTarget() {
-        return PerkTarget.HIDER;
+        return PerkTarget.NONE;
     }
 
     @Override
     public PerkType getType() {
-        return PerkType.PASSIVE;
+        return PerkType.NONE;
     }
 
     @Override
     public int getCost() {
-        return 100;
+        return 0;
     }
 
     @Override

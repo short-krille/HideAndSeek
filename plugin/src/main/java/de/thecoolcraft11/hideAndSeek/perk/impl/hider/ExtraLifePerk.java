@@ -65,7 +65,7 @@ public class ExtraLifePerk extends BasePerk {
             int pointsPerHeart = plugin.getSettingRegistry().get("perks.perk.hider_extra_life.points-per-heart", 100);
             int maxHearts = plugin.getSettingRegistry().get("perks.perk.hider_extra_life.max-hearts", 5);
             int earned = HideAndSeek.getDataController().getPoints(playerId) - baselinePoints.getOrDefault(playerId, 0);
-            int hearts = Math.max(0, Math.min(maxHearts, earned / Math.max(1, pointsPerHeart)));
+            int hearts = Math.clamp(maxHearts, 0, earned / Math.max(1, pointsPerHeart));
             if (plugin.getPerkStateManager().absorptionHearts.getOrDefault(playerId, 0) == hearts) {
                 return;
             }

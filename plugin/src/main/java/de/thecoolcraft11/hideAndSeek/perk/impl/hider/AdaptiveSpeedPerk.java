@@ -8,10 +8,13 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+
+import java.util.Objects;
 
 public class AdaptiveSpeedPerk extends BasePerk {
     @Override
@@ -66,7 +69,7 @@ public class AdaptiveSpeedPerk extends BasePerk {
             }
 
             double maxHp = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null
-                    ? player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue() : 20.0;
+                    ? Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue() : 20.0;
 
             if (player.getHealth() <= maxHp * threshold) {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration, 0, false, false, true));

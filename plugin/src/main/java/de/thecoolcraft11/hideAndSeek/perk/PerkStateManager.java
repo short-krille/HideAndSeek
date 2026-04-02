@@ -10,7 +10,10 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PerkStateManager {
@@ -18,6 +21,8 @@ public class PerkStateManager {
     private final HideAndSeek plugin;
     private final Map<UUID, Set<String>> purchased = new ConcurrentHashMap<>();
     private final Map<String, BukkitTask> activeTasks = new ConcurrentHashMap<>();
+    private final Map<String, Set<UUID>> finiteOwners = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, Long>> purchaseCooldownEnds = new ConcurrentHashMap<>();
 
     public final Map<UUID, Integer> absorptionHearts = new ConcurrentHashMap<>();
     public final Map<UUID, Long> lastTriggerTime = new ConcurrentHashMap<>();
@@ -36,10 +41,30 @@ public class PerkStateManager {
     public boolean purchase(Player player, PerkDefinition perk) {
         UUID id = player.getUniqueId();
         boolean isSeekerPerk = perk.getTarget() == PerkTarget.SEEKER;
+        boolean isFinitePerk = perk.getTarget() == PerkTarget.HIDER
+                || (isSeekerPerk && plugin.getPerkRegistry().isFiniteSeekerPerk(perk.getId()));
 
-        if (!isSeekerPerk && hasPurchased(id, perk.getId())) {
+        if (isFinitePerk && hasPurchased(id, perk.getId())) {
             player.sendMessage(Component.text("You already have this perk.", NamedTextColor.RED));
             return false;
+        }
+
+        if (isFinitePerk) {
+            int limit = plugin.getPerkRegistry().getFinitePlayerLimit(perk.getTarget());
+            if (limit > 0) {
+                Set<UUID> owners = finiteOwners.computeIfAbsent(perk.getId(), ignored -> ConcurrentHashMap.newKeySet());
+                if (owners.size() >= limit && !owners.contains(id)) {
+                    player.sendMessage(Component.text("That perk is already at the global player limit.", NamedTextColor.RED));
+                    return false;
+                }
+            }
+        } else if (isSeekerPerk) {
+            long remainingTicks = getPurchaseCooldownRemainingTicks(id, perk.getId());
+            if (remainingTicks > 0) {
+                long seconds = Math.max(1L, (remainingTicks + 19L) / 20L);
+                player.sendMessage(Component.text("You can buy that perk again in " + seconds + "s.", NamedTextColor.RED));
+                return false;
+            }
         }
 
         int cost = plugin.getSettingRegistry().get("perks.perk." + perk.getId() + ".cost", perk.getCost());
@@ -51,6 +76,13 @@ public class PerkStateManager {
 
         HideAndSeek.getDataController().addPoints(id, -cost);
         purchased.computeIfAbsent(id, ignored -> new HashSet<>()).add(perk.getId());
+
+        if (isFinitePerk) {
+            finiteOwners.computeIfAbsent(perk.getId(), ignored -> ConcurrentHashMap.newKeySet()).add(id);
+        } else if (isSeekerPerk) {
+            setPurchaseCooldown(id, perk);
+        }
+
         perk.onPurchase(player, plugin);
 
         player.sendMessage(Component.text()
@@ -58,7 +90,11 @@ public class PerkStateManager {
                 .append(perk.getDisplayName())
                 .build());
 
-        plugin.getPerkShopUI().refreshForPlayer(player);
+        if (isFinitePerk) {
+            plugin.getPerkShopUI().refreshAllPlayersWithShopItems();
+        } else {
+            plugin.getPerkShopUI().refreshForPlayer(player);
+        }
         return true;
     }
 
@@ -75,16 +111,22 @@ public class PerkStateManager {
         if (perks.isEmpty()) {
             purchased.remove(playerId);
         }
-    }
 
-    public void scheduleExpiry(Player player, PerkDefinition perk, long durationTicks) {
-        String key = player.getUniqueId() + ":" + perk.getId();
-        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            perk.onExpire(player, plugin);
-            activeTasks.remove(key);
-            removePurchased(player.getUniqueId(), perk.getId());
-        }, durationTicks);
-        activeTasks.put(key, task);
+        Set<UUID> owners = finiteOwners.get(perkId);
+        if (owners != null) {
+            owners.remove(playerId);
+            if (owners.isEmpty()) {
+                finiteOwners.remove(perkId);
+            }
+        }
+
+        Map<String, Long> cooldowns = purchaseCooldownEnds.get(playerId);
+        if (cooldowns != null) {
+            cooldowns.remove(perkId);
+            if (cooldowns.isEmpty()) {
+                purchaseCooldownEnds.remove(playerId);
+            }
+        }
     }
 
     public void storeTask(Player player, String perkId, BukkitTask task) {
@@ -100,6 +142,77 @@ public class PerkStateManager {
         if (task != null) {
             task.cancel();
         }
+    }
+
+    public boolean isFinitePurchaseLocked(UUID playerId, PerkDefinition perk) {
+        if (perk == null) {
+            return false;
+        }
+
+        boolean finite = perk.getTarget() == PerkTarget.HIDER
+                || (perk.getTarget() == PerkTarget.SEEKER && plugin.getPerkRegistry().isFiniteSeekerPerk(perk.getId()));
+        if (!finite) {
+            return false;
+        }
+
+        if (hasPurchased(playerId, perk.getId())) {
+            return true;
+        }
+
+        int limit = plugin.getPerkRegistry().getFinitePlayerLimit(perk.getTarget());
+        if (limit <= 0) {
+            return false;
+        }
+
+        Set<UUID> owners = finiteOwners.get(perk.getId());
+        return owners != null && owners.size() >= limit;
+    }
+
+    public int getFiniteBuyerCount(String perkId) {
+        Set<UUID> owners = finiteOwners.get(perkId);
+        return owners == null ? 0 : owners.size();
+    }
+
+    public UUID getFiniteOwnerUUID(String perkId) {
+        Set<UUID> owners = finiteOwners.get(perkId);
+        if (owners != null && !owners.isEmpty()) {
+            return owners.iterator().next();
+        }
+        return null;
+    }
+
+    public long getPurchaseCooldownRemainingTicks(UUID playerId, String perkId) {
+        Map<String, Long> cooldowns = purchaseCooldownEnds.get(playerId);
+        if (cooldowns == null) {
+            return 0L;
+        }
+
+        Long endsAt = cooldowns.get(perkId);
+        if (endsAt == null) {
+            return 0L;
+        }
+
+        long remainingMs = endsAt - System.currentTimeMillis();
+        if (remainingMs <= 0L) {
+            cooldowns.remove(perkId);
+            if (cooldowns.isEmpty()) {
+                purchaseCooldownEnds.remove(playerId);
+            }
+            return 0L;
+        }
+
+        return (remainingMs + 49L) / 50L;
+    }
+
+    private void setPurchaseCooldown(UUID playerId, PerkDefinition perk) {
+        long cooldownTicks = Math.max(0L, plugin.getPerkRegistry().getRebuyCooldownTicks(perk));
+        if (cooldownTicks <= 0L) {
+            return;
+        }
+
+        purchaseCooldownEnds
+                .computeIfAbsent(playerId, ignored -> new ConcurrentHashMap<>())
+                .put(perk.getId(), System.currentTimeMillis() + (cooldownTicks * 50L));
     }
 
     public void clearAll() {
@@ -140,7 +253,8 @@ public class PerkStateManager {
         proximityMeterNearest.clear();
         trapSenseGlowedEntities.clear();
         trapSenseShownIndicators.clear();
+        finiteOwners.clear();
+        purchaseCooldownEnds.clear();
     }
 }
-
 

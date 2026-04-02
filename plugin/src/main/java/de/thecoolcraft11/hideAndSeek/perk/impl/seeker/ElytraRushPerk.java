@@ -9,6 +9,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
@@ -59,6 +61,7 @@ public class ElytraRushPerk extends BasePerk {
     public void onPurchase(Player player, HideAndSeek plugin) {
         int durationTicks = plugin.getSettingRegistry().get("perks.perk.seeker_elytra_rush.duration-ticks", 600);
         double launchPower = plugin.getSettingRegistry().get("perks.perk.seeker_elytra_rush.launch-power", 1.8d);
+        boolean fallbackToLevitation = plugin.getSettingRegistry().get("perks.perk.seeker_elytra_rush.fallback-to-levitation", true);
 
         plugin.getPerkStateManager().cancelTask(player, getId());
         plugin.getPerkStateManager().cancelTask(player, getId() + "_tick");
@@ -66,9 +69,18 @@ public class ElytraRushPerk extends BasePerk {
         Vector velocity = player.getVelocity();
         velocity.setY(Math.max(velocity.getY(), launchPower));
         player.setVelocity(velocity);
-
-        
         player.setGliding(true);
+
+        if (fallbackToLevitation) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                if (!player.isGliding()) {
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, Math.min(60, durationTicks), 0, false, false, true));
+                }
+            }, 1L);
+        }
 
         noFall.add(player.getUniqueId());
 
@@ -83,7 +95,8 @@ public class ElytraRushPerk extends BasePerk {
 
                 ticksPassed++;
 
-                if (player.isOnGround() && ticksPassed >= 10) {
+                boolean onGround = player.getLocation().clone().subtract(0.0, 0.1, 0.0).getBlock().getType().isSolid();
+                if (onGround && ticksPassed >= 10) {
                     stopForPlayer(player, plugin);
                     return;
                 }

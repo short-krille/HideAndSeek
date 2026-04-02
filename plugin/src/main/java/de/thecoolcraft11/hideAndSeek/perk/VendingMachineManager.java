@@ -106,6 +106,16 @@ public class VendingMachineManager implements Listener {
             return;
         }
 
+        boolean isHider = HideAndSeek.getDataController().getHiders().contains(event.getPlayer().getUniqueId());
+        boolean isSeeker = HideAndSeek.getDataController().getSeekers().contains(event.getPlayer().getUniqueId());
+        PerkShopMode shopMode = isHider
+                ? plugin.getSettingRegistry().get("perks.hider-shop-mode", PerkShopMode.INVENTORY)
+                : plugin.getSettingRegistry().get("perks.seeker-shop-mode", PerkShopMode.INVENTORY);
+        if (!isHider && !isSeeker || shopMode != PerkShopMode.VENDING_MACHINE) {
+            event.getPlayer().sendMessage(Component.text("Your perk shop is configured to use the inventory instead.", NamedTextColor.GRAY));
+            return;
+        }
+
         plugin.getPerkShopUI().openShopInventory(event.getPlayer());
     }
 

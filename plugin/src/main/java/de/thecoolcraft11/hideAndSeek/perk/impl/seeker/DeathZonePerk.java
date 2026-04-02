@@ -1,11 +1,11 @@
 package de.thecoolcraft11.hideAndSeek.perk.impl.seeker;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.listener.player.PlayerHitListener;
 import de.thecoolcraft11.hideAndSeek.perk.AreaWarnHelper;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTarget;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTier;
 import de.thecoolcraft11.hideAndSeek.perk.impl.BasePerk;
-import de.thecoolcraft11.hideAndSeek.listener.player.PlayerHitListener;
 import de.thecoolcraft11.minigameframework.mappicker.CancelReason;
 import de.thecoolcraft11.minigameframework.mappicker.MapPickerBuilder;
 import de.thecoolcraft11.minigameframework.mappicker.MapPickerCallback;
@@ -22,6 +22,8 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class DeathZonePerk extends BasePerk {
@@ -104,11 +106,12 @@ public class DeathZonePerk extends BasePerk {
                     public void onConfirm(MapPickerResult result) {
                         Location center = new Location(player.getWorld(), result.getWorldX() + 0.5, player.getY(), result.getWorldZ() + 0.5);
                         double radius = Math.max(1.0d, result.getRadius());
+                        List<UUID> hidersSnapshot = new ArrayList<>(HideAndSeek.getDataController().getHiders());
 
                         AreaWarnHelper helper = new AreaWarnHelper(plugin, center, radius, escapeSeconds * 20);
-                        helper.start(HideAndSeek.getDataController().getHiders());
+                        helper.start(hidersSnapshot);
 
-                        for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
+                        for (UUID hiderId : hidersSnapshot) {
                             Player hider = Bukkit.getPlayer(hiderId);
                             if (hider != null && hider.isOnline()) {
                                 hider.sendMessage(Component.text("Death Zone active - leave the zone before time runs out!", NamedTextColor.RED));
@@ -116,7 +119,7 @@ public class DeathZonePerk extends BasePerk {
                         }
 
                         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                            for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
+                            for (UUID hiderId : hidersSnapshot) {
                                 Player hider = Bukkit.getPlayer(hiderId);
                                 if (hider == null || !hider.isOnline() || hider.getGameMode() == GameMode.SPECTATOR) {
                                     continue;

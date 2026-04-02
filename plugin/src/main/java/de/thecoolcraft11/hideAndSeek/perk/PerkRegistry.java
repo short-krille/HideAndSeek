@@ -47,6 +47,47 @@ public class PerkRegistry {
         roundSeekerPerks = selectRandom(PerkTarget.SEEKER, n);
     }
 
+    public boolean isFiniteSeekerPerk(String perkId) {
+        if (perkId == null || perkId.isBlank()) {
+            return false;
+        }
+        return plugin.getSettingRegistry().get("perks.perk." + perkId + ".finite", false);
+    }
+
+    public int getFinitePlayerLimit() {
+        return plugin.getSettingRegistry().get("perks.finite-player-limit", 1);
+    }
+
+    public int getFinitePlayerLimit(PerkTarget target) {
+        if (target == PerkTarget.HIDER) {
+            return plugin.getSettingRegistry().get("perks.hider-finite-player-limit", getFinitePlayerLimit());
+        }
+        if (target == PerkTarget.SEEKER) {
+            return plugin.getSettingRegistry().get("perks.seeker-finite-player-limit", 0);
+        }
+        return 0;
+    }
+
+    public long getRebuyCooldownTicks(PerkDefinition perk) {
+        if (perk == null || perk.getTarget() != PerkTarget.SEEKER || isFiniteSeekerPerk(perk.getId())) {
+            return 0L;
+        }
+
+        return switch (perk.getId()) {
+            case "seeker_death_zone" ->
+                    plugin.getSettingRegistry().get("perks.perk.seeker_death_zone.purchase-cooldown-ticks", 1200L);
+            case "seeker_random_swap" ->
+                    plugin.getSettingRegistry().get("perks.perk.seeker_random_swap.purchase-cooldown-ticks", 200L);
+            case "seeker_map_teleport" ->
+                    plugin.getSettingRegistry().get("perks.perk.seeker_map_teleport.purchase-cooldown-ticks", 200L);
+            case "seeker_relocate" ->
+                    plugin.getSettingRegistry().get("perks.perk.seeker_relocate.purchase-cooldown-ticks", 1200L);
+            case "seeker_elytra_rush" ->
+                    plugin.getSettingRegistry().get("perks.perk.seeker_elytra_rush.purchase-cooldown-ticks", 600L);
+            default -> 0L;
+        };
+    }
+
     private List<PerkDefinition> selectRandom(PerkTarget target, int count) {
         List<PerkDefinition> pool = allPerks.stream()
                 .filter(p -> p.getTarget() == target)

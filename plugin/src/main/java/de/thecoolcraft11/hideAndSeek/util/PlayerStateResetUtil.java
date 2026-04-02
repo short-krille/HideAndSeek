@@ -47,6 +47,7 @@ public final class PlayerStateResetUtil {
 
         double maxHealth = getAttributeValue(player, Attribute.MAX_HEALTH, DEFAULT_HEALTH);
         player.setHealth(maxHealth);
+        player.setAbsorptionAmount(0);
 
         if (clearInventory) {
             player.getInventory().clear();

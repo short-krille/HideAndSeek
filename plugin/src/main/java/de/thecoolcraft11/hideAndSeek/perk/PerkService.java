@@ -1,7 +1,6 @@
 package de.thecoolcraft11.hideAndSeek.perk;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
-import de.thecoolcraft11.hideAndSeek.perk.definition.PerkDefinition;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Particle;
@@ -40,19 +39,27 @@ public class PerkService implements Listener {
 
         registry.selectRoundPerks();
 
+        PerkShopMode hiderShopMode = plugin.getSettingRegistry().get("perks.hider-shop-mode", PerkShopMode.INVENTORY);
+        PerkShopMode seekerShopMode = plugin.getSettingRegistry().get("perks.seeker-shop-mode", PerkShopMode.INVENTORY);
+
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!player.isOnline()) {
                 continue;
             }
-            if (!HideAndSeek.getDataController().getHiders().contains(player.getUniqueId())
-                    && !HideAndSeek.getDataController().getSeekers().contains(player.getUniqueId())) {
+
+            boolean isHider = HideAndSeek.getDataController().getHiders().contains(player.getUniqueId());
+            boolean isSeeker = HideAndSeek.getDataController().getSeekers().contains(player.getUniqueId());
+            if (!isHider && !isSeeker) {
                 continue;
             }
-            shopUI.givePerkItems(player);
+
+            PerkShopMode shopMode = isHider ? hiderShopMode : seekerShopMode;
+            if (shopMode == PerkShopMode.INVENTORY) {
+                shopUI.givePerkItems(player);
+            }
         }
 
-        String shopMode = String.valueOf(plugin.getSettingRegistry().get("perks.shop-mode", "INVENTORY"));
-        if ("VENDING_MACHINE".equalsIgnoreCase(shopMode)) {
+        if (hiderShopMode == PerkShopMode.VENDING_MACHINE || seekerShopMode == PerkShopMode.VENDING_MACHINE) {
             vendingMachineManager.placeVendingMachines();
         }
     }
@@ -83,11 +90,13 @@ public class PerkService implements Listener {
                 return;
             }
 
-            PerkDefinition perk = registry.getAllPerks().stream().filter(p -> p.getId().equals(perkId)).findFirst().orElse(null);
-            if (perk != null) {
-                stateManager.purchase(player, perk);
-                shopUI.openShopInventory(player);
-            }
+            registry.getAllPerks().stream()
+                    .filter(p -> p.getId().equals(perkId))
+                    .findFirst()
+                    .ifPresent(perk -> {
+                        stateManager.purchase(player, perk);
+                        shopUI.openShopInventory(player);
+                    });
             return;
         }
 
@@ -98,10 +107,10 @@ public class PerkService implements Listener {
             }
 
             event.setCancelled(true);
-            PerkDefinition perk = registry.getAllPerks().stream().filter(p -> p.getId().equals(perkId)).findFirst().orElse(null);
-            if (perk != null) {
-                stateManager.purchase(player, perk);
-            }
+            registry.getAllPerks().stream()
+                    .filter(p -> p.getId().equals(perkId))
+                    .findFirst()
+                    .ifPresent(perk -> stateManager.purchase(player, perk));
         }
     }
 

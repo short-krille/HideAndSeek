@@ -47,6 +47,9 @@
 #   timings:                                       # Optional: Recommended game timings
 #     hiding-time: 60                              # Recommended hiding time in seconds
 #     seeking-time: 300                            # Recommended seeking time in seconds
+#   vending-machine-locations:                     # Optional: Per-map perk shop vending machine positions
+#     - "x,y,z"                                   # Integer world coordinates for dropper blocks placed during seeking
+#     - "x2,y2,z2"                                # Add one entry per vending machine location
 
 # Note: If spawn-points and world-borders have equal counts, they are matched by index
 # Example: Spawn 1 → Border 1, Spawn 2 → Border 2, etc.
@@ -100,6 +103,9 @@ map1:
   timings:
     hiding-time: 60
     seeking-time: 300
+  vending-machine-locations:
+    - "12,64,-8"      # Example: perk shop vending machine at x=12, y=64, z=-8
+    - "-40,71,22"     # Example: additional vending machine location
   allowed-blocks:
     - "STONE"
     - "DIRT"
