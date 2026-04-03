@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.perk.impl.seeker;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.perk.definition.DelayedActivationPerk;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTarget;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTier;
 import de.thecoolcraft11.hideAndSeek.perk.impl.BasePerk;
@@ -24,7 +25,7 @@ import org.bukkit.potion.PotionEffectType;
 import java.awt.*;
 import java.util.UUID;
 
-public class MapTeleportPerk extends BasePerk {
+public class MapTeleportPerk extends BasePerk implements DelayedActivationPerk {
     @Override
     public String getId() {
         return "seeker_map_teleport";
@@ -62,6 +63,7 @@ public class MapTeleportPerk extends BasePerk {
 
     @Override
     public void onPurchase(Player player, HideAndSeek plugin) {
+        int cost = plugin.getSettingRegistry().get("perks.perk.seeker_map_teleport.cost", getCost());
         double minDistance = plugin.getSettingRegistry().get("perks.perk.seeker_map_teleport.min-distance-from-hider", 5.0d);
         int blindnessTicks = plugin.getSettingRegistry().get("perks.perk.seeker_map_teleport.blindness-ticks", 40);
         int mapViewHeight = plugin.getSettingRegistry().get("perks.perk.global.map-picker.view-height", 350);
@@ -73,50 +75,64 @@ public class MapTeleportPerk extends BasePerk {
         int maxX = (int) Math.ceil(center.getX() + radius);
         int maxZ = (int) Math.ceil(center.getZ() + radius);
 
-        MapPickerBuilder.forPlayer(plugin, player)
-                .world(player.getWorld())
-                .area(minX, minZ, maxX, maxZ)
-                .cursorMode(CursorMode.POINT)
-                .inputMethod(InputMethod.BOTH)
-                .title("Map Teleport")
-                .showPlayerMarker(true)
-                .freezePlayer(true)
-                .allowSnapToPosition(true)
-                .sendBlockPacketsToPlayer(player)
-                .coordDisplay(CoordDisplay.BOSSBAR)
-                .coordColor(NamedTextColor.RED)
-                .coordFormat("Teleporting to: X: {x}, Z: {z}")
-                .cursorColor(Color.ORANGE)
-                .rightClickShowsHelp(true)
-                .mapViewHeight(mapViewHeight)
-                .open(new MapPickerCallback() {
-                    @Override
-                    public void onConfirm(MapPickerResult result) {
-                        int x = result.getWorldX();
-                        int z = result.getWorldZ();
-                        int y = player.getWorld().getHighestBlockYAt(x, z);
-                        Location target = new Location(player.getWorld(), x + 0.5, y + 1.0, z + 0.5, player.getYaw(), player.getPitch());
+        try {
+            MapPickerBuilder.forPlayer(plugin, player)
+                    .world(player.getWorld())
+                    .area(minX, minZ, maxX, maxZ)
+                    .cursorMode(CursorMode.POINT)
+                    .inputMethod(InputMethod.BOTH)
+                    .title("Map Teleport")
+                    .showPlayerMarker(true)
+                    .freezePlayer(true)
+                    .allowSnapToPosition(true)
+                    .sendBlockPacketsToPlayer(player)
+                    .coordDisplay(CoordDisplay.BOSSBAR)
+                    .coordColor(NamedTextColor.RED)
+                    .coordFormat("Teleporting to: X: {x}, Z: {z}")
+                    .cursorColor(Color.ORANGE)
+                    .rightClickShowsHelp(true)
+                    .mapViewHeight(mapViewHeight)
+                    .open(new MapPickerCallback() {
+                        @Override
+                        public void onConfirm(MapPickerResult result) {
+                            int x = result.getWorldX();
+                            int y = result.getSurfaceY();
+                            int z = result.getWorldZ();
 
-                        for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
-                            Player hider = Bukkit.getPlayer(hiderId);
-                            if (hider == null || !hider.isOnline() || hider.getGameMode() == GameMode.SPECTATOR) {
-                                continue;
+
+                            Location target = new Location(player.getWorld(), x + 0.5, y + 1.0, z + 0.5, player.getYaw(), player.getPitch());
+
+                            for (UUID hiderId : HideAndSeek.getDataController().getHiders()) {
+                                Player hider = Bukkit.getPlayer(hiderId);
+                                if (hider == null || !hider.isOnline() || hider.getGameMode() == GameMode.SPECTATOR) {
+                                    continue;
+                                }
+                                if (hider.getLocation().distance(target) < minDistance) {
+                                    player.sendMessage(Component.text("Too close to a hider.", NamedTextColor.RED));
+                                    return;
+                                }
                             }
-                            if (hider.getLocation().distance(target) < minDistance) {
-                                player.sendMessage(Component.text("Too close to a hider.", NamedTextColor.RED));
-                                return;
-                            }
+
+                            player.teleport(target);
+                            player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, blindnessTicks, 0, false, false, false));
                         }
 
-                        player.teleport(target);
-                        player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, blindnessTicks, 0, false, false, false));
-                    }
+                        @Override
+                        public void onCancel(CancelReason reason) {
+                            refundPurchase(player, plugin, cost);
+                            player.sendMessage(Component.text("Teleport cancelled.", NamedTextColor.GRAY));
+                        }
+                    });
+        } catch (IllegalStateException ex) {
+            refundPurchase(player, plugin, cost);
+            player.sendMessage(Component.text("Could not open the map picker right now. Your points were refunded.", NamedTextColor.RED));
+        }
+    }
 
-                    @Override
-                    public void onCancel(CancelReason reason) {
-                        player.sendMessage(Component.text("Teleport cancelled.", NamedTextColor.GRAY));
-                    }
-                });
+    private void refundPurchase(Player player, HideAndSeek plugin, int cost) {
+        plugin.getPerkService().getStateManager().removePurchased(player.getUniqueId(), getId());
+        HideAndSeek.getDataController().addPoints(player.getUniqueId(), cost);
+        plugin.getPerkShopUI().refreshForPlayer(player);
     }
 }
 

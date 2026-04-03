@@ -34,6 +34,7 @@ public class EndedPhase implements GamePhase {
     public void onStart(MinigameFramework plugin) {
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
         CameraItem.clearAllCameraState(hideAndSeekPlugin);
+        hideAndSeekPlugin.getAntiCheatVisibilityListener().resetNow();
         if (hideAndSeekPlugin.getDebugSettings().isVerboseLoggingEnabled()) {
             plugin.getLogger().info("Game ended");
         }
@@ -86,7 +87,7 @@ public class EndedPhase implements GamePhase {
                     String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
                     if (currentMapName != null && !currentMapName.isEmpty()) {
                         hideAndSeekPlugin.getMapManager().deleteWorkingWorld(currentMapName);
-                        HideAndSeek.getDataController().setCurrentMapName(null);
+                        HideAndSeek.getDataController().setCurrentMapName(null, false);
                     }
 
 
@@ -112,7 +113,7 @@ public class EndedPhase implements GamePhase {
         String currentMapName = HideAndSeek.getDataController().getCurrentMapName();
         if (currentMapName != null && !currentMapName.isEmpty()) {
             hideAndSeekPlugin.getMapManager().deleteWorkingWorld(currentMapName);
-            HideAndSeek.getDataController().setCurrentMapName(null);
+            HideAndSeek.getDataController().setCurrentMapName(null, false);
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {

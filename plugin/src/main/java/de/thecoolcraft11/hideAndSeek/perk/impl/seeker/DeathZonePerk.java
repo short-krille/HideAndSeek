@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek.perk.impl.seeker;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.listener.player.PlayerHitListener;
 import de.thecoolcraft11.hideAndSeek.perk.AreaWarnHelper;
+import de.thecoolcraft11.hideAndSeek.perk.definition.DelayedActivationPerk;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTarget;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTier;
 import de.thecoolcraft11.hideAndSeek.perk.impl.BasePerk;
@@ -26,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class DeathZonePerk extends BasePerk {
+public class DeathZonePerk extends BasePerk implements DelayedActivationPerk {
 
     @Override
     public String getId() {
@@ -70,6 +71,7 @@ public class DeathZonePerk extends BasePerk {
             return;
         }
 
+        int cost = plugin.getSettingRegistry().get("perks.perk.seeker_death_zone.cost", getCost());
         int escapeSeconds = plugin.getSettingRegistry().get("perks.perk.seeker_death_zone.escape-seconds", 60);
         int zoneRadius = plugin.getSettingRegistry().get("perks.perk.seeker_death_zone.radius", 32);
         int mapViewHeight = plugin.getSettingRegistry().get("perks.perk.global.map-picker.view-height", 350);
@@ -82,62 +84,76 @@ public class DeathZonePerk extends BasePerk {
         int maxZ = (int) Math.ceil(center.getZ() + radius);
 
 
-        MapPickerBuilder.forPlayer(plugin, player)
-                .world(player.getWorld())
-                .area(minX, minZ, maxX, maxZ)
-                .cursorMode(CursorMode.CIRCLE)
-                .inputMethod(InputMethod.BOTH)
-                .title("Death Zone")
-                .showPlayerMarker(true)
-                .freezePlayer(true)
-                .allowSnapToPosition(true)
-                .sendBlockPacketsToPlayer(player)
-                .coordDisplay(CoordDisplay.BOSSBAR)
-                .coordColor(NamedTextColor.RED)
-                .coordFormat("Creating Death zone at: X: {x}, Z: {z} Radius: {radius}")
-                .cursorColor(Color.RED)
-                .rightClickShowsHelp(true)
-                .circleRadius(zoneRadius)
-                .circleMaxRadius(zoneRadius)
-                .circleMinRadius(zoneRadius)
-                .mapViewHeight(mapViewHeight)
-                .open(new MapPickerCallback() {
-                    @Override
-                    public void onConfirm(MapPickerResult result) {
-                        Location center = new Location(player.getWorld(), result.getWorldX() + 0.5, player.getY(), result.getWorldZ() + 0.5);
-                        double radius = Math.max(1.0d, result.getRadius());
-                        List<UUID> hidersSnapshot = new ArrayList<>(HideAndSeek.getDataController().getHiders());
+        try {
+            MapPickerBuilder.forPlayer(plugin, player)
+                    .world(player.getWorld())
+                    .area(minX, minZ, maxX, maxZ)
+                    .cursorMode(CursorMode.CIRCLE)
+                    .inputMethod(InputMethod.BOTH)
+                    .title("Death Zone")
+                    .showPlayerMarker(true)
+                    .freezePlayer(true)
+                    .allowSnapToPosition(true)
+                    .sendBlockPacketsToPlayer(player)
+                    .coordDisplay(CoordDisplay.BOSSBAR)
+                    .coordColor(NamedTextColor.RED)
+                    .coordFormat("Creating Death zone at: X: {x}, Z: {z} Radius: {radius}")
+                    .cursorColor(Color.RED)
+                    .rightClickShowsHelp(true)
+                    .circleRadius(zoneRadius)
+                    .circleMaxRadius(zoneRadius)
+                    .circleMinRadius(zoneRadius)
+                    .mapViewHeight(mapViewHeight)
+                    .open(new MapPickerCallback() {
+                        @Override
+                        public void onConfirm(MapPickerResult result) {
+                            Location center = new Location(player.getWorld(), result.getWorldX() + 0.5, player.getY(), result.getWorldZ() + 0.5);
+                            double radius = Math.max(1.0d, result.getRadius());
+                            List<UUID> hidersSnapshot = new ArrayList<>(HideAndSeek.getDataController().getHiders());
 
-                        AreaWarnHelper helper = new AreaWarnHelper(plugin, center, radius, escapeSeconds * 20);
-                        helper.start(hidersSnapshot);
+                            AreaWarnHelper helper = new AreaWarnHelper(plugin, center, radius, escapeSeconds * 20);
+                            helper.start(hidersSnapshot);
 
-                        for (UUID hiderId : hidersSnapshot) {
-                            Player hider = Bukkit.getPlayer(hiderId);
-                            if (hider != null && hider.isOnline()) {
-                                hider.sendMessage(Component.text("Death Zone active - leave the zone before time runs out!", NamedTextColor.RED));
-                            }
-                        }
-
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
                             for (UUID hiderId : hidersSnapshot) {
                                 Player hider = Bukkit.getPlayer(hiderId);
-                                if (hider == null || !hider.isOnline() || hider.getGameMode() == GameMode.SPECTATOR) {
-                                    continue;
-                                }
-                                if (helper.isInsideZone(hider.getLocation())) {
-                                    plugin.getPlayerHitListener().markEnvironmentalDeath(hiderId, PlayerHitListener.EnvironmentalDeathCause.PERK_DEATH_ZONE);
-                                    hider.setHealth(0.0);
+                                if (hider != null && hider.isOnline()) {
+                                    hider.sendMessage(Component.text("Death Zone active - leave the zone before time runs out!", NamedTextColor.RED));
                                 }
                             }
-                            helper.stop();
-                        }, escapeSeconds * 20L);
-                    }
 
-                    @Override
-                    public void onCancel(CancelReason reason) {
-                        player.sendMessage(Component.text("Death Zone cancelled.", NamedTextColor.GRAY));
-                    }
-                });
+                            player.sendMessage(Component.text("Death Zone activated.", NamedTextColor.RED));
+
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                                for (UUID hiderId : hidersSnapshot) {
+                                    Player hider = Bukkit.getPlayer(hiderId);
+                                    if (hider == null || !hider.isOnline() || hider.getGameMode() == GameMode.SPECTATOR) {
+                                        continue;
+                                    }
+                                    if (helper.isInsideZone(hider.getLocation())) {
+                                        plugin.getPlayerHitListener().markEnvironmentalDeath(hiderId, PlayerHitListener.EnvironmentalDeathCause.PERK_DEATH_ZONE);
+                                        hider.setHealth(0.0);
+                                    }
+                                }
+                                helper.stop();
+                            }, escapeSeconds * 20L);
+                        }
+
+                        @Override
+                        public void onCancel(CancelReason reason) {
+                            refundPurchase(player, plugin, cost);
+                            player.sendMessage(Component.text("Death Zone cancelled.", NamedTextColor.GRAY));
+                        }
+                    });
+        } catch (IllegalStateException ex) {
+            refundPurchase(player, plugin, cost);
+            player.sendMessage(Component.text("Could not open the map picker right now. Your points were refunded.", NamedTextColor.RED));
+        }
+    }
+
+    private void refundPurchase(Player player, HideAndSeek plugin, int cost) {
+        plugin.getPerkService().getStateManager().removePurchased(player.getUniqueId(), getId());
+        HideAndSeek.getDataController().addPoints(player.getUniqueId(), cost);
+        plugin.getPerkShopUI().refreshForPlayer(player);
     }
 }
 

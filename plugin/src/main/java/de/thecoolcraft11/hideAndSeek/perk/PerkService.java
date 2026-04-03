@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.perk;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.perk.definition.DelayedActivationPerk;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Particle;
@@ -95,7 +96,9 @@ public class PerkService implements Listener {
                     .findFirst()
                     .ifPresent(perk -> {
                         stateManager.purchase(player, perk);
-                        shopUI.openShopInventory(player);
+                        if (!(perk instanceof DelayedActivationPerk)) {
+                            shopUI.openShopInventory(player);
+                        }
                     });
             return;
         }

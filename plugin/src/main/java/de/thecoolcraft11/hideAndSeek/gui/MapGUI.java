@@ -74,7 +74,7 @@ public class MapGUI {
 
 
     private void selectRandomMap(Player player) {
-        HideAndSeek.getDataController().setCurrentMapName(null);
+        HideAndSeek.getDataController().setCurrentMapName(null, false);
 
         player.sendMessage(Component.text("Map selection: ", NamedTextColor.GREEN)
                 .append(Component.text("Random", NamedTextColor.GOLD)));
@@ -96,7 +96,7 @@ public class MapGUI {
             return;
         }
 
-        HideAndSeek.getDataController().setCurrentMapName(mapName);
+        HideAndSeek.getDataController().setCurrentMapName(mapName, true);
 
         MapData mapData = plugin.getMapManager().getMapData(mapName);
         String displayName = (mapData != null) ? mapData.getDisplayName() : mapName;

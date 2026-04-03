@@ -138,6 +138,8 @@ public class SeekingPhase implements GamePhase {
 
 
                 player.setWalkSpeed(0.2f);
+                player.setAllowFlight(false);
+                player.setFlying(false);
 
                 player.addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.SATURATION,

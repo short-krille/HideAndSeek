@@ -97,6 +97,13 @@ public class LobbyPhase implements GamePhase {
             }
         }
 
+        if (HideAndSeek.getDataController().isMapSelectionLocked()) {
+            if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {
+                plugin.getLogger().info("Skipped voted map because map selection is locked to: " + HideAndSeek.getDataController().getCurrentMapName());
+            }
+            return;
+        }
+
         if (result.winningMap() != null && !result.winningMap().isBlank()) {
             HideAndSeek.getDataController().setCurrentMapName(result.winningMap());
             if (plugin.getDebugSettings().isVerboseLoggingEnabled()) {

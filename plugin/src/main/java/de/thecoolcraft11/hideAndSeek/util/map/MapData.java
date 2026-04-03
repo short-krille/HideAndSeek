@@ -298,7 +298,7 @@ public class MapData {
 
         WorldBorder border = world.getWorldBorder();
         border.setCenter(borderData.centerX(), borderData.centerZ());
-        border.setSize(borderData.radius() * 2);
+        border.setSize(borderData.size());
     }
 
     public SpawnWithBorder getSpawnPointWithBorder() {
@@ -358,7 +358,7 @@ public class MapData {
         }
     }
 
-    public record WorldBorderData(double centerX, double centerZ, double radius) {
+    public record WorldBorderData(double centerX, double centerZ, double size) {
 
         public static WorldBorderData fromString(String str) {
             try {
@@ -367,9 +367,25 @@ public class MapData {
 
                 double x = Double.parseDouble(parts[0].trim());
                 double z = Double.parseDouble(parts[1].trim());
-                double radius = Double.parseDouble(parts[2].trim());
+                String sizeToken = parts[2].trim();
+                boolean explicitRadius = sizeToken.regionMatches(true, 0, "radius:", 0, 7)
+                        || sizeToken.regionMatches(true, 0, "r:", 0, 2);
 
-                return new WorldBorderData(x, z, radius);
+                if (sizeToken.regionMatches(true, 0, "size:", 0, 5)) {
+                    sizeToken = sizeToken.substring(5).trim();
+                } else if (sizeToken.regionMatches(true, 0, "diameter:", 0, 9)
+                        || sizeToken.regionMatches(true, 0, "d:", 0, 2)) {
+                    int delimiter = sizeToken.indexOf(':');
+                    sizeToken = delimiter >= 0 ? sizeToken.substring(delimiter + 1).trim() : sizeToken;
+                } else if (explicitRadius) {
+                    int delimiter = sizeToken.indexOf(':');
+                    sizeToken = delimiter >= 0 ? sizeToken.substring(delimiter + 1).trim() : sizeToken;
+                }
+
+                double parsedSize = Double.parseDouble(sizeToken);
+                double borderSize = explicitRadius ? parsedSize * 2 : parsedSize;
+
+                return new WorldBorderData(x, z, borderSize);
             } catch (NumberFormatException e) {
                 return null;
             }
@@ -377,7 +393,7 @@ public class MapData {
 
         @Override
         public @NonNull String toString() {
-            return centerX + "," + centerZ + "," + radius;
+            return centerX + "," + centerZ + "," + size;
         }
     }
 }

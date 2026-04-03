@@ -1285,7 +1285,7 @@ public class SettingRegisterer {
 
        plugin.getSettingRegistry().register(SettingDefinition.builder("perks.perk.global.map-picker.view-height", SettingType.INTEGER, Integer.class)
                .defaultValue(getConfigValue(plugin, "perks.perk.global.map-picker.view-height", 350))
-               .range(0, 1000)
+               .range(-1000, 1000)
                .description("MapPicker view height used by perk map selection screens")
                .customIcon(Material.MAP)
                .build());

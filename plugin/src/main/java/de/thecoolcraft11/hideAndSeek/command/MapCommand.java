@@ -68,7 +68,7 @@ public class MapCommand implements MinigameSubcommand {
         }
 
 
-        HideAndSeek.getDataController().setCurrentMapName(mapName);
+        HideAndSeek.getDataController().setCurrentMapName(mapName, true);
         player.sendMessage(Component.text("Map selected: ", NamedTextColor.GREEN)
                 .append(Component.text(mapName, NamedTextColor.GOLD)));
         player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);

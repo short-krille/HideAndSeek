@@ -26,6 +26,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.border.WorldBorder;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.GameMode;
@@ -636,7 +637,8 @@ public class NmsAdapterImpl implements NmsAdapter {
             viewerHandle.connection.send(new ClientboundSetCameraPacket(cameraEntity));
         } catch (Throwable ignored) {
         }
-        hadAllowedFlight.put(viewer.getUniqueId(), viewer.getAllowFlight());
+
+        hadAllowedFlight.putIfAbsent(viewer.getUniqueId(), viewer.getAllowFlight());
         viewer.setAllowFlight(true);
     }
 
@@ -657,7 +659,13 @@ public class NmsAdapterImpl implements NmsAdapter {
             }
         } catch (Throwable ignored) {
         }
-        viewer.setAllowFlight(hadAllowedFlight.getOrDefault(viewer.getUniqueId(), false));
+        Boolean hadFlight = hadAllowedFlight.remove(viewer.getUniqueId());
+        if (hadFlight != null) {
+            viewer.setAllowFlight(hadFlight);
+            if (!hadFlight) {
+                viewer.setFlying(false);
+            }
+        }
     }
 
     @Override
@@ -700,10 +708,12 @@ public class NmsAdapterImpl implements NmsAdapter {
         }
         try {
             ServerPlayer handle = ((CraftPlayer) viewer).getHandle();
+            WorldBorder worldBorder = handle.level().getWorldBorder();
+
             net.minecraft.world.level.border.WorldBorder border = new net.minecraft.world.level.border.WorldBorder();
-            border.setCenter(border.getCenterX(), border.getCenterZ());
-            border.setSize(viewer.getWorld().getWorldBorder().getSize());
-            border.setWarningBlocks((int) (viewer.getWorld().getWorldBorder().getSize() * strength));
+            border.setCenter(worldBorder.getCenterX(), worldBorder.getCenterZ());
+            border.setSize(worldBorder.getSize());
+            border.setWarningBlocks((int) (worldBorder.getSize() * strength));
             border.setWarningTime(0);
             handle.connection.send(new ClientboundInitializeBorderPacket(border));
         } catch (Throwable ignored) {

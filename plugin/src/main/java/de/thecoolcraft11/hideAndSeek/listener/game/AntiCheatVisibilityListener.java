@@ -43,6 +43,13 @@ public class AntiCheatVisibilityListener implements Listener {
         Bukkit.getScheduler().runTask(plugin, this::reconcileVisibility);
     }
 
+    public void resetNow() {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            restoreAllVisibility();
+            plugin.getNmsAdapter().clearVisibilityFilters();
+        });
+    }
+
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Bukkit.getScheduler().runTaskLater(plugin, this::reconcileVisibility, 2L);

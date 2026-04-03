@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.perk;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.perk.definition.DelayedActivationPerk;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkDefinition;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTarget;
 import net.kyori.adventure.text.Component;
@@ -83,12 +84,24 @@ public class PerkStateManager {
             setPurchaseCooldown(id, perk);
         }
 
-        perk.onPurchase(player, plugin);
+        try {
+            perk.onPurchase(player, plugin);
+        } catch (RuntimeException ex) {
+            player.sendMessage(Component.text("That perk could not be activated.", NamedTextColor.RED));
+            player.sendMessage(Component.text("Your points were refunded.", NamedTextColor.RED));
+            refundPurchase(id, perk.getId(), cost);
+            if (!(perk instanceof DelayedActivationPerk)) {
+                plugin.getLogger().warning("Perk activation failed for " + perk.getId() + ": " + ex.getMessage());
+            }
+            return false;
+        }
 
-        player.sendMessage(Component.text()
-                .append(Component.text("Perk activated: ", NamedTextColor.GOLD))
-                .append(perk.getDisplayName())
-                .build());
+        if (!(perk instanceof DelayedActivationPerk)) {
+            player.sendMessage(Component.text()
+                    .append(Component.text("Perk activated: ", NamedTextColor.GOLD))
+                    .append(perk.getDisplayName())
+                    .build());
+        }
 
         if (isFinitePerk) {
             plugin.getPerkShopUI().refreshAllPlayersWithShopItems();
@@ -96,6 +109,13 @@ public class PerkStateManager {
             plugin.getPerkShopUI().refreshForPlayer(player);
         }
         return true;
+    }
+
+    public void refundPurchase(UUID playerId, String perkId, int amount) {
+        if (amount > 0) {
+            HideAndSeek.getDataController().addPoints(playerId, amount);
+        }
+        removePurchased(playerId, perkId);
     }
 
     public boolean hasPurchased(UUID playerId, String perkId) {

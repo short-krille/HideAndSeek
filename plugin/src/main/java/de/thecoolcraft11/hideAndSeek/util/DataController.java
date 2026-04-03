@@ -28,6 +28,7 @@ public class DataController {
     private final Map<UUID, Boolean> glowingState;
     private org.bukkit.Location roundSpawnPoint;
     private final Set<UUID> allowedSpectators;
+    private boolean mapSelectionLocked;
 
 
     public DataController() {
@@ -49,6 +50,7 @@ public class DataController {
         this.blockDamageOverrideUntil = new HashMap<>();
         this.glowingState = new HashMap<>();
         this.allowedSpectators = new HashSet<>();
+        this.mapSelectionLocked = false;
     }
 
     public void setup() {
@@ -107,6 +109,7 @@ public class DataController {
         blockDamageOverrideUntil.clear();
         glowingState.clear();
         clearAllowedSpectators();
+        mapSelectionLocked = false;
         roundSpawnPoint = null;
         for (org.bukkit.entity.Entity entity : sittingEntities.values()) {
             if (entity != null && entity.isValid()) {
@@ -270,8 +273,21 @@ public class DataController {
         this.currentMapName = mapName;
     }
 
+    public void setCurrentMapName(String mapName, boolean lockSelection) {
+        this.currentMapName = mapName;
+        this.mapSelectionLocked = lockSelection;
+    }
+
     public String getCurrentMapName() {
         return this.currentMapName;
+    }
+
+    public boolean isMapSelectionLocked() {
+        return this.mapSelectionLocked;
+    }
+
+    public void setMapSelectionLocked(boolean locked) {
+        this.mapSelectionLocked = locked;
     }
 
     public void setCurrentBorderIndex(int borderIndex) {

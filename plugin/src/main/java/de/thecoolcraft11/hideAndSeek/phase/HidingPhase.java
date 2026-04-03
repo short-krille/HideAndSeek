@@ -387,9 +387,11 @@ public class HidingPhase implements GamePhase {
                         Location above = location.clone().add(0, 1, 0);
                         seeker.sendBlockChange(above, above.getBlock().getBlockData());
 
-                        seeker.setAllowFlight(false);
                     }
                 }
+
+                seeker.setAllowFlight(false);
+                seeker.setFlying(false);
 
                 seeker.getInventory().setHelmet(null);
 

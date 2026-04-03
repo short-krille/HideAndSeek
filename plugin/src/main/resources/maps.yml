@@ -13,7 +13,8 @@
 #     - "x,y,z,yaw,pitch"
 #     - "x2,y2,z2,yaw2,pitch2"
 #   world-borders:
-#     - "centerX,centerZ,radius"
+#     - "centerX,centerZ,size"                   # size = full world border width (diameter)
+#     - "centerX,centerZ,r:radius"               # optional explicit radius format
 #   preferred-modes:
 #     - "NORMAL"
 #     - "BLOCK"
@@ -70,7 +71,7 @@ map1:
   icon: "GRASS_BLOCK"
   spawn-points:
     - "0,65,0,0,0"     # Format: x,y,z,yaw,pitch
-  world-borders: [ ]    # Optional, format: centerX,centerZ,radius
+  world-borders: [ ]    # Optional, format: centerX,centerZ,size (or centerX,centerZ,r:radius)
   preferred-modes:
     - "BLOCK"
   seeker-break-blocks:
