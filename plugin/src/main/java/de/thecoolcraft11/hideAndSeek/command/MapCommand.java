@@ -32,6 +32,11 @@ public class MapCommand implements MinigameSubcommand {
     }
 
     @Override
+    public @Nullable String getPermission() {
+        return PERMISSION;
+    }
+
+    @Override
     public boolean handle(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("This command can only be used by players!", NamedTextColor.RED));

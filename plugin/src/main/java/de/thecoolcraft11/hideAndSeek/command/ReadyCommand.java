@@ -36,6 +36,11 @@ public class ReadyCommand implements MinigameSubcommand {
     }
 
     @Override
+    public @Nullable String getPermission() {
+        return PERMISSION;
+    }
+
+    @Override
     public boolean handle(@NotNull CommandSender sender, @NotNull String[] args) {
         VoteManager voteManager = plugin.getVoteManager();
         if (!voteManager.isReadinessEnabled()) {

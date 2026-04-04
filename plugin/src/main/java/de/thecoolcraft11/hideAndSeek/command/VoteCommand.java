@@ -7,6 +7,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -26,6 +27,11 @@ public class VoteCommand implements MinigameSubcommand {
     @Override
     public @NotNull List<String> getAliases() {
         return List.of("voting");
+    }
+
+    @Override
+    public @Nullable String getPermission() {
+        return PERMISSION;
     }
 
     @Override

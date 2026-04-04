@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 public class ItemSkinCommand implements MinigameSubcommand {
     private final HideAndSeek plugin;
+    private static final String PERMISSION = "hideandseek.command.skin";
     private final Map<String, String> itemAliases = new HashMap<>();
 
     public ItemSkinCommand(HideAndSeek plugin) {
@@ -36,9 +37,19 @@ public class ItemSkinCommand implements MinigameSubcommand {
     }
 
     @Override
+    public @Nullable String getPermission() {
+        return PERMISSION;
+    }
+
+    @Override
     public boolean handle(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("This command can only be used by players!", NamedTextColor.RED));
+            return true;
+        }
+
+        if (!sender.hasPermission(PERMISSION)) {
+            sender.sendMessage(Component.text("You don't have permission to use this command!", NamedTextColor.RED));
             return true;
         }
 

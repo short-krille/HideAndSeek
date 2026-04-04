@@ -33,3 +33,6 @@ permissions:
   hideandseek.command.ready.gui:
     description: Allows opening the readiness overview GUI
     default: op
+  hideandseek.command.skin:
+    description: Allows using /mg skin command
+    default: true
