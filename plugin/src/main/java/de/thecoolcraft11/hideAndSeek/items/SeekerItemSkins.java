@@ -54,6 +54,14 @@ public final class SeekerItemSkins {
         register(vm, plugin, SeekersSwordItem.ID, "skin_energy_blade", "Energy Blade", "end_rod", 0, ItemRarity.RARE);
         register(vm, plugin, SeekersSwordItem.ID, "skin_the_ban_hammer", "The Ban Hammer", "iron_axe", -1, ItemRarity.EPIC);
         register(vm, plugin, SeekersSwordItem.ID, "skin_giant_spatula", "Giant Spatula", "iron_shovel", -2, ItemRarity.UNCOMMON);
+
+        register(vm, plugin, CameraItem.ID, "skin_spy_lens", "Spy Lens", "spyglass", 0, ItemRarity.UNCOMMON);
+        register(vm, plugin, CameraItem.ID, "skin_owl_eye", "Owl Eye", "compass", -1, ItemRarity.RARE);
+        register(vm, plugin, CameraItem.ID, "skin_orbital_spy", "Orbital Spy", "nether_star", -2, ItemRarity.EPIC);
+
+        register(vm, plugin, SeekerAssistantItem.ID, "skin_steel_golem", "Steel Golem", "iron_ingot", 0, ItemRarity.UNCOMMON);
+        register(vm, plugin, SeekerAssistantItem.ID, "skin_ghost_drone", "Ghost Drone", "phantom_membrane", -1, ItemRarity.RARE);
+        register(vm, plugin, SeekerAssistantItem.ID, "skin_battle_mech", "Battle Mech", "netherite_ingot", -2, ItemRarity.EPIC);
     }
 
     private static void register(

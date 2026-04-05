@@ -5,6 +5,10 @@ import de.thecoolcraft11.hideAndSeek.gui.*;
 import de.thecoolcraft11.hideAndSeek.items.*;
 import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectManager;
 import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectSkins;
+import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageManager;
+import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageSkins;
+import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinManager;
+import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinSkins;
 import de.thecoolcraft11.hideAndSeek.listener.game.*;
 import de.thecoolcraft11.hideAndSeek.listener.item.*;
 import de.thecoolcraft11.hideAndSeek.listener.perk.PerkListener;
@@ -100,6 +104,8 @@ public final class HideAndSeek extends MinigameFramework {
         HiderItemSkins.registerAll(this);
         SeekerItemSkins.registerAll(this);
         KillEffectSkins.registerAll();
+        WinSkinSkins.registerAll();
+        DeathMessageSkins.registerAll();
 
         blockModeListener = new BlockModeListener(this);
         playerHitListener = new PlayerHitListener(this);
@@ -107,7 +113,7 @@ public final class HideAndSeek extends MinigameFramework {
         hiderCampingListener = new HiderCampingListener(this, playerHitListener);
 
         Bukkit.getPluginManager().registerEvents(playerHitListener, this);
-        Bukkit.getPluginManager().registerEvents(new EnvironmentalDeathMessageListener(playerHitListener), this);
+        Bukkit.getPluginManager().registerEvents(new EnvironmentalDeathMessageListener(playerHitListener, playerHitListener.getDeathMessageService()), this);
         Bukkit.getPluginManager().registerEvents(new GameStateListener(this), this);
         Bukkit.getPluginManager().registerEvents(blockModeListener, this);
         Bukkit.getPluginManager().registerEvents(antiCheatVisibilityListener, this);
@@ -178,6 +184,8 @@ public final class HideAndSeek extends MinigameFramework {
             perkService.shutdown();
         }
         KillEffectManager.clear();
+        WinSkinManager.clear();
+        DeathMessageManager.clear();
         ItemSkinSelectionService.shutdown(this);
         LoadoutDataService.shutdown(this);
     }

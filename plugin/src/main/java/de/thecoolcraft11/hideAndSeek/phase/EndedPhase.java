@@ -2,6 +2,7 @@ package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
+import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinService;
 import de.thecoolcraft11.hideAndSeek.items.seeker.CameraItem;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
@@ -67,6 +68,23 @@ public class EndedPhase implements GamePhase {
 
         announceWinner(plugin, hidersWin, coinGains);
 
+        WinSkinService winSkinService = new WinSkinService(hideAndSeekPlugin);
+        if (hidersWin) {
+            for (UUID hiderId : activeHiders) {
+                Player hider = Bukkit.getPlayer(hiderId);
+                if (hider != null && hider.isOnline()) {
+                    winSkinService.triggerWinSkin(hider, true);
+                }
+            }
+        } else {
+            for (UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
+                Player seeker = Bukkit.getPlayer(seekerId);
+                if (seeker != null && seeker.isOnline()) {
+                    winSkinService.triggerWinSkin(seeker, false);
+                }
+            }
+        }
+
 
         boolean autoCleanup = plugin.getSettingRegistry().get("game.round.auto-cleanup", true);
 
@@ -94,7 +112,7 @@ public class EndedPhase implements GamePhase {
 
                     plugin.getStateManager().setPhase("lobby", true);
                 }
-            }.runTaskLater(plugin, 60L);
+            }.runTaskLater(plugin, 120L);
         } else {
 
             new BukkitRunnable() {

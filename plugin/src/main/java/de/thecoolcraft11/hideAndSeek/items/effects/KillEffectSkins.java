@@ -35,6 +35,11 @@ public final class KillEffectSkins {
 
         register("effect_vitality_wave", "Vitality Wave", Material.GOLDEN_APPLE, ItemRarity.RARE, -7, new VitalityWaveKillEffect());
         register("effect_score_crown", "Score Crown", Material.NETHER_STAR, ItemRarity.LEGENDARY, -8, new ScoreCrownKillEffect());
+        register("effect_thunder_strike", "Thunder Strike", Material.LIGHTNING_ROD, ItemRarity.EPIC, -9, new ThunderStrikeKillEffect());
+        register("effect_rainbow_blast", "Rainbow Blast", Material.FIREWORK_STAR, ItemRarity.RARE, -10, new RainbowBlastKillEffect());
+        register("effect_phantom_slash", "Phantom Slash", Material.PHANTOM_MEMBRANE, ItemRarity.EPIC, -11, new PhantomSlashKillEffect());
+        register("effect_bubble_pop", "Bubble Pop", Material.PRISMARINE_CRYSTALS, ItemRarity.UNCOMMON, -12, new BubblePopKillEffect());
+        register("effect_wither_storm", "Wither Storm", Material.WITHER_SKELETON_SKULL, ItemRarity.LEGENDARY, -13, new WitherStormKillEffect());
     }
 
     private static void register(String id, String displayName, Material icon, ItemRarity rarity, int sortPriority, KillEffect effect) {

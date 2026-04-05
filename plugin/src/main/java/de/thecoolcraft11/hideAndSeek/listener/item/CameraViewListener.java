@@ -275,6 +275,7 @@ public class CameraViewListener implements Listener {
         }
 
         CameraItem.attachToCurrentCamera(player, plugin);
+        CameraItem.playNightVisionToggleSound(player, state.skinVariant(), state.nightVision());
 
         if (state.nightVision()) {
             player.sendActionBar(Component.text("Night vision camera: ON", NamedTextColor.GREEN));

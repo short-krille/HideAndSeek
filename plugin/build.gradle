@@ -6,7 +6,8 @@ plugins {
 
 dependencies {
     implementation project(":nms")
-    implementation project(":nms-v1_21_R7")
+    implementation project(":nms-v1_21_10")
+    implementation project(":nms-v1_21_11")
 
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
 

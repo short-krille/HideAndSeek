@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.items.seeker;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
 import de.thecoolcraft11.minigameframework.items.CustomItemBuilder;
@@ -26,6 +27,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class SeekerAssistantItem implements GameItem {
 
     public static final String ID = "has_seeker_assistant";
+    public static final String SKIN_STEEL_GOLEM = "skin_steel_golem";
+    public static final String SKIN_GHOST_DRONE = "skin_ghost_drone";
+    public static final String SKIN_BATTLE_MECH = "skin_battle_mech";
+    public static final String PDC_SKIN_KEY = "assistant_skin_variant";
 
     @Override
     public String getId() {
@@ -114,10 +119,18 @@ public class SeekerAssistantItem implements GameItem {
         }
 
         Location spawn = player.getLocation();
-        Entity assistant = plugin.getNmsAdapter().spawnSeekerAssistant(plugin, player, spawn);
+        String selectedSkin = resolveSelectedSkin(player);
+        Entity assistant = plugin.getNmsAdapter().spawnSeekerAssistant(plugin, player, spawn, selectedSkin);
         if (assistant == null) {
             player.sendMessage(Component.text("Failed to summon assistant.", NamedTextColor.RED));
             return;
+        }
+        if (selectedSkin != null) {
+            assistant.getPersistentDataContainer().set(
+                    new org.bukkit.NamespacedKey(plugin, PDC_SKIN_KEY),
+                    org.bukkit.persistence.PersistentDataType.STRING,
+                    selectedSkin
+            );
         }
 
         UUID assistantId = assistant.getUniqueId();
@@ -142,10 +155,28 @@ public class SeekerAssistantItem implements GameItem {
         player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation(), 16, 0.3, 0.4, 0.3, 0.02);
         player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation(), 10, 0.3, 0.5, 0.3, 0.01);
 
+        if (SKIN_STEEL_GOLEM.equals(selectedSkin)) {
+            player.getWorld().spawnParticle(Particle.BLOCK, player.getLocation(), 14, 0.35, 0.45, 0.35,
+                    Material.IRON_BLOCK.createBlockData());
+        } else if (SKIN_GHOST_DRONE.equals(selectedSkin)) {
+            player.getWorld().spawnParticle(Particle.SOUL, player.getLocation(), 18, 0.35, 0.55, 0.35, 0.03);
+        } else if (SKIN_BATTLE_MECH.equals(selectedSkin)) {
+            player.getWorld().spawnParticle(Particle.FLAME, player.getLocation(), 24, 0.4, 0.6, 0.4, 0.04);
+            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.55f, 1.4f);
+        }
+
         player.sendActionBar(Component.text()
                 .append(Component.text("Assistant summoned! ", NamedTextColor.RED))
                 .append(Component.text("(" + lifetimeSeconds + "s lifetime)", NamedTextColor.GRAY))
                 .build());
+    }
+
+    private String resolveSelectedSkin(Player player) {
+        String variant = ItemSkinSelectionService.getSelectedVariant(player, ID);
+        if (variant == null || variant.isBlank()) {
+            return null;
+        }
+        return ItemSkinSelectionService.isUnlocked(player.getUniqueId(), ID, variant) ? variant : null;
     }
 
     @Override

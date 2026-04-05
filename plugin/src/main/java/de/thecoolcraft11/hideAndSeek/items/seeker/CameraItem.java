@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek.items.seeker;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.api.GameItem;
 import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
@@ -12,10 +13,7 @@ import de.thecoolcraft11.minigameframework.items.ItemInteractionContext;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
@@ -43,6 +41,9 @@ import static de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager.*;
 
 public class CameraItem implements GameItem {
     public static final String ID = "has_seeker_camera";
+    public static final String SKIN_SPY_LENS = "skin_spy_lens";
+    public static final String SKIN_OWL_EYE = "skin_owl_eye";
+    public static final String SKIN_ORBITAL_SPY = "skin_orbital_spy";
     private static final String HEAD_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWE3ZDJhN2ZiYjRkMzdiNGQ1M2ZlODc3NTcxMjhlNWVmNjZlYzIzZDdmZjRmZTk5NDQ1NDZkYmM4Y2U3NzcifX19";
 
     private static void enterCameraMode(ItemInteractionContext context, HideAndSeek plugin) {
@@ -114,6 +115,9 @@ public class CameraItem implements GameItem {
 
         LinkedList<ItemStateManager.PlacedCamera> cameras = seekerCameras.computeIfAbsent(player.getUniqueId(), ignored -> new LinkedList<>());
         cameras.add(camera);
+
+        String skinVariant = resolveActiveCameraSkin(player);
+        playCameraPlacementCosmetics(player, torchBlock.getLocation(), skinVariant);
 
         int maxCameras = Math.max(1, plugin.getSettingRegistry().get("seeker-items.camera.max-placed", 5));
         while (cameras.size() > maxCameras) {
@@ -258,6 +262,7 @@ public class CameraItem implements GameItem {
 
         ItemStateManager.CameraSessionState state = new ItemStateManager.CameraSessionState(idx, baseYaw);
         state.nightVision(false);
+        state.skinVariant(resolveActiveCameraSkin(seeker));
         state.activatedAtMs(System.currentTimeMillis());
         activeCameraSessions.put(seeker.getUniqueId(), state);
 
@@ -309,9 +314,93 @@ public class CameraItem implements GameItem {
 
         if (state.nightVision()) {
             setViewerGlow(seeker, plugin, true);
+        } else {
+            playCameraSkinCosmetics(seeker, state.skinVariant());
         }
 
         return true;
+    }
+
+    private static String resolveActiveCameraSkin(Player seeker) {
+        if (seeker == null) {
+            return null;
+        }
+        String selected = ItemSkinSelectionService.getSelectedVariant(seeker, ID);
+        if (selected == null || selected.isBlank()) {
+            return null;
+        }
+        return ItemSkinSelectionService.isUnlocked(seeker.getUniqueId(), ID, selected) ? selected : null;
+    }
+
+    private static void playCameraSkinCosmetics(Player seeker, String skinVariant) {
+        if (seeker == null || skinVariant == null || skinVariant.isBlank()) {
+            return;
+        }
+
+        switch (skinVariant) {
+            case SKIN_OWL_EYE -> {
+                seeker.getWorld().spawnParticle(Particle.END_ROD, seeker.getLocation().clone().add(0, 1.2, 0), 10, 0.35, 0.45, 0.35, 0.01);
+                seeker.playSound(seeker.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.3f);
+                return;
+            }
+            case SKIN_ORBITAL_SPY -> {
+                seeker.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, seeker.getLocation().clone().add(0, 1.2, 0), 12, 0.45, 0.55, 0.45, 0.02);
+                seeker.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, seeker.getLocation().clone().add(0, 1.2, 0), 10, 0.35, 0.45, 0.35, 0.01);
+                seeker.sendActionBar(Component.text("Orbital scan active", NamedTextColor.GOLD));
+                return;
+            }
+            case SKIN_SPY_LENS -> {
+                seeker.getWorld().spawnParticle(Particle.WITCH, seeker.getLocation().clone().add(0, 1.1, 0), 10, 0.3, 0.35, 0.3, 0.01);
+                seeker.sendActionBar(Component.text("Spy Lens focus", NamedTextColor.AQUA));
+            }
+        }
+
+    }
+
+    private static void playCameraPlacementCosmetics(Player seeker, Location torchLocation, String skinVariant) {
+        if (seeker == null || torchLocation == null || torchLocation.getWorld() == null) {
+            return;
+        }
+
+        Location center = torchLocation.clone().add(0.5, 0.55, 0.5);
+
+        if (SKIN_OWL_EYE.equals(skinVariant)) {
+            center.getWorld().spawnParticle(Particle.GLOW, center, 20, 0.25, 0.2, 0.25, 0.01);
+            center.getWorld().spawnParticle(Particle.ENCHANT, center.clone().add(0, 0.2, 0), 16, 0.3, 0.25, 0.3, 0.01);
+            return;
+        }
+
+        if (SKIN_ORBITAL_SPY.equals(skinVariant)) {
+            center.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, center, 28, 0.35, 0.2, 0.35, 0.02);
+            center.getWorld().spawnParticle(Particle.END_ROD, center.clone().add(0, 0.25, 0), 12, 0.2, 0.2, 0.2, 0.01);
+            return;
+        }
+
+        center.getWorld().spawnParticle(Particle.CRIT, center, 16, 0.25, 0.2, 0.25, 0.02);
+        center.getWorld().spawnParticle(Particle.SMOKE, center.clone().add(0, 0.2, 0), 8, 0.2, 0.15, 0.2, 0.01);
+    }
+
+    public static void playNightVisionToggleSound(Player seeker, String skinVariant, boolean enabled) {
+        if (seeker == null) {
+            return;
+        }
+
+        Sound sound;
+        float volume = 0.9f;
+        float pitch;
+
+        if (SKIN_OWL_EYE.equals(skinVariant)) {
+            sound = enabled ? Sound.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM : Sound.BLOCK_AMETHYST_BLOCK_CHIME;
+            pitch = enabled ? 1.45f : 0.85f;
+        } else if (SKIN_ORBITAL_SPY.equals(skinVariant)) {
+            sound = enabled ? Sound.BLOCK_BEACON_POWER_SELECT : Sound.BLOCK_BEACON_DEACTIVATE;
+            pitch = enabled ? 1.2f : 0.9f;
+        } else {
+            sound = enabled ? Sound.BLOCK_NOTE_BLOCK_BIT : Sound.BLOCK_NOTE_BLOCK_BASS;
+            pitch = enabled ? 1.4f : 0.7f;
+        }
+
+        seeker.playSound(seeker.getLocation(), sound, volume, pitch);
     }
 
     public static void stopCameraSession(Player seeker, HideAndSeek plugin, boolean resetCameraPacket) {

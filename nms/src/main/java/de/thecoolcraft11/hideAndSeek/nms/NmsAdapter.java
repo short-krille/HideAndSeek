@@ -65,7 +65,7 @@ public interface NmsAdapter {
 
     void resetWarningBorder(Player viewer);
 
-    Entity spawnSeekerAssistant(Plugin plugin, Player seeker, Location location);
+    Entity spawnSeekerAssistant(Plugin plugin, Player seeker, Location location, String assistantSkin);
 
     void removeAllAssistants(Plugin plugin, UUID seekerId);
 

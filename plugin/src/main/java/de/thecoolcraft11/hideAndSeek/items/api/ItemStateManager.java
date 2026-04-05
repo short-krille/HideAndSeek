@@ -86,6 +86,7 @@ public record ItemStateManager(HideAndSeek plugin) {
         private int fakeEntityId = Integer.MIN_VALUE;
         private float rotationYaw;
         private long activatedAtMs = System.currentTimeMillis();
+        private String skinVariant;
 
         public CameraSessionState(int currentIndex, float rotationYaw) {
             this.currentIndex = currentIndex;
@@ -126,6 +127,14 @@ public record ItemStateManager(HideAndSeek plugin) {
 
         public long activatedAtMs() {
             return activatedAtMs;
+        }
+
+        public String skinVariant() {
+            return skinVariant;
+        }
+
+        public void skinVariant(String skinVariant) {
+            this.skinVariant = skinVariant;
         }
 
         public void activatedAtMs(long activatedAtMs) {

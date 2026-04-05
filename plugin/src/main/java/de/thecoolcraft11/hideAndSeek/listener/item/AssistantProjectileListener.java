@@ -2,14 +2,12 @@ package de.thecoolcraft11.hideAndSeek.listener.item;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
+import de.thecoolcraft11.hideAndSeek.items.seeker.SeekerAssistantItem;
 import de.thecoolcraft11.hideAndSeek.items.seeker.assistant.AssistantProjectile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
@@ -59,6 +57,7 @@ public class AssistantProjectileListener implements Listener {
 
         UUID seekerUUID = parseUuid(seekerStr);
         UUID assistantUUID = parseUuid(assistantStr);
+        String assistantSkin = resolveAssistantSkin(assistantUUID);
 
         Location impact = snowball.getLocation();
         snowball.remove();
@@ -76,9 +75,9 @@ public class AssistantProjectileListener implements Listener {
             double effectiveDirect = moving ? Math.min(directThreshold, movingDirect) : Math.max(directThreshold, stationaryDirect);
             double dist = impact.distance(hider.getLocation().add(0.0, 1.0, 0.0));
             if (!moving || dist < effectiveDirect || ThreadLocalRandom.current().nextDouble() < luckyMovingDirectChance) {
-                handleDirectHit(hider, seekerUUID, assistantUUID, impact);
+                handleDirectHit(hider, seekerUUID, assistantUUID, impact, assistantSkin);
             } else if (dist < nearThreshold) {
-                handleNearHit(hider, seekerUUID, assistantUUID, dist, nearThreshold, directThreshold);
+                handleNearHit(hider, seekerUUID, assistantUUID, dist, nearThreshold, directThreshold, assistantSkin);
             } else {
                 AssistantProjectile.spawnMissEffect(impact);
             }
@@ -108,14 +107,14 @@ public class AssistantProjectileListener implements Listener {
             double effectiveDirect = moving ? Math.min(directThreshold, movingDirect) : Math.max(directThreshold, stationaryDirect);
 
             if (nearestDist < effectiveDirect) {
-                handleDirectHit(nearestHider, seekerUUID, assistantUUID, impact);
+                handleDirectHit(nearestHider, seekerUUID, assistantUUID, impact, assistantSkin);
                 return;
             }
             if (nearestDist < nearThreshold) {
                 if (moving && ThreadLocalRandom.current().nextDouble() < luckyMovingDirectChance) {
-                    handleDirectHit(nearestHider, seekerUUID, assistantUUID, impact);
+                    handleDirectHit(nearestHider, seekerUUID, assistantUUID, impact, assistantSkin);
                 } else {
-                    handleNearHit(nearestHider, seekerUUID, assistantUUID, nearestDist, nearThreshold, directThreshold);
+                    handleNearHit(nearestHider, seekerUUID, assistantUUID, nearestDist, nearThreshold, directThreshold, assistantSkin);
                 }
                 return;
             }
@@ -140,12 +139,29 @@ public class AssistantProjectileListener implements Listener {
         return Math.sqrt((vel.getX() * vel.getX()) + (vel.getZ() * vel.getZ()));
     }
 
-    private void handleDirectHit(Player hider, UUID seekerUUID, UUID assistantUUID, Location impactLoc) {
+    private String resolveAssistantSkin(UUID assistantUUID) {
+        if (assistantUUID == null) {
+            return null;
+        }
+        Entity assistant = Bukkit.getEntity(assistantUUID);
+        if (assistant == null || !assistant.isValid()) {
+            return null;
+        }
+        return assistant.getPersistentDataContainer().get(
+                new org.bukkit.NamespacedKey(plugin, SeekerAssistantItem.PDC_SKIN_KEY),
+                PersistentDataType.STRING
+        );
+    }
+
+    private void handleDirectHit(Player hider, UUID seekerUUID, UUID assistantUUID, Location impactLoc, String assistantSkin) {
         int slowDuration = plugin.getSettingRegistry().get("seeker-items.assistant.hit-direct-slowness-duration", 120);
         int nauseaDuration = plugin.getSettingRegistry().get("seeker-items.assistant.hit-direct-nausea-duration", 100);
+        int slownessAmplifier = 2;
 
-        hider.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowDuration, 2, false, true, true));
+        hider.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowDuration, slownessAmplifier, false, true, true));
         hider.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, nauseaDuration, 0, false, true, true));
+
+        playSkinCosmetics(hider.getLocation(), assistantSkin, true);
 
 
         plugin.getNmsAdapter().sendAssistantBeamToAll(plugin, hider.getLocation(), "alert");
@@ -183,7 +199,7 @@ public class AssistantProjectileListener implements Listener {
         incrementHitCounter(seekerUUID, assistantUUID, impactLoc);
     }
 
-    private void handleNearHit(Player hider, UUID seekerUUID, UUID assistantUUID, double dist, double nearThreshold, double directThreshold) {
+    private void handleNearHit(Player hider, UUID seekerUUID, UUID assistantUUID, double dist, double nearThreshold, double directThreshold, String assistantSkin) {
         int slowBase = plugin.getSettingRegistry().get("seeker-items.assistant.hit-near-slowness-base", 80);
         int nauseaBase = plugin.getSettingRegistry().get("seeker-items.assistant.hit-near-nausea-base", 60);
 
@@ -192,11 +208,12 @@ public class AssistantProjectileListener implements Listener {
 
         int slowDur = (int) (slowBase * factor);
         int nauseaDur = (int) (nauseaBase * factor);
+        Location hLoc = hider.getLocation();
 
         hider.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowDur, 1, false, true, true));
         hider.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, nauseaDur, 0, false, true, true));
 
-        Location hLoc = hider.getLocation();
+        playSkinCosmetics(hLoc, assistantSkin, false);
         hLoc.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, hLoc, 16, 0.4, 0.6, 0.4, 0.04);
         hLoc.getWorld().spawnParticle(Particle.SMOKE, hLoc, 12, 0.3, 0.3, 0.3, 0.02);
         hLoc.getWorld().playSound(hLoc, Sound.ENTITY_BLAZE_HURT, 0.8f, 1.0f);
@@ -258,6 +275,34 @@ public class AssistantProjectileListener implements Listener {
                 .append(Component.text(" was destroyed (" + maxHits + " hits)!", NamedTextColor.GRAY))
                 .build();
         Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(msg));
+    }
+
+    private void playSkinCosmetics(Location loc, String assistantSkin, boolean directHit) {
+        if (loc == null || loc.getWorld() == null) {
+            return;
+        }
+
+        if (SeekerAssistantItem.SKIN_STEEL_GOLEM.equals(assistantSkin)) {
+            loc.getWorld().spawnParticle(Particle.BLOCK, loc, directHit ? 24 : 12, 0.35, 0.45, 0.35, 0.02,
+                    Material.IRON_BLOCK.createBlockData());
+            loc.getWorld().playSound(loc, Sound.BLOCK_ANVIL_LAND, 0.35f, 0.9f);
+            return;
+        }
+
+        if (SeekerAssistantItem.SKIN_GHOST_DRONE.equals(assistantSkin)) {
+            loc.getWorld().spawnParticle(Particle.SOUL, loc, directHit ? 22 : 12, 0.4, 0.55, 0.4, 0.03);
+            loc.getWorld().spawnParticle(Particle.END_ROD, loc, directHit ? 10 : 5, 0.3, 0.4, 0.3, 0.01);
+            return;
+        }
+
+        if (SeekerAssistantItem.SKIN_BATTLE_MECH.equals(assistantSkin)) {
+            loc.getWorld().spawnParticle(Particle.FLAME, loc, directHit ? 24 : 14, 0.35, 0.45, 0.35, 0.03);
+            loc.getWorld().spawnParticle(Particle.SMOKE, loc, directHit ? 14 : 8, 0.25, 0.3, 0.25, 0.01);
+            loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 0.28f, 1.2f);
+            return;
+        }
+
+        loc.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, loc, directHit ? 16 : 8, 0.4, 0.6, 0.4, 0.03);
     }
 
 }

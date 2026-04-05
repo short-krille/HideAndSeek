@@ -3,6 +3,10 @@ package de.thecoolcraft11.hideAndSeek.gui;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectSkins;
+import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageManager;
+import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageSkin;
+import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageSkins;
+import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinSkins;
 import de.thecoolcraft11.hideAndSeek.model.ItemRarity;
 import de.thecoolcraft11.hideAndSeek.util.CustomModelDataUtil;
 import de.thecoolcraft11.minigameframework.inventory.FrameworkInventory;
@@ -102,6 +106,14 @@ public class SkinGUI {
     private void openVariants(Player player, String logicalItemId) {
         if (KillEffectSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
             openKillEffectVariants(player, logicalItemId);
+            return;
+        }
+        if (WinSkinSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
+            openWinSkinVariants(player, logicalItemId);
+            return;
+        }
+        if (DeathMessageSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
+            openDeathMessageVariants(player, logicalItemId);
             return;
         }
 
@@ -243,6 +255,142 @@ public class SkinGUI {
         plugin.getInventoryFramework().openInventory(player, inventory);
     }
 
+    private void openWinSkinVariants(Player player, String logicalItemId) {
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("skin_variants_" + player.getUniqueId() + "_" + logicalItemId)
+                .title(VARIANTS_TITLE_PREFIX + humanize(logicalItemId))
+                .rows(6)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .build();
+
+        int slot = 0;
+        String selected = ItemSkinSelectionService.getSelectedVariant(player, logicalItemId);
+        if (selected != null && !ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, selected)) {
+            selected = null;
+        }
+
+        for (WinSkinSkins.Definition definition : WinSkinSkins.getDefinitions()) {
+            if (slot >= 45) {
+                break;
+            }
+
+            String variantId = definition.id();
+            InventoryItem variantItem = new InventoryItem(createWinSkinVariantButton(player, logicalItemId, definition, selected));
+            variantItem.setClickHandler((p, item, event, s) -> {
+                handleVariantClick(p, logicalItemId, variantId, event.getClick());
+                event.setCancelled(true);
+            });
+            variantItem.setAllowTakeout(false);
+            variantItem.setAllowInsert(false);
+            variantItem.setMetadata("variant_id", variantId);
+            variantItem.setMetadata("logical_item_id", logicalItemId);
+            inventory.setItem(slot++, variantItem);
+        }
+
+        InventoryItem backBtn = new InventoryItem(createUtility(Material.ARROW, "Back", NamedTextColor.YELLOW,
+                List.of(Component.text("Return to skin item list", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        backBtn.setClickHandler((p, item, event, s) -> {
+            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
+            open(p);
+            event.setCancelled(true);
+        });
+        backBtn.setAllowTakeout(false);
+        backBtn.setAllowInsert(false);
+        inventory.setItem(45, backBtn);
+
+        InventoryItem clearBtn = new InventoryItem(createUtility(Material.BARRIER, "Clear Selection", NamedTextColor.RED,
+                List.of(Component.text("Remove saved skin for this item", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        clearBtn.setClickHandler((p, item, event, s) -> {
+            ItemSkinSelectionService.clearSelectedVariant(p.getUniqueId(), logicalItemId);
+            ItemSkinSelectionService.savePlayer(plugin, p.getUniqueId());
+            p.sendMessage(Component.text("Cleared saved skin for ", NamedTextColor.YELLOW)
+                    .append(Component.text(humanize(logicalItemId), NamedTextColor.GOLD)));
+            p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.7f, 1.1f);
+            openWinSkinVariants(p, logicalItemId);
+            event.setCancelled(true);
+        });
+        clearBtn.setAllowTakeout(false);
+        clearBtn.setAllowInsert(false);
+        inventory.setItem(53, clearBtn);
+
+        InventoryItem coinsItem = new InventoryItem(createCoinsHint(player));
+        coinsItem.setClickHandler((p, item, event, s) -> event.setCancelled(true));
+        coinsItem.setAllowTakeout(false);
+        coinsItem.setAllowInsert(false);
+        inventory.setItem(49, coinsItem);
+
+        plugin.getInventoryFramework().openInventory(player, inventory);
+    }
+
+    private void openDeathMessageVariants(Player player, String logicalItemId) {
+        FrameworkInventory inventory = new InventoryBuilder(plugin.getInventoryFramework())
+                .id("skin_variants_" + player.getUniqueId() + "_" + logicalItemId)
+                .title(VARIANTS_TITLE_PREFIX + humanize(logicalItemId))
+                .rows(6)
+                .allowOutsideClicks(false)
+                .allowDrag(false)
+                .allowPlayerInventoryInteraction(false)
+                .build();
+
+        int slot = 0;
+        String selected = ItemSkinSelectionService.getSelectedVariant(player, logicalItemId);
+        if (selected != null && !ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, selected)) {
+            selected = null;
+        }
+
+        for (DeathMessageSkins.Definition definition : DeathMessageSkins.getDefinitions()) {
+            if (slot >= 45) {
+                break;
+            }
+
+            String variantId = definition.id();
+            InventoryItem variantItem = new InventoryItem(createDeathMessageVariantButton(player, logicalItemId, definition, selected));
+            variantItem.setClickHandler((p, item, event, s) -> {
+                handleVariantClick(p, logicalItemId, variantId, event.getClick());
+                event.setCancelled(true);
+            });
+            variantItem.setAllowTakeout(false);
+            variantItem.setAllowInsert(false);
+            variantItem.setMetadata("variant_id", variantId);
+            variantItem.setMetadata("logical_item_id", logicalItemId);
+            inventory.setItem(slot++, variantItem);
+        }
+
+        InventoryItem backBtn = new InventoryItem(createUtility(Material.ARROW, "Back", NamedTextColor.YELLOW,
+                List.of(Component.text("Return to skin item list", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        backBtn.setClickHandler((p, item, event, s) -> {
+            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
+            open(p);
+            event.setCancelled(true);
+        });
+        backBtn.setAllowTakeout(false);
+        backBtn.setAllowInsert(false);
+        inventory.setItem(45, backBtn);
+
+        InventoryItem clearBtn = new InventoryItem(createUtility(Material.BARRIER, "Clear Selection", NamedTextColor.RED,
+                List.of(Component.text("Remove saved death messages for this item", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        clearBtn.setClickHandler((p, item, event, s) -> {
+            ItemSkinSelectionService.clearSelectedVariant(p.getUniqueId(), logicalItemId);
+            ItemSkinSelectionService.savePlayer(plugin, p.getUniqueId());
+            p.sendMessage(Component.text("Cleared saved death messages.", NamedTextColor.YELLOW));
+            p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.7f, 1.1f);
+            openDeathMessageVariants(p, logicalItemId);
+            event.setCancelled(true);
+        });
+        clearBtn.setAllowTakeout(false);
+        clearBtn.setAllowInsert(false);
+        inventory.setItem(53, clearBtn);
+
+        InventoryItem coinsItem = new InventoryItem(createCoinsHint(player));
+        coinsItem.setClickHandler((p, item, event, s) -> event.setCancelled(true));
+        coinsItem.setAllowTakeout(false);
+        coinsItem.setAllowInsert(false);
+        inventory.setItem(49, coinsItem);
+
+        plugin.getInventoryFramework().openInventory(player, inventory);
+    }
 
     private void handleVariantClick(Player player, String logicalItemId, String variantId, ClickType clickType) {
         boolean unlocked = ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, variantId);
@@ -283,6 +431,12 @@ public class SkinGUI {
     private ItemStack createLogicalItemButton(Player player, String logicalItemId) {
         if (KillEffectSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
             return createKillEffectCategoryButton(player, logicalItemId);
+        }
+        if (WinSkinSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
+            return createWinSkinCategoryButton(player, logicalItemId);
+        }
+        if (DeathMessageSkins.LOGICAL_ITEM_ID.equals(logicalItemId)) {
+            return createDeathMessageCategoryButton(player, logicalItemId);
         }
 
         String runtimeItemId = ItemSkinSelectionService.resolveRuntimeItemId(player, logicalItemId);
@@ -345,6 +499,66 @@ public class SkinGUI {
 
         stack.setItemMeta(meta);
         CustomModelDataUtil.setCustomModelData(stack, KillEffectSkins.LOGICAL_ITEM_ID, selected);
+        return stack;
+    }
+
+    private ItemStack createWinSkinCategoryButton(Player player, String logicalItemId) {
+        String selected = ItemSkinSelectionService.getSelectedVariant(player, logicalItemId);
+        WinSkinSkins.Definition selectedDef = selected == null ? null : WinSkinSkins.getDefinition(selected);
+        ItemStack stack = new ItemStack(selectedDef == null ? Material.NETHER_STAR : selectedDef.icon());
+
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return stack;
+        }
+
+        int variantCount = WinSkinSkins.getDefinitions().size();
+        int unlockedCount = (int) WinSkinSkins.getDefinitions().stream()
+                .filter(def -> ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, def.id()))
+                .count();
+
+        meta.displayName(Component.text("Win Skins", NamedTextColor.GOLD, TextDecoration.BOLD)
+                .decoration(TextDecoration.ITALIC, false));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Unlocked: " + unlockedCount + "/" + variantCount, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Selected: " + (selectedDef == null ? "Default" : selectedDef.displayName()), NamedTextColor.YELLOW)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Left click to open", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore);
+
+        stack.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(stack, WinSkinSkins.LOGICAL_ITEM_ID, selected);
+        return stack;
+    }
+
+    private ItemStack createDeathMessageCategoryButton(Player player, String logicalItemId) {
+        String selected = ItemSkinSelectionService.getSelectedVariant(player, logicalItemId);
+        DeathMessageSkins.Definition selectedDef = selected == null ? null : DeathMessageSkins.getDefinition(selected);
+        ItemStack stack = new ItemStack(selectedDef == null ? Material.WRITABLE_BOOK : selectedDef.icon());
+
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return stack;
+        }
+
+        int variantCount = DeathMessageSkins.getDefinitions().size();
+        int unlockedCount = (int) DeathMessageSkins.getDefinitions().stream()
+                .filter(def -> ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, def.id()))
+                .count();
+
+        meta.displayName(Component.text("Death Messages", NamedTextColor.DARK_RED, TextDecoration.BOLD)
+                .decoration(TextDecoration.ITALIC, false));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Unlocked: " + unlockedCount + "/" + variantCount, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Selected: " + (selectedDef == null ? "Default" : selectedDef.displayName()), NamedTextColor.YELLOW)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Left click to open", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore);
+
+        stack.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(stack, DeathMessageSkins.LOGICAL_ITEM_ID, selected);
         return stack;
     }
 
@@ -422,6 +636,87 @@ public class SkinGUI {
         return stack;
     }
 
+    private ItemStack createWinSkinVariantButton(Player player, String logicalItemId, WinSkinSkins.Definition definition, String selectedVariant) {
+        ItemStack stack = new ItemStack(definition.icon());
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return stack;
+        }
+
+        boolean selected = definition.id().equals(selectedVariant);
+        boolean unlocked = ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, definition.id());
+        int cost = ItemSkinSelectionService.getCost(plugin, logicalItemId, definition.id());
+
+        meta.displayName(Component.text(
+                        definition.displayName(),
+                        selected ? NamedTextColor.GREEN : (unlocked ? NamedTextColor.AQUA : NamedTextColor.RED),
+                        TextDecoration.BOLD
+                )
+                .decoration(TextDecoration.ITALIC, false));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("ID: " + definition.id(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Rarity: " + definition.rarity().name(), getRarityColor(definition.rarity())).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Cost: " + cost + " coins", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text(selected ? "Currently selected" : (unlocked ? "Click to select" : "Click to unlock + select"),
+                        selected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Right click: select/unlock and close", NamedTextColor.DARK_GRAY)
+                .decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore);
+
+        stack.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(stack, WinSkinSkins.LOGICAL_ITEM_ID, definition.id());
+        return stack;
+    }
+
+    private ItemStack createDeathMessageVariantButton(Player player, String logicalItemId, DeathMessageSkins.Definition definition, String selectedVariant) {
+        ItemStack stack = new ItemStack(definition.icon());
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return stack;
+        }
+
+        boolean selected = definition.id().equals(selectedVariant);
+        boolean unlocked = ItemSkinSelectionService.isUnlocked(player.getUniqueId(), logicalItemId, definition.id());
+        int cost = ItemSkinSelectionService.getCost(plugin, logicalItemId, definition.id());
+
+        meta.displayName(Component.text(
+                        definition.displayName(),
+                        selected ? NamedTextColor.GREEN : (unlocked ? NamedTextColor.AQUA : NamedTextColor.RED),
+                        TextDecoration.BOLD
+                )
+                .decoration(TextDecoration.ITALIC, false));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("ID: " + definition.id(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Rarity: " + definition.rarity().name(), getRarityColor(definition.rarity())).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Cost: " + cost + " coins", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
+
+        DeathMessageSkin skin = DeathMessageManager.getDeathMessageSkin(definition.id());
+        if (skin != null) {
+            Component envPreview = skin.getEnvironmentalDeathMessage(player.getName(), "CAMPING");
+            Component killPreview = skin.getKillMessage(player.getName(), "Victim");
+            lore.add(Component.text("Preview (Env):", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
+            lore.add((envPreview == null ? Component.text(player.getName() + " was struck down for camping too long.", NamedTextColor.YELLOW) : envPreview)
+                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("Preview (Kill):", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
+            lore.add((killPreview == null ? Component.text(player.getName() + " eliminated Victim.", NamedTextColor.YELLOW) : killPreview)
+                    .decoration(TextDecoration.ITALIC, false));
+        }
+
+        lore.add(Component.text(selected ? "Currently selected" : (unlocked ? "Click to select" : "Click to unlock + select"),
+                        selected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Right click: select/unlock and close", NamedTextColor.DARK_GRAY)
+                .decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore);
+
+        stack.setItemMeta(meta);
+        CustomModelDataUtil.setCustomModelData(stack, DeathMessageSkins.LOGICAL_ITEM_ID, definition.id());
+        return stack;
+    }
+
     private ItemStack createBackHint() {
         return createUtility(Material.BOOK, "Skin Selection",
                 NamedTextColor.YELLOW,
@@ -465,6 +760,8 @@ public class SkinGUI {
             ids.add(ItemSkinSelectionService.normalizeLogicalItemId(itemId));
         }
         ids.add(KillEffectSkins.LOGICAL_ITEM_ID);
+        ids.add(WinSkinSkins.LOGICAL_ITEM_ID);
+        ids.add(DeathMessageSkins.LOGICAL_ITEM_ID);
         return new ArrayList<>(ids);
     }
 }

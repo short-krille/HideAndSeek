@@ -19,7 +19,8 @@ dependencyResolutionManagement {
 
 rootProject.name = 'HideAndSeek'
 include 'nms'
-include 'nms-v1_21_R7'
+include 'nms-v1_21_10'
+include 'nms-v1_21_11'
 include 'plugin'
 
 project(':plugin').name = 'HideAndSeek'

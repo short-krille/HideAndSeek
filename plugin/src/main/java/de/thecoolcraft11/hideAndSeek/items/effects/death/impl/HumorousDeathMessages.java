@@ -1,0 +1,37 @@
+package de.thecoolcraft11.hideAndSeek.items.effects.death.impl;
+
+import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageSkin;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+public class HumorousDeathMessages implements DeathMessageSkin {
+
+    @Override
+    public Component getEnvironmentalDeathMessage(String victimName, String cause) {
+        return switch (cause) {
+            case "CAMPING" ->
+                    base(victimName).append(Component.text(" became one with the campfire. Literally.", NamedTextColor.GREEN));
+            case "WORLD_BORDER" ->
+                    base(victimName).append(Component.text(" tried to find the end of the world... and found it.", NamedTextColor.GREEN));
+            case "PERK_DEATH_ZONE" ->
+                    base(victimName).append(Component.text(" discovered that zones have feelings too.", NamedTextColor.GREEN));
+            case "PERK_RELOCATE" ->
+                    base(victimName).append(Component.text(" teleported into the shadow realm by accident.", NamedTextColor.GREEN));
+            default ->
+                    base(victimName).append(Component.text(" became part of the environment.", NamedTextColor.GREEN));
+        };
+    }
+
+    @Override
+    public Component getKillMessage(String killerName, String victimName) {
+        return Component.text(killerName, NamedTextColor.AQUA)
+                .append(Component.text(" sent ", NamedTextColor.GRAY))
+                .append(Component.text(victimName, NamedTextColor.YELLOW))
+                .append(Component.text(" to the shadow realm!", NamedTextColor.GRAY));
+    }
+
+    private Component base(String victimName) {
+        return Component.text(victimName, NamedTextColor.YELLOW);
+    }
+}
+

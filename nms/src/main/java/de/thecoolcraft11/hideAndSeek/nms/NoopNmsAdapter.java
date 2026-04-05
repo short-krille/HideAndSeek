@@ -116,7 +116,7 @@ public class NoopNmsAdapter implements NmsAdapter {
     }
 
     @Override
-    public Entity spawnSeekerAssistant(Plugin plugin, Player seeker, Location location) {
+    public Entity spawnSeekerAssistant(Plugin plugin, Player seeker, Location location, String assistantSkin) {
         return null;
     }
 

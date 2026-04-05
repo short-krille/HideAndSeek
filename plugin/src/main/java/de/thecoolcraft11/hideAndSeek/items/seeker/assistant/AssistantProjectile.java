@@ -17,6 +17,11 @@ public final class AssistantProjectile {
     public static final String KEY_NAME = "assistant_projectile";
     public static final String SEEKER_KEY_NAME = "assistant_projectile_seeker";
     public static final String ASSISTANT_KEY_NAME = "assistant_projectile_assistant";
+
+    private static final String SKIN_GHOST_DRONE = "skin_ghost_drone";
+    private static final String SKIN_BATTLE_MECH = "skin_battle_mech";
+    private static final String SKIN_STEEL_GOLEM = "skin_steel_golem";
+
     private AssistantProjectile() {
     }
 
@@ -43,7 +48,8 @@ public final class AssistantProjectile {
             double homingRange,
             int lifetimeTicks,
             UUID targetId,
-            UUID seekerUUID
+            UUID seekerUUID,
+            String assistantSkin
     ) {
         if (plugin == null || shooter == null || launchLoc == null || launchLoc.getWorld() == null) {
             return;
@@ -53,7 +59,12 @@ public final class AssistantProjectile {
             sb.setShooter(shooter);
             sb.setVelocity(initialVel);
             sb.setGravity(false);
-            sb.setItem(new ItemStack(Material.SOUL_TORCH));
+            switch (assistantSkin) {
+                case SKIN_BATTLE_MECH -> sb.setItem(new ItemStack(Material.BEACON));
+                case SKIN_GHOST_DRONE -> sb.setItem(new ItemStack(Material.STRUCTURE_VOID));
+                case SKIN_STEEL_GOLEM -> sb.setItem(new ItemStack(Material.IRON_BLOCK));
+                default -> sb.setItem(new ItemStack(Material.SOUL_TORCH));
+            }
             sb.getPersistentDataContainer().set(projectileKey(plugin), PersistentDataType.BOOLEAN, true);
             sb.getPersistentDataContainer().set(seekerKey(plugin), PersistentDataType.STRING, seekerUUID.toString());
             sb.getPersistentDataContainer().set(assistantKey(plugin), PersistentDataType.STRING, assistantId.toString());

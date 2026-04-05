@@ -5,6 +5,7 @@ import de.thecoolcraft11.hideAndSeek.items.HiderItems;
 import de.thecoolcraft11.hideAndSeek.items.SeekerItems;
 import de.thecoolcraft11.hideAndSeek.items.api.ItemStateManager;
 import de.thecoolcraft11.hideAndSeek.items.effects.KillEffectService;
+import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageService;
 import de.thecoolcraft11.hideAndSeek.model.GameStyleEnum;
 import de.thecoolcraft11.hideAndSeek.perk.definition.PerkTarget;
 import de.thecoolcraft11.hideAndSeek.perk.impl.seeker.DeathZonePerk;
@@ -42,30 +43,51 @@ import static de.thecoolcraft11.hideAndSeek.items.seeker.CurseSpellItem.isCurseA
 
 public class PlayerHitListener implements Listener {
     private final Map<UUID, EnvironmentalDeathCause> environmentalDeaths = new HashMap<>();
+    private final Map<UUID, UUID> environmentalDeathAttributors = new HashMap<>();
 
     private final HideAndSeek plugin;
     private final KillEffectService killEffectService;
+    private final DeathMessageService deathMessageService;
     private final Map<UUID, Long> hidersBorderExitTime = new HashMap<>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<>();
 
-    public void markEnvironmentalDeath(UUID playerId, EnvironmentalDeathCause cause) {
-        if (playerId == null || cause == null) {
-            return;
-        }
-        environmentalDeaths.put(playerId, cause);
-    }
 
     public PlayerHitListener(HideAndSeek plugin) {
         this.plugin = plugin;
         this.killEffectService = new KillEffectService(plugin);
+        this.deathMessageService = new DeathMessageService(plugin);
+    }
+
+    public void markEnvironmentalDeath(UUID playerId, EnvironmentalDeathCause cause) {
+        markEnvironmentalDeath(playerId, cause, null);
+    }
+
+    public void markEnvironmentalDeath(UUID playerId, EnvironmentalDeathCause cause, UUID attributedSeekerId) {
+        if (playerId == null || cause == null) {
+            return;
+        }
+        environmentalDeaths.put(playerId, cause);
+        if (attributedSeekerId != null) {
+            environmentalDeathAttributors.put(playerId, attributedSeekerId);
+        } else {
+            environmentalDeathAttributors.remove(playerId);
+        }
     }
 
     public EnvironmentalDeathCause peekEnvironmentalDeathCause(UUID playerId) {
         return environmentalDeaths.get(playerId);
     }
 
-    private EnvironmentalDeathCause consumeEnvironmentalDeathCause(UUID playerId) {
+    public EnvironmentalDeathCause consumeEnvironmentalDeathCause(UUID playerId) {
         return environmentalDeaths.remove(playerId);
+    }
+
+    public UUID peekEnvironmentalDeathAttributor(UUID playerId) {
+        return environmentalDeathAttributors.get(playerId);
+    }
+
+    public void consumeEnvironmentalDeathAttributor(UUID playerId) {
+        environmentalDeathAttributors.remove(playerId);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -84,6 +106,7 @@ public class PlayerHitListener implements Listener {
         }
 
         EnvironmentalDeathCause environmentalCause = consumeEnvironmentalDeathCause(deceased.getUniqueId());
+        consumeEnvironmentalDeathAttributor(deceased.getUniqueId());
         if (environmentalCause != null && HideAndSeek.getDataController().getHiders().contains(deceased.getUniqueId())) {
 
             for (java.util.UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
@@ -95,7 +118,8 @@ public class PlayerHitListener implements Listener {
             GameStyleEnum gameStyle = (gameStyleObj instanceof GameStyleEnum) ?
                     (GameStyleEnum) gameStyleObj : GameStyleEnum.SPECTATOR;
 
-            handleHiderElimination(deceased, null, gameStyle, environmentalCause);
+            killEffectService.triggerEnvironmentalKillEffect(deceased, deceased.getLocation(), environmentalCause);
+            handleHiderElimination(deceased, null, gameStyle);
             return;
         }
 
@@ -113,7 +137,13 @@ public class PlayerHitListener implements Listener {
 
                 killEffectService.triggerKillEffect(killer, deceased, deceased.getLocation());
 
-                handleHiderElimination(deceased, killer, gameStyle, null);
+
+                Component customKillMessage = deathMessageService.getKillMessage(killer, deceased);
+                if (customKillMessage != null) {
+                    event.deathMessage(customKillMessage);
+                }
+
+                handleHiderElimination(deceased, killer, gameStyle);
             }
         }
     }
@@ -303,6 +333,7 @@ public class PlayerHitListener implements Listener {
             hidersBorderExitTime.clear();
             lastDamageTime.clear();
             environmentalDeaths.clear();
+            environmentalDeathAttributors.clear();
             return;
         }
 
@@ -428,37 +459,15 @@ public class PlayerHitListener implements Listener {
         }
     }
 
-    private void handleHiderElimination(Player hider, Player seeker, GameStyleEnum gameStyle, EnvironmentalDeathCause environmentalCause) {
+    private void handleHiderElimination(Player hider, Player seeker, GameStyleEnum gameStyle) {
 
         int seekerPoints = plugin.getPointService().onHiderEliminated(hider, seeker);
 
         plugin.getSeekingBossBarService().onHiderEliminated();
 
-        Component announcement;
         if (seeker != null) {
             seeker.sendMessage(Component.text("+" + seekerPoints + " points for finding " + hider.getName() + "!", NamedTextColor.GOLD));
-
-            announcement = Component.text(seeker.getName(), NamedTextColor.RED)
-                    .append(Component.text(" found ", NamedTextColor.YELLOW))
-                    .append(Component.text(hider.getName(), NamedTextColor.GREEN))
-                    .append(Component.text("!", NamedTextColor.YELLOW));
-        } else {
-            String reason = switch (environmentalCause) {
-                case CAMPING -> " was struck down for camping too long!";
-                case WORLD_BORDER -> " was eliminated by the world border!";
-                case PERK_DEATH_ZONE -> " did not escape the Death Zone!";
-                case PERK_RELOCATE -> " did not relocate in time!";
-                default -> " was eliminated by the environment!";
-            };
-
-            announcement = Component.text(hider.getName(), NamedTextColor.GREEN)
-                    .append(Component.text(reason, NamedTextColor.YELLOW));
         }
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(announcement);
-        }
-
 
         if (gameStyle == GameStyleEnum.INVASION || gameStyle == GameStyleEnum.INFINITE) {
             clearHiderPerksAfterElimination(hider);
@@ -651,6 +660,10 @@ public class PlayerHitListener implements Listener {
         UUID playerId = player.getUniqueId();
         DeathZonePerk.clearWarningsFor(playerId);
         RelocatePerk.clearWarningsFor(playerId);
+    }
+
+    public DeathMessageService getDeathMessageService() {
+        return deathMessageService;
     }
 
     public enum EnvironmentalDeathCause {

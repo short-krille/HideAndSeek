@@ -210,9 +210,6 @@ public class AreaWarnHelper {
         }
     }
 
-    public int getTicksRemaining() {
-        return ticksRemaining;
-    }
 }
 
 
