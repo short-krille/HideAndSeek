@@ -265,7 +265,7 @@ public class SeekingBossBarService {
     }
 
     private boolean isDisabled() {
-        return plugin.getSettingRegistry().get("game.seeking-bossbar.enabled", true);
+        return !plugin.getSettingRegistry().get("game.seeking-bossbar.enabled", true);
     }
 
     private boolean isNotSeekingPhase() {
