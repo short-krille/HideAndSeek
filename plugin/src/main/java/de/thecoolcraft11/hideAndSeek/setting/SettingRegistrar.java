@@ -336,6 +336,28 @@ public class SettingRegistrar {
 
         plugin.getConfigRegistry().register("settings.hider-items.random-block.uses", Integer.class, 5);
 
+        plugin.getConfigRegistry().register("settings.game.unstuck.cooldown", Integer.class, 30);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.spawn-cooldown", Integer.class, 90);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.seeker-range", Double.class, 15.0);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.history-seconds", Integer.class, 12);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.scan-radius", Integer.class, 3);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.spawn-search-radius", Integer.class, 4);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.stationary-seconds", Integer.class, 4);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.stationary-radius", Double.class, 0.75);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.max-upward-gain", Double.class, 1.0);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.max-horizontal-rollback", Double.class, 4.0);
+
+        plugin.getConfigRegistry().register("settings.game.unstuck.force-spawn-after-attempts", Integer.class, 3);
+
         plugin.getConfigRegistry().register("settings.hider-items.crossbow.hits-per-upgrade", Integer.class, 3);
 
         plugin.getConfigRegistry().register("settings.hider-items.sound.cooldown", Integer.class, 8);
@@ -849,6 +871,8 @@ public class SettingRegistrar {
         plugin.getSectionRegistry().register(SectionDefinition.builder("perks.perk.seeker_scent_trail").icon(Material.DIRT_PATH).build());
 
         plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items").icon(Material.PLAYER_HEAD).build());
+
+        plugin.getSectionRegistry().register(SectionDefinition.builder("game.unstuck").icon(Material.ENDER_PEARL).build());
 
         plugin.getSectionRegistry().register(SectionDefinition.builder("hider-items.crossbow").icon(Material.CROSSBOW).build());
 

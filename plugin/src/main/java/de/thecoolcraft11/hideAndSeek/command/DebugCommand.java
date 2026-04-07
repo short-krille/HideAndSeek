@@ -33,6 +33,7 @@ public class DebugCommand implements MinigameSubcommand {
         subcommands.put("loadout", new DebugLoadoutCommand(plugin));
         subcommands.put("perks", new DebugPerksCommand(plugin));
         subcommands.put("config", new DebugConfigCommand(plugin));
+        subcommands.put("unstuck", new DebugUnstuckCommand(plugin));
     }
 
     @Override
@@ -110,6 +111,8 @@ public class DebugCommand implements MinigameSubcommand {
                 .append(Component.text(" - Manage player perks", NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("/has debug config [test|validate] [-a]", NamedTextColor.YELLOW)
                 .append(Component.text(" - Test configuration and maps", NamedTextColor.GRAY)));
+        sender.sendMessage(Component.text("/has debug unstuck <player> [history|nearby|spawn]", NamedTextColor.YELLOW)
+                .append(Component.text(" - Forcefully unstuck a player", NamedTextColor.GRAY)));
     }
 }
 

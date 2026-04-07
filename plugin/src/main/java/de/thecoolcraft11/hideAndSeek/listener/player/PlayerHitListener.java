@@ -494,6 +494,7 @@ public class PlayerHitListener implements Listener {
 
     private void handleSpectatorMode(Player hider) {
         HideAndSeek.getDataController().removeHider(hider.getUniqueId());
+        plugin.getUnstuckManager().clearPlayerData(hider.getUniqueId());
         HideAndSeek.getDataController().addSeeker(hider.getUniqueId());
 
 

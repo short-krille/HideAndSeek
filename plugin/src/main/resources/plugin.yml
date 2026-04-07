@@ -36,3 +36,6 @@ permissions:
   hideandseek.command.skin:
     description: Allows using /mg skin command
     default: true
+  hideandseek.command.unstuck:
+    description: Allows using /mg unstuck command
+    default: true

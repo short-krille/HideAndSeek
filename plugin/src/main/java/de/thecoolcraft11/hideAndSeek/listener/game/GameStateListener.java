@@ -89,6 +89,7 @@ public class GameStateListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        plugin.getUnstuckManager().clearPlayerData(player.getUniqueId());
         ItemSkinSelectionService.savePlayer(plugin, player.getUniqueId());
         cleanupSwordCharge(player.getUniqueId());
         cleanupMedkitCharge(player.getUniqueId());

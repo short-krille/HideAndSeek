@@ -31,6 +31,7 @@ import de.thecoolcraft11.hideAndSeek.setting.SettingChangeListener;
 import de.thecoolcraft11.hideAndSeek.setting.SettingRegistrar;
 import de.thecoolcraft11.hideAndSeek.util.DataController;
 import de.thecoolcraft11.hideAndSeek.util.SeekingBossBarService;
+import de.thecoolcraft11.hideAndSeek.util.UnstuckManager;
 import de.thecoolcraft11.hideAndSeek.util.map.MapManager;
 import de.thecoolcraft11.hideAndSeek.util.points.PointService;
 import de.thecoolcraft11.hideAndSeek.vote.VoteManager;
@@ -63,6 +64,7 @@ public final class HideAndSeek extends MinigameFramework {
     private HiderCampingListener hiderCampingListener;
     private SeekingBossBarService seekingBossBarService;
     private PerkService perkService;
+    private UnstuckManager unstuckManager;
 
     @Override
     protected void onGameEnable() {
@@ -82,6 +84,7 @@ public final class HideAndSeek extends MinigameFramework {
         voteGUI = new VoteGUI(this);
         readyGUI = new ReadyGUI(this);
         seekingBossBarService = new SeekingBossBarService(this);
+        unstuckManager = new UnstuckManager(this);
 
         nmsAdapter = NmsLoader.load(getLogger(), getConfig().getBoolean("nms.enabled", true));
 
@@ -154,6 +157,9 @@ public final class HideAndSeek extends MinigameFramework {
         MinigameSubcommandRegistry.register(new VoteCommand(this));
         MinigameSubcommandRegistry.register(new ReadyCommand(this));
         MinigameSubcommandRegistry.register(new DebugCommand(this));
+        MinigameSubcommandRegistry.register(new UnstuckCommand(this, unstuckManager));
+
+        unstuckManager.startTrackingTask();
 
         timerPlugin = (Timer) Bukkit.getPluginManager().getPlugin("Timer");
         if (timerPlugin != null) {
@@ -185,6 +191,9 @@ public final class HideAndSeek extends MinigameFramework {
         }
         if (perkService != null) {
             perkService.shutdown();
+        }
+        if (unstuckManager != null) {
+            unstuckManager.shutdown();
         }
         KillEffectManager.clear();
         WinSkinManager.clear();
@@ -343,6 +352,10 @@ public final class HideAndSeek extends MinigameFramework {
 
     public PerkShopUI getPerkShopUI() {
         return perkService.getShopUI();
+    }
+
+    public UnstuckManager getUnstuckManager() {
+        return unstuckManager;
     }
 
     public void updateWorldIconsForAllMaps() {

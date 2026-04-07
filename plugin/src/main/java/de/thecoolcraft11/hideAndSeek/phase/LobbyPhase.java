@@ -37,6 +37,7 @@ public class LobbyPhase implements GamePhase {
 
         HideAndSeek.getDataController().reset();
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
+        hideAndSeekPlugin.getUnstuckManager().clearAll();
         CameraItem.clearAllCameraState(hideAndSeekPlugin);
         hideAndSeekPlugin.getMapManager().clearAppliedSettingOverrides();
         hideAndSeekPlugin.getVoteManager().resetVotes();
