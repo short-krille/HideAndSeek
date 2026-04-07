@@ -14,6 +14,7 @@ import java.util.List;
 public class LoadoutCommand implements MinigameSubcommand {
     private final HideAndSeek plugin;
     private static final String PERMISSION = "hideandseek.command.loadout";
+    private static final String ADMIN_PERMISSION = "hideandseek.command.loadout.admin";
 
     public LoadoutCommand(HideAndSeek plugin) {
         this.plugin = plugin;
@@ -43,6 +44,15 @@ public class LoadoutCommand implements MinigameSubcommand {
 
         if (!sender.hasPermission(PERMISSION)) {
             sender.sendMessage(Component.text("You don't have permission to use this command!", NamedTextColor.RED));
+            return true;
+        }
+
+        if (args.length > 0 && "admin".equalsIgnoreCase(args[0])) {
+            if (!sender.hasPermission(ADMIN_PERMISSION)) {
+                sender.sendMessage(Component.text("You don't have permission to use admin loadout management!", NamedTextColor.RED));
+                return true;
+            }
+            plugin.getAdminLoadoutManagementGUI().open(player);
             return true;
         }
 

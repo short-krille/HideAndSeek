@@ -21,6 +21,9 @@ permissions:
   hideandseek.command.loadout:
     description: Allows using /mg loadout command
     default: true
+  hideandseek.command.loadout.admin:
+    description: Allows using the admin loadout management GUI
+    default: op
   hideandseek.command.map:
     description: Allows selecting and setting maps
     default: op

@@ -51,6 +51,7 @@ public final class HideAndSeek extends MinigameFramework {
     private BlockModeListener blockModeListener;
     private LoadoutManager loadoutManager;
     private LoadoutGUI loadoutGUI;
+    private AdminLoadoutManagementGUI adminLoadoutManagementGUI;
     private MapGUI mapGUI;
     private SkinGUI skinGUI;
     private PointService pointService;
@@ -76,6 +77,7 @@ public final class HideAndSeek extends MinigameFramework {
         blockSelectorGUI = new BlockSelectorGUI(this);
         loadoutManager = new LoadoutManager(this);
         loadoutGUI = new LoadoutGUI(loadoutManager, this);
+        adminLoadoutManagementGUI = new AdminLoadoutManagementGUI(this);
         mapGUI = new MapGUI(this);
         skinGUI = new SkinGUI(this);
         pointService = new PointService(this);
@@ -237,6 +239,10 @@ public final class HideAndSeek extends MinigameFramework {
 
     public LoadoutGUI getLoadoutGUI() {
         return loadoutGUI;
+    }
+
+    public AdminLoadoutManagementGUI getAdminLoadoutManagementGUI() {
+        return adminLoadoutManagementGUI;
     }
 
     public MapGUI getMapGUI() {

@@ -86,6 +86,7 @@ public final class SeekerItems {
 
     public static void giveLoadoutItems(Player player, HideAndSeek plugin) {
 
+        plugin.getLoadoutManager().sanitizePlayerLoadout(player.getUniqueId());
         var loadout = plugin.getLoadoutManager().getLoadout(player.getUniqueId());
 
         int slot = 1;

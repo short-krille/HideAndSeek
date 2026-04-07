@@ -92,6 +92,7 @@ public class PerkRegistry {
         List<PerkDefinition> pool = allPerks.stream()
                 .filter(p -> p.getTarget() == target)
                 .filter(p -> plugin.getSettingRegistry().get("perks.perk." + p.getId() + ".enabled", true))
+                .filter(p -> plugin.getLoadoutManager().isPerkAllowed(target, p.getId()))
                 .collect(Collectors.toCollection(ArrayList::new));
         Collections.shuffle(pool);
         return pool.subList(0, Math.min(count, pool.size()));
