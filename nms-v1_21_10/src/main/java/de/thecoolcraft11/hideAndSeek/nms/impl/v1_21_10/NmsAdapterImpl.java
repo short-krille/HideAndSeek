@@ -875,8 +875,7 @@ public class NmsAdapterImpl implements NmsAdapter {
             return;
         }
 
-        int minY = hiderLocation.getWorld().getMinHeight();
-        BlockPos pos = new BlockPos(hiderLocation.getBlockX(), minY, hiderLocation.getBlockZ());
+        BlockPos pos = new BlockPos(hiderLocation.getBlockX(), findBeamY(hiderLocation), hiderLocation.getBlockZ());
 
         if ("alert".equalsIgnoreCase(color)) {
             int switches = 6;
@@ -923,6 +922,8 @@ public class NmsAdapterImpl implements NmsAdapter {
 
     private void sendBeamPackets(Player player, BlockPos pos, String color) {
         var conn = ((CraftPlayer) player).getHandle().connection;
+
+        System.out.println("Sending block update packet to " + player.getName() + " for beam with color " + color);
 
         conn.send(new ClientboundBlockUpdatePacket(pos, Blocks.TEST_INSTANCE_BLOCK.defaultBlockState()));
 
@@ -984,6 +985,26 @@ public class NmsAdapterImpl implements NmsAdapter {
         error.putString("translate", "test.error.tick");
         error.put("with", outerWith);
         return error;
+    }
+
+    private int findBeamY(Location loc) {
+        if (loc == null || loc.getWorld() == null) return Objects.requireNonNull(loc).getBlockY();
+
+        int startY = loc.getBlockY() - 2;
+        int endY = Math.max(loc.getBlockY() - 15, loc.getWorld().getMinHeight());
+        int x = loc.getBlockX();
+        int z = loc.getBlockZ();
+
+        for (int y = startY; y >= endY; y--) {
+            var block = loc.getWorld().getBlockAt(x, y, z);
+            var above = loc.getWorld().getBlockAt(x, y + 1, z);
+
+            if (!block.isEmpty() && above.isEmpty()) {
+                return y;
+            }
+        }
+
+        return endY;
     }
 
     @Override
