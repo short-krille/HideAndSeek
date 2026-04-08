@@ -2,12 +2,15 @@ package de.thecoolcraft11.hideAndSeek.listener.item;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import org.bukkit.*;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class SmokeBombListener implements Listener {
@@ -91,7 +94,7 @@ public class SmokeBombListener implements Listener {
         new BukkitRunnable() {
 
             int ticks = 0;
-            final int maxTicks = finalDuration * 20;
+            final int maxTicks = (finalDuration * 20) / 3;
 
             @Override
             public void run() {
@@ -106,8 +109,8 @@ public class SmokeBombListener implements Listener {
 
                 double densityMultiplier = 1.0 - (progress * 0.6);
 
-                int coreAmount = (int) (350 * densityMultiplier);
-                int swirlAmount = (int) (200 * densityMultiplier);
+                int coreAmount = (int) (175 * densityMultiplier);
+                int swirlAmount = (int) (75 * densityMultiplier);
 
 
                 world.spawnParticle(
@@ -164,7 +167,29 @@ public class SmokeBombListener implements Listener {
                 ticks++;
             }
 
-        }.runTaskTimer(plugin, 1L, 1L);
+        }.runTaskTimer(plugin, 1L, 3L);
+
+        new BukkitRunnable() {
+
+            final int maxTicks = finalDuration * 20;
+            int ticks = 0;
+
+            @Override
+            public void run() {
+
+                if (ticks >= maxTicks) {
+                    cancel();
+                    return;
+                }
+
+                for (Player p : world.getPlayers()) {
+                    if (p.getLocation().distance(impactLocation) < finalRadius) {
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 25, 1, false, false, false));
+                    }
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
 
         snowball.remove();
     }

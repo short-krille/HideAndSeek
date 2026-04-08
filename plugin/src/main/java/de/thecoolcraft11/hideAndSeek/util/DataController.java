@@ -10,6 +10,7 @@ public class DataController {
 
     private static DataController instance;
     private final List<UUID> hiders;
+    private final List<UUID> allHiders;
     private final List<UUID> seekers;
     private final Map<UUID, Block> hiddenBlocks;
     private final Map<UUID, org.bukkit.Material> chosenBlocks;
@@ -33,6 +34,7 @@ public class DataController {
 
     public DataController() {
         this.hiders = new ArrayList<>();
+        this.allHiders = new ArrayList<>();
         this.seekers = new ArrayList<>();
         this.hiddenBlocks = new HashMap<>();
         this.chosenBlocks = new HashMap<>();
@@ -82,6 +84,10 @@ public class DataController {
         return hiders;
     }
 
+    public List<UUID> getAllHiders() {
+        return Collections.unmodifiableList(allHiders);
+    }
+
     public void removeHiddenBlock(UUID uuid) {
         hiddenBlocks.remove(uuid);
     }
@@ -96,6 +102,7 @@ public class DataController {
 
     public void reset() {
         hiders.clear();
+        allHiders.clear();
         seekers.clear();
         hiddenBlocks.clear();
         chosenBlocks.clear();
@@ -145,6 +152,7 @@ public class DataController {
     public void addHider(UUID uuid) {
         if (!hiders.contains(uuid)) {
             hiders.add(uuid);
+            allHiders.add(uuid);
         }
     }
 
@@ -284,10 +292,6 @@ public class DataController {
 
     public boolean isMapSelectionLocked() {
         return this.mapSelectionLocked;
-    }
-
-    public void setMapSelectionLocked(boolean locked) {
-        this.mapSelectionLocked = locked;
     }
 
     public void setCurrentBorderIndex(int borderIndex) {

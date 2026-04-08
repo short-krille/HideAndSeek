@@ -4,6 +4,7 @@ import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinService;
 import de.thecoolcraft11.hideAndSeek.items.seeker.CameraItem;
+import de.thecoolcraft11.hideAndSeek.util.DataController;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import de.thecoolcraft11.hideAndSeek.util.TimerManager;
 import de.thecoolcraft11.minigameframework.MinigameFramework;
@@ -69,6 +70,7 @@ public class EndedPhase implements GamePhase {
         announceWinner(plugin, hidersWin, coinGains);
 
         WinSkinService winSkinService = new WinSkinService(hideAndSeekPlugin);
+
         if (hidersWin) {
             for (UUID hiderId : activeHiders) {
                 Player hider = Bukkit.getPlayer(hiderId);
@@ -77,7 +79,9 @@ public class EndedPhase implements GamePhase {
                 }
             }
         } else {
-            for (UUID seekerId : HideAndSeek.getDataController().getSeekers()) {
+            List<UUID> winningSeekers = new ArrayList<>(HideAndSeek.getDataController().getSeekers());
+            winningSeekers.removeAll(DataController.getInstance().getAllHiders());
+            for (UUID seekerId : winningSeekers) {
                 Player seeker = Bukkit.getPlayer(seekerId);
                 if (seeker != null && seeker.isOnline()) {
                     winSkinService.triggerWinSkin(seeker, false);
