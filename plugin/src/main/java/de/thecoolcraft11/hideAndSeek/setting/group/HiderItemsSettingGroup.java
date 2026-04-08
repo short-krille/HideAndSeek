@@ -490,6 +490,41 @@ public final class HiderItemsSettingGroup implements SettingGroup {
                         .description("Radius of smoke cloud in blocks")
                         .customIcon(Material.BLAZE_POWDER)
                         .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.remote-gateway.cooldown", SettingType.INTEGER, Integer.class)
+                        .defaultValue(getConfigValue(plugin, "hider-items.remote-gateway.cooldown", 8))
+                        .range(0, 120)
+                        .description("Cooldown for remote gateway placement in seconds")
+                        .customIcon(Material.CLOCK)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.remote-gateway.max-pairs", SettingType.INTEGER, Integer.class)
+                        .defaultValue(getConfigValue(plugin, "hider-items.remote-gateway.max-pairs", 1))
+                        .range(1, 3)
+                        .description("Maximum active remote gateway pairs per hider")
+                        .customIcon(Material.ENDER_EYE)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.remote-gateway.duration-seconds", SettingType.INTEGER, Integer.class)
+                        .defaultValue(getConfigValue(plugin, "hider-items.remote-gateway.duration-seconds", 120))
+                        .range(-1, 600)
+                        .description("How long remote gateway pairs remain active in seconds (-1 = until round ends)")
+                        .customIcon(Material.CLOCK)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.remote-gateway.travel-cooldown-seconds", SettingType.DOUBLE, Double.class)
+                        .defaultValue(getConfigValue(plugin, "hider-items.remote-gateway.travel-cooldown-seconds", 1.5))
+                        .rangeDouble(0.0, 30.0)
+                        .description("Cooldown in seconds before a player can use any gateway again")
+                        .customIcon(Material.CLOCK)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.remote-gateway.portal-stand-seconds", SettingType.DOUBLE, Double.class)
+                        .defaultValue(getConfigValue(plugin, "hider-items.remote-gateway.portal-stand-seconds", 0.0))
+                        .rangeDouble(0.0, 10.0)
+                        .description("Seconds a player must stand inside a gateway before teleporting")
+                        .customIcon(Material.HEAVY_WEIGHTED_PRESSURE_PLATE)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.remote-gateway.seeker-can-use", SettingType.BOOLEAN, Boolean.class)
+                        .defaultValue(getConfigValue(plugin, "hider-items.remote-gateway.seeker-can-use", false))
+                        .description("Allow seekers to use remote gateways")
+                        .customIcon(Material.IRON_SWORD)
+                        .build()),
                 (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("hider-items.ghost-essence.cooldown", SettingType.INTEGER, Integer.class)
                         .defaultValue(getConfigValue(plugin, "hider-items.ghost-essence.cooldown", 25))
                         .range(0, 300)

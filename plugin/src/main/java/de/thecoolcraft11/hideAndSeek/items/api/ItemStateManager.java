@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
@@ -20,6 +21,11 @@ public record ItemStateManager(HideAndSeek plugin) {
     public static final Map<Location, BlockDisplay> sensorDisplays = new HashMap<>();
     public static final Map<UUID, LinkedList<PlacedCamera>> seekerCameras = new HashMap<>();
     public static final Map<UUID, CameraSessionState> activeCameraSessions = new HashMap<>();
+    public static final Map<UUID, LinkedList<GatewayPairData>> hiderGatewayPairs = new ConcurrentHashMap<>();
+    public static final Map<UUID, GatewayData> pendingGatewayByOwner = new ConcurrentHashMap<>();
+    public static final Map<UUID, Long> gatewayTeleportCooldownUntil = new ConcurrentHashMap<>();
+    public static final Set<UUID> remoteGatewayEntities = ConcurrentHashMap.newKeySet();
+    public static final Map<UUID, Long> phantomViewerMapExpiry = new ConcurrentHashMap<>();
     public static final Map<UUID, BukkitTask> swordChargeTasks = new HashMap<>();
     public static final Map<UUID, BukkitTask> swordChargeXpTasks = new HashMap<>();
     public static final Map<UUID, XpProgressHelper.SavedXp> swordChargeXp = new HashMap<>();
@@ -151,5 +157,12 @@ public record ItemStateManager(HideAndSeek plugin) {
         public void activatedAtMs(long activatedAtMs) {
             this.activatedAtMs = activatedAtMs;
         }
+    }
+
+    public record GatewayData(Location center, List<Display> displays, String skinVariant, long placedAtMs,
+                              Set<UUID> teleportCooldowns) {
+    }
+
+    public record GatewayPairData(GatewayData first, GatewayData second, long createdAtMs) {
     }
 }

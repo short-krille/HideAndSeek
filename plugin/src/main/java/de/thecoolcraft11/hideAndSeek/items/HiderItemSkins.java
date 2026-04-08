@@ -72,6 +72,11 @@ public final class HiderItemSkins {
 
         register(vm, plugin, SoundItem.ID, "skin_megaphone", "Megaphone", "iron_ingot", 0, ItemRarity.COMMON);
         register(vm, plugin, SoundItem.ID, "skin_rubber_chicken", "Rubber Chicken", "yellow_wool", -1, ItemRarity.UNCOMMON);
+
+        register(vm, plugin, RemoteGatewayItem.ID, "skin_end_rift", "End Rift", "ender_eye", 0, ItemRarity.RARE);
+        register(vm, plugin, RemoteGatewayItem.ID, "skin_phase_door", "Phase Door", "warped_door", -1, ItemRarity.UNCOMMON);
+        register(vm, plugin, RemoteGatewayItem.ID, "skin_dematerializer", "Dematerializer", "light_blue_stained_glass", -2, ItemRarity.EPIC);
+        register(vm, plugin, RemoteGatewayItem.ID, "skin_void_lattice", "Void Lattice", "sculk", -3, ItemRarity.LEGENDARY);
     }
 
     private static void register(

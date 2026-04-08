@@ -1,6 +1,7 @@
 package de.thecoolcraft11.hideAndSeek.phase;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
+import de.thecoolcraft11.hideAndSeek.items.hider.RemoteGatewayItem;
 import de.thecoolcraft11.hideAndSeek.items.seeker.CameraItem;
 import de.thecoolcraft11.hideAndSeek.model.GameModeEnum;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
@@ -39,6 +40,7 @@ public class LobbyPhase implements GamePhase {
         HideAndSeek hideAndSeekPlugin = (HideAndSeek) plugin;
         hideAndSeekPlugin.getUnstuckManager().clearAll();
         CameraItem.clearAllCameraState(hideAndSeekPlugin);
+        RemoteGatewayItem.clearAllGateways();
         hideAndSeekPlugin.getMapManager().clearAppliedSettingOverrides();
         hideAndSeekPlugin.getVoteManager().resetVotes();
 

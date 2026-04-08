@@ -34,6 +34,7 @@ public final class SeekerItems {
         add(new ChainPullItem());
         add(new ProximitySensorItem());
         add(new CameraItem());
+        add(new PhantomViewerItem());
         add(new CageTrapItem());
         add(new SeekerAssistantItem());
         add(new SeekersSwordItem());

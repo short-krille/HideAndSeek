@@ -3,6 +3,7 @@ package de.thecoolcraft11.hideAndSeek.phase;
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
 import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinService;
+import de.thecoolcraft11.hideAndSeek.items.hider.RemoteGatewayItem;
 import de.thecoolcraft11.hideAndSeek.items.seeker.CameraItem;
 import de.thecoolcraft11.hideAndSeek.util.DataController;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
@@ -38,6 +39,7 @@ public class EndedPhase implements GamePhase {
 
         hideAndSeekPlugin.getAntiCheatVisibilityListener().resetNow();
         CameraItem.clearAllCameraState(hideAndSeekPlugin);
+        RemoteGatewayItem.clearAllGateways();
         if (hideAndSeekPlugin.getDebugSettings().isVerboseLoggingEnabled()) {
             plugin.getLogger().info("Game ended");
         }
@@ -169,6 +171,7 @@ public class EndedPhase implements GamePhase {
 
 
         HideAndSeek.getDataController().reset();
+        RemoteGatewayItem.clearAllGateways();
 
 
         for (Player player : Bukkit.getOnlinePlayers()) {

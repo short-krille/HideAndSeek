@@ -10,6 +10,7 @@ import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageManager;
 import de.thecoolcraft11.hideAndSeek.items.effects.death.DeathMessageSkins;
 import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinManager;
 import de.thecoolcraft11.hideAndSeek.items.effects.win.WinSkinSkins;
+import de.thecoolcraft11.hideAndSeek.items.hider.RemoteGatewayItem;
 import de.thecoolcraft11.hideAndSeek.listener.game.*;
 import de.thecoolcraft11.hideAndSeek.listener.item.*;
 import de.thecoolcraft11.hideAndSeek.listener.perk.PerkListener;
@@ -145,6 +146,7 @@ public final class HideAndSeek extends MinigameFramework {
         Bukkit.getPluginManager().registerEvents(new LightningListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SlownessBallListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SmokeBombListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PhantomViewerMapListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SetPhaseReadinessGuardListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerSpectateListener(), this);
         Bukkit.getPluginManager().registerEvents(new TrapMovementListener(), this);
@@ -205,6 +207,7 @@ public final class HideAndSeek extends MinigameFramework {
         KillEffectManager.clear();
         WinSkinManager.clear();
         DeathMessageManager.clear();
+        RemoteGatewayItem.clearAllGateways();
         ItemSkinSelectionService.shutdown(this);
         LoadoutDataService.shutdown(this);
     }

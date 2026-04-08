@@ -2,6 +2,8 @@ package de.thecoolcraft11.hideAndSeek.listener.game;
 
 import de.thecoolcraft11.hideAndSeek.HideAndSeek;
 import de.thecoolcraft11.hideAndSeek.items.ItemSkinSelectionService;
+import de.thecoolcraft11.hideAndSeek.items.hider.RemoteGatewayItem;
+import de.thecoolcraft11.hideAndSeek.items.seeker.PhantomViewerItem;
 import de.thecoolcraft11.hideAndSeek.util.PlayerStateResetUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -93,6 +95,8 @@ public class GameStateListener implements Listener {
         ItemSkinSelectionService.savePlayer(plugin, player.getUniqueId());
         cleanupSwordCharge(player.getUniqueId());
         cleanupMedkitCharge(player.getUniqueId());
+        RemoteGatewayItem.clearGatewaysForOwner(player.getUniqueId());
+        PhantomViewerItem.clearPlayerState(player.getUniqueId());
         HideAndSeek.getDataController().removeAllowedSpectator(player.getUniqueId());
         plugin.getVoteManager().clearVotes(player.getUniqueId());
 

@@ -44,6 +44,7 @@ public final class HiderItems {
         add(new SlownessBallItem());
         add(new SmokeBombItem());
         add(new GhostEssenceItem());
+        add(new RemoteGatewayItem());
     }
 
     private static void add(GameItem item) {

@@ -24,6 +24,7 @@ public enum LoadoutItemType {
     SLOWNESS_BALL(true, false, ItemRarity.UNCOMMON, SlownessBallItem.ID),
     SMOKE_BOMB(true, false, ItemRarity.UNCOMMON, SmokeBombItem.ID),
     GHOST_ESSENCE(true, false, ItemRarity.RARE, GhostEssenceItem.ID, NmsCapabilities.CLIENT_GAMEMODE_SPOOFING, NmsCapabilities.MOB_PATHFINDING),
+    REMOTE_GATEWAY(true, false, ItemRarity.EPIC, RemoteGatewayItem.ID),
 
 
     GRAPPLING_HOOK(false, true, ItemRarity.COMMON, GrapplingHookItem.ID),
@@ -35,6 +36,7 @@ public enum LoadoutItemType {
     CHAIN_PULL(false, true, ItemRarity.UNCOMMON, ChainPullItem.ID),
     PROXIMITY_SENSOR(false, true, ItemRarity.RARE, ProximitySensorItem.ID),
     CAMERA(false, true, ItemRarity.EPIC, CameraItem.ID, NmsCapabilities.CLIENT_CAMERA_SPOOFING, NmsCapabilities.CLIENT_ENTITY_GLOWING, NmsCapabilities.CLIENT_ENTITY_SPAWNING),
+    PHANTOM_VIEWER(false, true, ItemRarity.RARE, PhantomViewerItem.ID),
     CAGE_TRAP(false, true, ItemRarity.RARE, CageTrapItem.ID),
     SEEKER_ASSISTANT(false, true, ItemRarity.LEGENDARY, SeekerAssistantItem.ID, NmsCapabilities.MOB_PATHFINDING, NmsCapabilities.CLIENT_TEST_BLOCK_BEAM, NmsCapabilities.CUSTOM_ENTITY_GOALS),
     ;

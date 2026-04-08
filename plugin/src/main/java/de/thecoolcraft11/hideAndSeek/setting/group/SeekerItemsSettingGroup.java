@@ -191,6 +191,44 @@ public final class SeekerItemsSettingGroup implements SettingGroup {
                         .description("Time in seconds the cage trap takes to set up before it can trap a player")
                         .customIcon(Material.CLOCK)
                         .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.phantom-viewer.cooldown", SettingType.INTEGER, Integer.class)
+                        .defaultValue(getConfigValue(plugin, "seeker-items.phantom-viewer.cooldown", 45))
+                        .range(0, 180)
+                        .description("Cooldown for phantom viewer in seconds")
+                        .customIcon(Material.CLOCK)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.phantom-viewer.ray-distance", SettingType.INTEGER, Integer.class)
+                        .defaultValue(getConfigValue(plugin, "seeker-items.phantom-viewer.ray-distance", 24))
+                        .range(8, 64)
+                        .description("Maximum render distance for phantom snapshot rays")
+                        .customIcon(Material.COMPASS)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.phantom-viewer.show-player-name", SettingType.BOOLEAN, Boolean.class)
+                        .defaultValue(getConfigValue(plugin, "seeker-items.phantom-viewer.show-player-name", false))
+                        .description("Show the target hider name when phantom snapshot is captured")
+                        .customIcon(Material.NAME_TAG)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.phantom-viewer.map-duration-seconds", SettingType.INTEGER, Integer.class)
+                        .defaultValue(getConfigValue(plugin, "seeker-items.phantom-viewer.map-duration-seconds", 60))
+                        .range(5, 300)
+                        .description("How long phantom snapshot maps remain in player inventory")
+                        .customIcon(Material.FILLED_MAP)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.phantom-viewer.target-random", SettingType.BOOLEAN, Boolean.class)
+                        .defaultValue(getConfigValue(plugin, "seeker-items.phantom-viewer.target-random", true))
+                        .description("Use random hider target instead of nearest hider")
+                        .customIcon(Material.ENDER_EYE)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.phantom-viewer.apply-to-item-map-data", SettingType.BOOLEAN, Boolean.class)
+                        .defaultValue(getConfigValue(plugin, "seeker-items.phantom-viewer.apply-to-item-map-data", false))
+                        .description("Apply generated map data to the Phantom Viewer item instead of giving extra filled maps")
+                        .customIcon(Material.FILLED_MAP)
+                        .build()),
+                (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.phantom-viewer.target-name-in-lore", SettingType.BOOLEAN, Boolean.class)
+                        .defaultValue(getConfigValue(plugin, "seeker-items.phantom-viewer.target-name-in-lore", false))
+                        .description("Add captured target name as lore on the Phantom Viewer item")
+                        .customIcon(Material.NAME_TAG)
+                        .build()),
                 (plugin, resolver, iconHelper) -> plugin.getSettingRegistry().register(SettingDefinition.builder("seeker-items.assistant.cooldown", SettingType.INTEGER, Integer.class)
                         .defaultValue(getConfigValue(plugin, "seeker-items.assistant.cooldown", 120))
                         .range(0, 600)

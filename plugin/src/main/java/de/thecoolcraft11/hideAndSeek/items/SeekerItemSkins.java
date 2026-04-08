@@ -59,6 +59,11 @@ public final class SeekerItemSkins {
         register(vm, plugin, CameraItem.ID, "skin_owl_eye", "Owl Eye", "compass", -1, ItemRarity.RARE);
         register(vm, plugin, CameraItem.ID, "skin_orbital_spy", "Orbital Spy", "nether_star", -2, ItemRarity.EPIC);
 
+        register(vm, plugin, PhantomViewerItem.ID, "skin_echo_slate", "Echo Slate", "echo_shard", 0, ItemRarity.UNCOMMON);
+        register(vm, plugin, PhantomViewerItem.ID, "skin_spectral_cartography", "Spectral Cartography", "map", -1, ItemRarity.RARE);
+        register(vm, plugin, PhantomViewerItem.ID, "skin_quantum_viewfinder", "Quantum Viewfinder", "recovery_compass", -2, ItemRarity.EPIC);
+        register(vm, plugin, PhantomViewerItem.ID, "skin_night_recon", "Night Recon", "spyglass", -3, ItemRarity.LEGENDARY);
+
         register(vm, plugin, SeekerAssistantItem.ID, "skin_steel_golem", "Steel Golem", "iron_ingot", 0, ItemRarity.UNCOMMON);
         register(vm, plugin, SeekerAssistantItem.ID, "skin_ghost_drone", "Ghost Drone", "phantom_membrane", -1, ItemRarity.RARE);
         register(vm, plugin, SeekerAssistantItem.ID, "skin_battle_mech", "Battle Mech", "netherite_ingot", -2, ItemRarity.EPIC);
